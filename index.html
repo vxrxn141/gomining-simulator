@@ -1013,7 +1013,7 @@
     <div id="strategy-alert" style="display:none;"></div>
 
     <div class="container">
-        <header id="main-header"><h1>GoMining Simulateur</h1></header>
+        <header id="main-header"><h1>GoMining Simulator</h1></header>
 
         <!-- TAB: Dashboard (Homepage) -->
         <div class="tab-content active" id="tab-dashboard">
@@ -1566,12 +1566,12 @@
                     <div class="form-group">
                         <label data-i18n="lbl_category">Category</label>
                         <select id="tx-category">
-                            <option value="nft" data-i18n="cat_nft">Buy NFT</option>
-                            <option value="upgrade" data-i18n="cat_upgrade">Upgrade TH</option>
-                            <option value="upgrade-wth" data-i18n="cat_upgrade_wth">Upgrade W/TH</option>
-                            <option value="lock" data-i18n="cat_lock">Lock GMT</option>
-                            <option value="staking" data-i18n="cat_staking">Staking veGMT</option>
-                            <option value="other" data-i18n="cat_other">Other</option>
+                            <option value="nft" data-i18n="cat_nft">⛏ Buy NFT</option>
+                            <option value="upgrade" data-i18n="cat_upgrade">⬆ Upgrade TH</option>
+                            <option value="upgrade-wth" data-i18n="cat_upgrade_wth">⚡ Upgrade W/TH</option>
+                            <option value="lock" data-i18n="cat_lock">🔒 Lock GMT</option>
+                            <option value="staking" data-i18n="cat_staking">💎 Staking veGMT</option>
+                            <option value="other" data-i18n="cat_other">📦 Other</option>
                         </select>
                     </div>
                     <div class="form-group">
@@ -3839,8 +3839,10 @@
                 nav_reinvest: 'Reinvestment', nav_compare: 'Compare', nav_simulation: 'Simulation',
                 nav_performance: 'Performance', nav_alerts: 'Alerts', nav_portfolio: 'Portfolio',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
+                btn_export: 'Export', btn_import: 'Import',
                 // KPIs
                 kpi_today: 'Est. Gain Today', kpi_month: 'Gain This Month', kpi_miner: 'Miner', kpi_strategy: 'Optimal Strategy',
+                kpi_pool_reward: 'Pool Reward', kpi_gmt_wallet: 'GMT Wallet', kpi_prepaid_days: 'Prepaid Days', kpi_next_halving: 'Next Halving',
                 // Section titles
                 sec_th_progress: 'TH Progress', sec_monthly_goal: 'Monthly Goal', sec_whatif: 'What If I Upgrade?',
                 sec_reward_history: 'Reward History', sec_price_alerts: 'Price Alerts', sec_portfolio: 'My Portfolio',
@@ -3850,17 +3852,84 @@
                 sec_mining_params: 'NFT Miner Parameters', sec_results: 'Results',
                 sec_btc_scenarios: 'Profits by Bitcoin Price', sec_strategy_map: 'Strategy Map — BTC × GMT',
                 sec_compare: 'Compare: Buy vs Upgrade vs Lock GMT',
+                sec_th_objective: 'TH Objective', sec_validation: 'Validation vs GoMining',
+                sec_reward_history_mining: 'Reward History', sec_vegmt_lock_info: 'veGOMINING Lock Info',
+                sec_current_status: 'Current Status',
+                // Mining form
+                lbl_hashrate: 'Hashrate (TH/s)', lbl_efficiency: 'Energy Efficiency (W/TH)', lbl_elec_cost: 'Electricity Cost ($/kWh)',
+                lbl_gmt_wallet: 'GMT in Wallet', lbl_gmt_locked: 'GMT Locked (tokenomics)', lbl_sat_per_th: 'sat/TH/day (PR)',
+                hint_hashrate: '1 TH/s (level 1) to 5000 TH/s (level 20)', hint_efficiency: '15 W/TH (best) to 50 W/TH (worst)',
+                hint_elec_cost: 'GoMining: $0.05 - $0.07', hint_gmt_wallet: 'Virtual GMT wallet balance',
+                hint_gmt_locked: 'Tokens locked in veGOMINING', hint_sat_per_th: 'Auto-calculated — manually adjustable from your dashboard',
+                // Result cards
+                res_gross_day: 'Gross Revenue / Day', res_fees_day: 'Fees / Day', res_net_day: 'Net Profit / Day',
+                res_net_month: 'Net Profit / Month', res_net_year: 'Net Profit / Year',
+                lbl_th_target: 'Target TH', lbl_result: 'Result',
+                // Scenario table
+                th_btc_price: 'BTC Price', th_gross_day: 'Gross/Day', th_fees_day: 'Fees/Day',
+                th_net_day: 'Net/Day', th_net_month: 'Net/Month', th_net_year: 'Net/Year',
+                scenarios_desc: 'Based on your NFT parameters above. Orange line = current price.',
+                lbl_custom_btc: 'Custom BTC Price to Add ($)',
+                // Reinvest form
+                reinvest_desc: 'Based on future BTC and GMT prices, what is the best action?',
+                lbl_cost_per_th_upgrade: 'Cost per TH Upgrade ($)', lbl_reinv_bonus: 'TH Reinvestment Bonus (%)',
+                lbl_horizon: 'Horizon (days)', lbl_gmt_balance: 'Current GMT Balance',
+                lbl_reserve_days: 'Desired GMT Reserve Days',
+                hint_gmt_balance: 'How much GMT you have in your wallet', hint_reserve_days: 'How many days of fees you want in reserve',
+                btn_generate_map: 'Generate Map',
+                // Legend
+                legend_hold_btc: 'Hold BTC', legend_convert_gmt: 'Convert to GMT', legend_reinvest_th: 'Reinvest in TH',
+                legend_unprofitable: 'Unprofitable', legend_current_pos: 'Current Position',
+                map_ylabel: 'GMT Price (USD)', map_xlabel: 'BTC Price (USD)',
+                // Compare form
+                compare_desc: 'For the same budget, which strategy yields the most?',
+                lbl_budget: 'Available Budget ($)', lbl_cost_per_th_buy: 'Avg Price per TH/s ($) — Buy NFT',
+                lbl_cost_per_th_upg: 'Price per TH/s ($) — Upgrade Existing',
+                lbl_new_efficiency: 'New/Upgrade Efficiency (W/TH)', lbl_lock_duration: 'GMT Lock Duration (years)',
+                lbl_vegmt_apr: 'Estimated veGOMINING APR (%)',
+                hint_cost_per_th_buy: 'Marketplace: $21-26/TH (API confirmed)', hint_cost_per_th_upg: '$12.34/TH (confirmed GoMining app)',
+                hint_vegmt_apr: 'Variable — check current rewards',
+                opt_3months: '3 months', opt_6months: '6 months', opt_1year: '1 year', opt_2years: '2 years', opt_4years: '4 years',
+                btn_compare: 'Compare',
+                // Multisim
+                multisim_desc: 'Project your profits over 12 months by varying BTC and network difficulty.',
+                lbl_btc_variation: 'BTC Variation', lbl_diff_variation: 'Difficulty Variation',
+                lbl_reinvest_th: 'Reinvest in TH', hint_compound_th: 'Compound gains into TH',
+                // Performance
+                perf_desc: 'Compare your actual gains (extension) vs simulator projections.',
+                perf_accuracy: 'Simulator Accuracy', perf_actual_cum: 'Cumulative Actual Gains', perf_projected_cum: 'Cumulative Projected Gains',
+                perf_auto_fill: 'Data fills automatically with each sync from the extension.',
+                btn_reset_data: 'Reset Data', perf_reset_confirm: 'Performance data reset.',
+                perf_actual: 'Actual', perf_projected: 'Projected', perf_gap: 'Gap',
+                perf_no_data: 'Not enough data. Sync a few times from the extension to accumulate data.',
+                // Alerts
+                lbl_alert_btc_high: 'Alert if BTC > ($)', lbl_alert_btc_low: 'Alert if BTC < ($)',
+                lbl_alert_gmt_high: 'Alert if GMT > ($)', lbl_alert_gmt_low: 'Alert if GMT < ($)',
+                btn_enable_notif: 'Enable Browser Notifications',
+                lbl_current_btc: 'Current BTC', lbl_current_gmt: 'Current GMT',
+                alerts_none: 'No alerts triggered. Set thresholds above.',
+                // Portfolio
+                lbl_staking_weekly: 'GMT Received / Week (veGMT lock)', hint_staking_weekly: 'Auto-filled from extension (visit your veGMT lock page)',
+                lbl_date: 'Date', lbl_category: 'Category', lbl_amount: 'Amount', lbl_currency: 'Currency',
+                lbl_th_added: 'TH Added', hint_th_added: 'Auto-updated in the simulator', lbl_note: 'Note', btn_add: '+ Add',
+                cat_nft: '⛏ Buy NFT', cat_upgrade: '⬆ Upgrade TH', cat_upgrade_wth: '⚡ Upgrade W/TH', cat_lock: '🔒 Lock GMT', cat_staking: '💎 Staking veGMT', cat_other: '📦 Other',
+                cat_nft_label: 'Buy NFT', cat_upgrade_label: 'Upgrade TH', cat_upgrade_wth_label: 'Upgrade W/TH',
+                cat_lock_label: 'Lock GMT', cat_staking_label: 'Staking veGMT', cat_other_label: 'Other',
+                port_total_invested: 'Total Invested', port_cumulative: 'Cumulative Gains',
+                port_pnl: 'Profit / Loss', port_roi_label: 'ROI',
+                port_active_days: 'Active Days', port_daily_avg: 'Avg Gain / Day',
+                port_payback: 'Investment Payback', port_asset_value: 'Asset Value', port_paid_back: 'Paid Back!',
                 // Labels
                 lbl_breakeven: 'Breakeven BTC', lbl_days_next: 'Days to Next Level', lbl_roi: 'Est. Annual ROI', lbl_daily_fees: 'Daily Fees GMT',
                 lbl_objective: 'Objective $', lbl_today_label: 'today',
                 alerts_desc: 'Set price thresholds and get notified when they are triggered.',
+                mob_scenarios: 'Scenarios',
                 // Onboarding
                 onboard_title: 'Welcome to GoMining Simulator', onboard_desc: 'The most complete investment tool for GoMining NFT miners. Track your profits, compare strategies, and optimize your mining rewards.',
                 onboard_s1_title: 'Install the Chrome Extension', onboard_s1_desc: 'It auto-syncs your GoMining data. Load it from the extension/ folder in developer mode.',
                 onboard_s2_title: 'Visit app.gomining.com', onboard_s2_desc: 'Navigate through your miner and rewards pages. The extension captures your data automatically.',
                 onboard_s3_title: 'Come back here', onboard_s3_desc: 'Your dashboard fills automatically. Or enter your miner details manually in the Simulator tab.',
                 onboard_btn: 'Get Started', onboard_guide: 'How to install the extension',
-                // Guide
                 guide_title: 'Chrome Extension Installation',
                 guide_s1: 'Open <strong>chrome://extensions/</strong> in your browser',
                 guide_s2: 'Enable <strong>"Developer mode"</strong> (toggle in the top right corner)',
@@ -3868,13 +3937,60 @@
                 guide_s4: 'Select the <strong>extension/</strong> folder from the downloaded files',
                 guide_s5: 'Visit <strong>app.gomining.com</strong> — the extension icon should appear',
                 guide_s6: 'Navigate to your miner rewards page, then come back here. Data syncs automatically!',
-                // Disclaimer
                 disclaimer: 'This tool provides estimates only and is not financial advice. Calculations are based on current conditions and may not reflect actual returns. DYOR.',
-                // Empty state
                 empty_title: 'Welcome to GoMining Simulator', empty_desc: 'Install the Chrome extension and visit app.gomining.com to auto-sync your miner data. Or enter your details manually in the Simulator tab.',
                 empty_guide: 'Install Extension', empty_manual: 'Enter Manually',
-                // Footer
-                footer_text: 'GoMining Simulator', footer_disclaimer: 'Not financial advice. Use at your own risk.'
+                footer_text: 'GoMining Simulator', footer_disclaimer: 'Not financial advice. Use at your own risk.',
+                // JS dynamic strings
+                loading: 'Loading...', refresh_data: 'Refresh Data', last_update: 'Last update',
+                alert_load_data: 'Please load live data first.', alert_calc_first: 'First calculate your profits in the Mining Simulator tab.',
+                danger_title: 'Danger Zone — Profitability Thresholds', danger_current_btc: 'Current BTC Price',
+                danger_breakeven: 'BTC Breakeven (profit = 0)', danger_margin: 'margin', danger_safety: 'Safety Margin',
+                danger_btc_can_drop: 'BTC can drop by this amount',
+                miner_info: 'Miner Info', miner_current_level: 'Current Level', miner_next_level: 'Next Level',
+                miner_needed: 'needed', miner_upgrade_cost: 'Direct Upgrade Cost',
+                dash_gross: 'Gross', dash_fees: 'Fees', dash_next: 'Next',
+                days_remaining: 'days remaining', days: 'days', months: 'months', years: 'years', d_suffix: 'd', and: 'and',
+                th_already_reached: 'Objective already reached!', th_unreachable: 'Not reachable under current conditions',
+                strat_buy_nft: 'Buy a New NFT', strat_upgrade_nft: 'Upgrade an Existing NFT', strat_lock_gmt: 'Lock GMT (veGOMINING)',
+                strat_th_obtained: 'TH/s Obtained', strat_th_added: 'TH/s Added',
+                strat_net_day: 'Net Profit/Day', strat_net_month: 'Net Profit/Month', strat_net_year: 'Net Profit/Year',
+                strat_annual_roi: 'Annual ROI', strat_payback_in: 'Payback In',
+                strat_gmt_tokens: 'GMT Tokens', strat_vegmt_received: 'veGOMINING Received',
+                strat_lock_duration: 'Lock Duration', strat_est_rewards_year: 'Est. Rewards/Year', strat_effective_apr: 'Effective APR',
+                lock_current_gmt: 'Current GMT Price', lock_ratio: 'veGMT Ratio', lock_note_label: 'Note',
+                lock_note_text: 'veGMT decreases linearly until expiration. APR is an estimate.',
+                reserve_ok: 'GMT Reserve OK', reserve_fill_first: 'Fill your GMT reserve first!',
+                reserve_you_have: 'You have', reserve_enough_for: 'enough for', reserve_days_of_fees: 'days of fees',
+                reserve_goal: 'goal', reserve_fees_day: 'Fees/day', reserve_needed: 'Reserve needed',
+                reserve_but_need: 'but need', reserve_for: 'for', reserve_missing: 'Missing',
+                reserve_convert_for: 'convert to GMT for', reserve_before_reinvest: 'before BTC or TH reinvest', reserve_covered: 'Covered',
+                map_hold_btc: 'Hold BTC', map_convert_gmt: 'Convert GMT', map_reinvest_th: 'Reinvest TH',
+                map_annual_minus_fees: 'annual revenue - fees',
+                reco_priority_reserve: 'Priority: fill your GMT reserve', reco_missing: 'You are missing',
+                reco_to_cover: 'to cover', reco_convert_rewards: 'Convert your rewards to GMT for',
+                reco_then_optimal: 'then switch to the optimal strategy', reco_best_after_reserve: 'Best strategy once reserve is OK',
+                reco_at_current_prices: 'At current prices over',
+                sim_cum_profit: 'Cumulative 12-month profit', sim_optimistic: 'Optimistic', sim_pessimistic: 'Pessimistic', sim_final_th: 'Final TH',
+                sync_active: 'Auto-sync active', sync_less_1min: 'Sync < 1 min', sync_ago: 'Sync', sync_none: 'No sync',
+                sync_success: 'Data synced from extension!',
+                sync_no_data: 'No GoMining data in clipboard.\n\n1. Go to app.gomining.com\n2. Click "Copy data for Simulator" in the extension panel\n3. Come back here and click "Sync Extension"',
+                sync_clipboard_denied: 'Clipboard access denied.\nClick somewhere on the page first, then try again.',
+                alert_strategy_change: 'Recommended strategy change',
+                alert_conditions_suggest: 'Current conditions (BTC/GMT/difficulty) suggest a change.',
+                notif_strategy: 'GoMining Strategy', notif_strategy_change: 'Recommended change', notif_price_alert: 'GoMining Price Alert',
+                val_metric: 'Metric', val_simulator: 'Simulator', val_last_data: 'Latest data',
+                val_accuracy: 'Accuracy', val_validated: 'Calculations validated!', val_net_gap: 'Net gap', val_check_params: 'check parameters',
+                cal_week: 'Week', cal_average: 'Average', cal_day: 'day', cal_week_short: 'wk',
+                goal_month_est: 'month estimated', goal_above: 'above objective', goal_missing: 'missing',
+                import_invalid: 'Invalid file.', import_confirm: 'Import backup from',
+                import_overwrite: 'This will overwrite your current data.',
+                import_success: 'Import successful! Page will reload.', import_error: 'File read error',
+                tx_fill_date_amount: 'Fill in the date and amount.', tx_gmt_unavailable: 'GMT price unavailable. Refresh data.',
+                tx_no_transactions: 'No transactions. Add your first investment above.',
+                tx_category: 'Category', tx_delete_confirm: 'Delete this transaction?',
+                whatif_upgrade_to: 'Upgrade to', whatif_cost: 'Cost', whatif_extra_gain: 'Extra Gain/Day', whatif_payback: 'Payback In',
+                proj_3months: '3 months', proj_6months: '6 months', proj_1year: '1 year', proj_annualized_roi: 'Annualized ROI'
             },
             fr: {
                 // Sidebar
@@ -3883,8 +3999,10 @@
                 nav_reinvest: 'Réinvestissement', nav_compare: 'Comparer', nav_simulation: 'Simulation',
                 nav_performance: 'Performance', nav_alerts: 'Alertes', nav_portfolio: 'Portfolio',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
+                btn_export: 'Export', btn_import: 'Import',
                 // KPIs
                 kpi_today: "Gain estimé aujourd'hui", kpi_month: 'Gain ce mois', kpi_miner: 'Mineur', kpi_strategy: 'Stratégie optimale',
+                kpi_pool_reward: 'Pool Reward', kpi_gmt_wallet: 'GMT Wallet', kpi_prepaid_days: 'Jours prépayés', kpi_next_halving: 'Prochain Halving',
                 // Section titles
                 sec_th_progress: 'Progression TH', sec_monthly_goal: 'Objectif Mensuel', sec_whatif: "Et si j'upgrade ?",
                 sec_reward_history: 'Historique des Rewards', sec_price_alerts: 'Alertes de Prix', sec_portfolio: 'Mon Portfolio',
@@ -3894,10 +4012,80 @@
                 sec_mining_params: 'Paramètres NFT Mineur', sec_results: 'Résultats',
                 sec_btc_scenarios: 'Profits selon le prix du Bitcoin', sec_strategy_map: 'Carte Stratégique — BTC × GMT',
                 sec_compare: 'Comparer : Acheter vs Upgrader vs Lock GMT',
+                sec_th_objective: 'Objectif TH', sec_validation: 'Validation vs GoMining',
+                sec_reward_history_mining: 'Historique des rewards', sec_vegmt_lock_info: 'Info veGOMINING Lock',
+                sec_current_status: 'Statut actuel',
+                // Mining form
+                lbl_hashrate: 'Puissance de calcul (TH/s)', lbl_efficiency: 'Efficacité énergétique (W/TH)', lbl_elec_cost: 'Coût électricité ($/kWh)',
+                lbl_gmt_wallet: 'GMT dans le wallet', lbl_gmt_locked: 'GMT locked (tokenomics)', lbl_sat_per_th: 'sat/TH/jour (PR)',
+                hint_hashrate: '1 TH/s (niveau 1) à 5000 TH/s (niveau 20)', hint_efficiency: '15 W/TH (meilleur) à 50 W/TH (pire)',
+                hint_elec_cost: 'GoMining : $0.05 - $0.07', hint_gmt_wallet: 'Balance GMT virtuel wallet',
+                hint_gmt_locked: 'Tokens lockés en veGOMINING', hint_sat_per_th: 'Auto-calculé — ajustable manuellement depuis ton dashboard',
+                // Result cards
+                res_gross_day: 'Revenu brut / jour', res_fees_day: 'Frais / jour', res_net_day: 'Profit net / jour',
+                res_net_month: 'Profit net / mois', res_net_year: 'Profit net / an',
+                lbl_th_target: 'TH cible', lbl_result: 'Résultat',
+                // Scenario table
+                th_btc_price: 'Prix BTC', th_gross_day: 'Revenu brut/jour', th_fees_day: 'Frais/jour',
+                th_net_day: 'Profit net/jour', th_net_month: 'Profit net/mois', th_net_year: 'Profit net/an',
+                scenarios_desc: 'Basé sur tes paramètres NFT ci-dessus. La ligne orange = prix actuel.',
+                lbl_custom_btc: 'Prix BTC personnalisé à ajouter ($)',
+                // Reinvest form
+                reinvest_desc: 'Selon les prix futurs de BTC et GMT, quelle est la meilleure action ?',
+                lbl_cost_per_th_upgrade: 'Coût par TH upgrade ($)', lbl_reinv_bonus: 'Bonus TH réinvestissement (%)',
+                lbl_horizon: 'Horizon (jours)', lbl_gmt_balance: 'Balance GMT actuelle',
+                lbl_reserve_days: 'Jours de réserve GMT souhaités',
+                hint_gmt_balance: 'Combien de GMT tu as dans ton wallet', hint_reserve_days: 'Combien de jours de frais tu veux en réserve',
+                btn_generate_map: 'Générer la carte',
+                // Legend
+                legend_hold_btc: 'Garder BTC', legend_convert_gmt: 'Convertir en GMT', legend_reinvest_th: 'Réinvestir en TH',
+                legend_unprofitable: 'Non rentable', legend_current_pos: 'Position actuelle',
+                map_ylabel: 'Prix GMT (USD)', map_xlabel: 'Prix BTC (USD)',
+                // Compare form
+                compare_desc: 'Pour un même budget, quelle stratégie rapporte le plus ?',
+                lbl_budget: 'Budget disponible ($)', lbl_cost_per_th_buy: 'Prix moyen par TH/s ($) — achat NFT',
+                lbl_cost_per_th_upg: 'Prix par TH/s ($) — upgrade existant',
+                lbl_new_efficiency: 'Efficacité du nouveau/upgrade (W/TH)', lbl_lock_duration: 'Durée de lock GMT (années)',
+                lbl_vegmt_apr: 'APR estimé veGOMINING (%)',
+                hint_cost_per_th_buy: 'Marketplace: $21-26/TH (API confirmé)', hint_cost_per_th_upg: '$12.34/TH (confirmé app GoMining)',
+                hint_vegmt_apr: 'Variable — vérifier les rewards actuels',
+                opt_3months: '3 mois', opt_6months: '6 mois', opt_1year: '1 an', opt_2years: '2 ans', opt_4years: '4 ans',
+                btn_compare: 'Comparer',
+                // Multisim
+                multisim_desc: 'Projette tes profits sur 12 mois en variant BTC et la difficulté réseau.',
+                lbl_btc_variation: 'Variation BTC', lbl_diff_variation: 'Variation difficulté',
+                lbl_reinvest_th: 'Réinvestir en TH', hint_compound_th: 'Compound les gains en TH',
+                // Performance
+                perf_desc: 'Compare tes gains réels (extension) vs les projections du simulateur.',
+                perf_accuracy: 'Précision simulateur', perf_actual_cum: 'Gains réels cumulés', perf_projected_cum: 'Gains projetés cumulés',
+                perf_auto_fill: "Les données se remplissent automatiquement à chaque sync depuis l'extension.",
+                btn_reset_data: 'Reset données', perf_reset_confirm: 'Données de performance réinitialisées.',
+                perf_actual: 'Réel', perf_projected: 'Projeté', perf_gap: 'Écart',
+                perf_no_data: "Pas assez de données. Fais quelques syncs depuis l'extension pour accumuler des données.",
+                // Alerts
+                lbl_alert_btc_high: 'Alerte si BTC > ($)', lbl_alert_btc_low: 'Alerte si BTC < ($)',
+                lbl_alert_gmt_high: 'Alerte si GMT > ($)', lbl_alert_gmt_low: 'Alerte si GMT < ($)',
+                btn_enable_notif: 'Activer notifications navigateur',
+                lbl_current_btc: 'BTC actuel', lbl_current_gmt: 'GMT actuel',
+                alerts_none: 'Aucune alerte déclenchée. Configure des seuils ci-dessus.',
+                // Portfolio
+                lbl_staking_weekly: 'GMT reçus / semaine (lock veGMT)', hint_staking_weekly: "Auto-rempli depuis l'extension (visite ta page veGMT lock)",
+                lbl_date: 'Date', lbl_category: 'Catégorie', lbl_amount: 'Montant', lbl_currency: 'Devise',
+                lbl_th_added: 'TH ajoutés', hint_th_added: 'Mis à jour auto dans le simulateur', lbl_note: 'Note', btn_add: '+ Ajouter',
+                cat_nft: '⛏ Achat NFT', cat_upgrade: '⬆ Upgrade TH', cat_upgrade_wth: '⚡ Upgrade W/TH',
+                cat_lock: '🔒 Lock GMT', cat_staking: '💎 Staking veGMT', cat_other: '📦 Autre',
+                cat_nft_label: 'Achat NFT', cat_upgrade_label: 'Upgrade TH', cat_upgrade_wth_label: 'Upgrade W/TH',
+                cat_lock_label: 'Lock GMT', cat_staking_label: 'Staking veGMT', cat_other_label: 'Autre',
+                port_total_invested: 'Total investi', port_cumulative: 'Gains cumulés',
+                port_pnl: 'Profit / Perte', port_roi_label: 'ROI',
+                port_active_days: 'Jours actifs', port_daily_avg: 'Gain moyen / jour',
+                port_payback: 'Retour investissement', port_asset_value: 'Valeur actifs', port_paid_back: 'Remboursé !',
                 // Labels
                 lbl_breakeven: 'Breakeven BTC', lbl_days_next: 'Jours prochain level', lbl_roi: 'ROI annuel estimé', lbl_daily_fees: 'Frais GMT / jour',
                 lbl_objective: 'Objectif $', lbl_today_label: "aujourd'hui",
                 alerts_desc: "Configurez des seuils de prix et recevez une notification quand ils sont dépassés.",
+                mob_scenarios: 'Scénarios',
+                // Onboarding
                 onboard_title: 'Bienvenue sur GoMining Simulator', onboard_desc: "L'outil d'investissement le plus complet pour les mineurs NFT GoMining. Suivez vos profits, comparez les stratégies et optimisez vos revenus de minage.",
                 onboard_s1_title: "Installez l'extension Chrome", onboard_s1_desc: "Elle synchronise automatiquement vos données GoMining. Chargez-la depuis le dossier extension/ en mode développeur.",
                 onboard_s2_title: 'Visitez app.gomining.com', onboard_s2_desc: "Naviguez dans vos pages de mineur et rewards. L'extension capture vos données automatiquement.",
@@ -3913,7 +4101,57 @@
                 disclaimer: "Cet outil fournit des estimations uniquement et ne constitue pas un conseil financier. Les calculs sont basés sur les conditions actuelles. Faites vos propres recherches.",
                 empty_title: 'Bienvenue sur GoMining Simulator', empty_desc: "Installez l'extension Chrome et visitez app.gomining.com pour synchroniser vos données. Ou entrez vos détails manuellement dans l'onglet Simulateur.",
                 empty_guide: "Installer l'extension", empty_manual: 'Entrer manuellement',
-                footer_text: 'GoMining Simulator', footer_disclaimer: "Pas un conseil financier. Utilisez à vos risques."
+                footer_text: 'GoMining Simulator', footer_disclaimer: "Pas un conseil financier. Utilisez à vos risques.",
+                // JS dynamic strings
+                loading: 'Chargement...', refresh_data: 'Rafraîchir les données', last_update: 'Dernière mise à jour',
+                alert_load_data: "Veuillez d'abord charger les données en direct.", alert_calc_first: "Calcule d'abord tes profits dans l'onglet Simulateur Mining.",
+                danger_title: 'Zone de danger — Seuils de rentabilité', danger_current_btc: 'Prix BTC actuel',
+                danger_breakeven: 'BTC Breakeven (profit = 0)', danger_margin: 'de marge', danger_safety: 'Marge de sécurité',
+                danger_btc_can_drop: 'BTC peut baisser de ce montant',
+                miner_info: 'Info Mineur', miner_current_level: 'Niveau actuel', miner_next_level: 'Prochain palier',
+                miner_needed: 'nécessaires', miner_upgrade_cost: 'Coût upgrade direct',
+                dash_gross: 'Brut', dash_fees: 'Frais', dash_next: 'Prochain',
+                days_remaining: 'jours restants', days: 'jours', months: 'mois', years: 'ans', d_suffix: 'j', and: 'et',
+                th_already_reached: 'Objectif déjà atteint !', th_unreachable: 'Non atteignable aux conditions actuelles',
+                strat_buy_nft: 'Acheter un nouveau NFT', strat_upgrade_nft: 'Upgrader un NFT existant', strat_lock_gmt: 'Lock GMT (veGOMINING)',
+                strat_th_obtained: 'TH/s obtenus', strat_th_added: 'TH/s ajoutés',
+                strat_net_day: 'Profit net/jour', strat_net_month: 'Profit net/mois', strat_net_year: 'Profit net/an',
+                strat_annual_roi: 'ROI annuel', strat_payback_in: 'Retour en',
+                strat_gmt_tokens: 'Tokens GMT', strat_vegmt_received: 'veGOMINING reçus',
+                strat_lock_duration: 'Durée du lock', strat_est_rewards_year: 'Rewards estimés/an', strat_effective_apr: 'APR effectif',
+                lock_current_gmt: 'Prix GMT actuel', lock_ratio: 'Ratio veGMT', lock_note_label: 'Note',
+                lock_note_text: "Les veGMT décroissent linéairement jusqu'à expiration. L'APR est une estimation.",
+                reserve_ok: 'Réserve GMT OK', reserve_fill_first: "Remplis ta réserve GMT d'abord !",
+                reserve_you_have: 'Tu as', reserve_enough_for: 'assez pour', reserve_days_of_fees: 'jours de frais',
+                reserve_goal: 'objectif', reserve_fees_day: 'Frais/jour', reserve_needed: 'Réserve nécessaire',
+                reserve_but_need: "mais il t'en faut", reserve_for: 'pour', reserve_missing: 'Manque',
+                reserve_convert_for: 'convertis en GMT pendant', reserve_before_reinvest: 'avant de faire BTC ou TH reinvest', reserve_covered: 'Couvert',
+                map_hold_btc: 'Garder BTC', map_convert_gmt: 'Convertir GMT', map_reinvest_th: 'Réinvestir TH',
+                map_annual_minus_fees: 'revenu annuel - frais',
+                reco_priority_reserve: 'Priorité : remplir ta réserve GMT', reco_missing: 'Il te manque',
+                reco_to_cover: 'pour couvrir', reco_convert_rewards: 'Convertis tes rewards en GMT pendant',
+                reco_then_optimal: 'ensuite passe à la stratégie optimale', reco_best_after_reserve: 'Meilleure stratégie une fois la réserve OK',
+                reco_at_current_prices: 'Aux prix actuels sur',
+                sim_cum_profit: 'Profit cumulé 12 mois', sim_optimistic: 'Optimiste', sim_pessimistic: 'Pessimiste', sim_final_th: 'TH final',
+                sync_active: 'Auto-sync actif', sync_less_1min: 'Sync < 1 min', sync_ago: 'Sync il y a', sync_none: 'Pas de sync',
+                sync_success: "Données synchronisées depuis l'extension !",
+                sync_no_data: "Aucune donnée GoMining dans le presse-papier.\n\n1. Va sur app.gomining.com\n2. Clique \"Copier données pour Simulateur\" dans le panel de l'extension\n3. Reviens ici et clique \"Sync Extension\"",
+                sync_clipboard_denied: "Accès au presse-papier refusé.\nClique d'abord quelque part sur la page, puis réessaie.",
+                alert_strategy_change: 'Changement de stratégie recommandé',
+                alert_conditions_suggest: 'Les conditions actuelles (BTC/GMT/difficulté) suggèrent de changer.',
+                notif_strategy: 'GoMining Stratégie', notif_strategy_change: 'Changement recommandé', notif_price_alert: 'GoMining Alerte Prix',
+                val_metric: 'Métrique', val_simulator: 'Simulateur', val_last_data: 'Dernière donnée',
+                val_accuracy: 'Précision', val_validated: 'Calculs validés !', val_net_gap: 'Écart net', val_check_params: 'vérifier les paramètres',
+                cal_week: 'Semaine', cal_average: 'Moyenne', cal_day: 'jour', cal_week_short: 'sem',
+                goal_month_est: 'mois estimé', goal_above: "au-dessus de l'objectif", goal_missing: 'manquants',
+                import_invalid: 'Fichier invalide.', import_confirm: 'Importer le backup du',
+                import_overwrite: 'Ceci va écraser tes données actuelles.',
+                import_success: 'Import réussi ! La page va se recharger.', import_error: 'Erreur de lecture du fichier',
+                tx_fill_date_amount: 'Remplis la date et le montant.', tx_gmt_unavailable: 'Prix GMT non disponible. Rafraîchis les données.',
+                tx_no_transactions: 'Aucune transaction. Ajoute ton premier investissement ci-dessus.',
+                tx_category: 'Catégorie', tx_delete_confirm: 'Supprimer cette transaction ?',
+                whatif_upgrade_to: 'Upgrade vers', whatif_cost: 'Coût', whatif_extra_gain: 'Gain supplémentaire/jour', whatif_payback: 'Rentabilisé en',
+                proj_3months: '3 mois', proj_6months: '6 mois', proj_1year: '1 an', proj_annualized_roi: 'ROI annualisé'
             }
         };
 
