@@ -1,8 +1,11 @@
 {
   "manifest_version": 3,
-  "name": "GoMining Data Extractor",
+  "name": "GoMining Simulator",
   "version": "1.0",
-  "description": "Extrait les données de mining depuis app.gomining.com",
+  "description": "Auto-sync your GoMining data with the GoMining Simulator",
+  "icons": {
+    "128": "icon.png"
+  },
   "permissions": ["storage"],
   "host_permissions": ["https://app.gomining.com/*", "https://api.gomining.com/*"],
   "content_scripts": [
@@ -23,7 +26,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["interceptor.js"],
+      "resources": ["interceptor.js", "icon.png"],
       "matches": ["https://app.gomining.com/*"]
     }
   ]
