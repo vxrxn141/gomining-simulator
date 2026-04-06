@@ -1059,8 +1059,8 @@
                 </div>
             </div>
 
-            <!-- Price Cards -->
-            <div class="live-data">
+            <!-- Price & Info Cards -->
+            <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
                 <div class="live-card">
                     <div class="label">Bitcoin</div>
                     <div class="value btc" id="btc-price">--</div>
@@ -1070,14 +1070,27 @@
                     <div class="value gmt" id="gmt-price">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label">Hashrate Réseau</div>
-                    <div class="value net" id="net-difficulty">--</div>
-                </div>
-                <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Satoshis gagnés par TH/s par jour avant frais">Pool Reward</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees">Pool Reward</span></div>
                     <div class="value net" id="net-hashrate">--</div>
                 </div>
+                <div class="live-card">
+                    <div class="label"><span class="has-tooltip" data-tooltip="Daily net profit from mining">Profit / Day</span></div>
+                    <div class="value positive" id="dash-profit-day">--</div>
+                </div>
+                <div class="live-card">
+                    <div class="label"><span class="has-tooltip" data-tooltip="GMT balance in your wallet">GMT Wallet</span></div>
+                    <div class="value gmt" id="dash-gmt-wallet">--</div>
+                </div>
+                <div class="live-card">
+                    <div class="label"><span class="has-tooltip" data-tooltip="How many days your locked + wallet GMT cover your fees">Prepaid Days</span></div>
+                    <div class="value" id="dash-prepaid-days" style="color:var(--green);">--</div>
+                </div>
+                <div class="live-card">
+                    <div class="label"><span class="has-tooltip" data-tooltip="Countdown to next Bitcoin halving (~April 2028)">Next Halving</span></div>
+                    <div class="value" id="dash-halving" style="color:var(--accent);font-size:1.2em;">--</div>
+                </div>
             </div>
+            <div style="display:none;" id="net-difficulty">--</div>
             <div id="dash-ticker" style="font-size:0.8em;color:var(--text-dim);text-align:center;margin-top:4px;"></div>
 
             <!-- TH Progress -->
@@ -2516,6 +2529,36 @@
             document.getElementById('dash-ticker').textContent =
                 `BTC ${formatUSD(bp)} | GMT $${gp.toFixed(4)} | ${new Date().toLocaleTimeString('fr-FR')}`;
 
+            // === New dashboard cards ===
+            // Profit per day
+            const profitEl = document.getElementById('dash-profit-day');
+            if (profitEl) profitEl.textContent = formatProfit(r.netBtc, bp, r.netGmt, r.grossBtc);
+
+            // GMT wallet
+            const gmtWalletEl = document.getElementById('dash-gmt-wallet');
+            const gmtPrepaid = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
+            if (gmtWalletEl) gmtWalletEl.textContent = gmtPrepaid.toFixed(1) + ' GMT';
+
+            // Prepaid days
+            const prepaidEl = document.getElementById('dash-prepaid-days');
+            const prepaidDays = parseFloat(document.getElementById('discount')?.value) > 0
+                ? Math.round((gmtPrepaid + (parseFloat(document.getElementById('gmt-locked')?.value) || 0)) / (r.feesGmt > 0 ? r.feesGmt : 1))
+                : 0;
+            if (prepaidEl) {
+                prepaidEl.textContent = prepaidDays + 'd';
+                prepaidEl.style.color = prepaidDays > 30 ? 'var(--green)' : prepaidDays > 7 ? 'var(--accent)' : 'var(--red)';
+            }
+
+            // Next halving countdown (approx April 14, 2028)
+            const halvingEl = document.getElementById('dash-halving');
+            if (halvingEl) {
+                const halvingDate = new Date('2028-04-14T00:00:00Z');
+                const daysToHalving = Math.max(0, Math.round((halvingDate - new Date()) / 86400000));
+                const years = Math.floor(daysToHalving / 365);
+                const days = daysToHalving % 365;
+                halvingEl.textContent = years > 0 ? `${years}y ${days}d` : `${days}d`;
+            }
+
             // === TH Progress Bar ===
             const nextTH2 = getNextLevelTH(hashrate);
             const currentLevel2 = getCurrentLevel(hashrate);
@@ -3932,7 +3975,8 @@
 
         function saveDashCache() {
             const ids = ['dash-today', 'dash-month', 'dash-miner', 'dash-strategy',
-                         'btc-price', 'gmt-price', 'net-difficulty', 'net-hashrate',
+                         'btc-price', 'gmt-price', 'net-hashrate',
+                         'dash-profit-day', 'dash-gmt-wallet', 'dash-prepaid-days', 'dash-halving',
                          'dash-breakeven', 'dash-days-next', 'dash-roi', 'dash-daily-fees'];
             const cache = {};
             ids.forEach(id => {
