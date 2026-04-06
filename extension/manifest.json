@@ -13,7 +13,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["http://localhost:*/*", "file:///*"],
+      "matches": ["http://localhost:*/*", "file:///*", "https://jaygauvin2002.github.io/*"],
       "js": ["sync-bridge.js"],
       "run_at": "document_idle"
     }
