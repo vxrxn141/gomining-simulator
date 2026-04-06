@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -335,7 +335,7 @@
         .strategy-card.best { border-color: var(--green); }
 
         .strategy-card.best::after {
-            content: 'MEILLEUR';
+            content: var(--best-label, 'BEST');
             position: absolute;
             top: -10px;
             right: 15px;
@@ -941,8 +941,8 @@
             </div>
             <button class="refresh-btn" style="width:100%;justify-content:center;font-size:0.72em;margin-bottom:8px;" onclick="showExtensionGuide()" data-i18n="sidebar_guide">Extension Guide</button>
             <div style="display:flex;gap:6px;margin-bottom:8px;">
-                <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="exportAllData()">↓ Export</button>
-                <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="document.getElementById('import-file').click()">↑ Import</button>
+                <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="exportAllData()">↓ <span data-i18n="btn_export">Export</span></button>
+                <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="document.getElementById('import-file').click()">↑ <span data-i18n="btn_import">Import</span></button>
                 <input type="file" id="import-file" accept=".json" style="display:none;" onchange="importAllData(event)">
             </div>
             <div class="sync-status" id="sync-status">
@@ -1063,19 +1063,19 @@
                     <div class="value gmt" id="gmt-price">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees">Pool Reward</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees" data-i18n="kpi_pool_reward">Pool Reward</span></div>
                     <div class="value net" id="net-hashrate">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="GMT balance in your wallet">GMT Wallet</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="GMT balance in your wallet" data-i18n="kpi_gmt_wallet">GMT Wallet</span></div>
                     <div class="value gmt" id="dash-gmt-wallet">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="How many days your locked + wallet GMT cover your fees">Prepaid Days</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="How many days your locked + wallet GMT cover your fees" data-i18n="kpi_prepaid_days">Prepaid Days</span></div>
                     <div class="value" id="dash-prepaid-days" style="color:var(--green);">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Countdown to next Bitcoin halving (~April 2028)">Next Halving</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="Countdown to next Bitcoin halving (~April 2028)" data-i18n="kpi_next_halving">Next Halving</span></div>
                     <div class="value" id="dash-halving" style="color:var(--accent);font-size:1.2em;">--</div>
                 </div>
             </div>
@@ -1124,7 +1124,7 @@
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
                     <h2 style="margin:0;border:none;padding:0;" data-i18n="sec_monthly_goal">Monthly Goal</h2>
                     <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
-                        <label style="margin:0;white-space:nowrap;">Objectif $</label>
+                        <label style="margin:0;white-space:nowrap;" data-i18n="lbl_objective">Objective $</label>
                         <input type="number" id="monthly-goal" value="20" min="1" step="5" style="width:80px;padding:6px 10px;">
                     </div>
                 </div>
@@ -1166,19 +1166,19 @@
                 <div class="collapsible-body">
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Puissance de calcul (TH/s)</label>
+                        <label data-i18n="lbl_hashrate">Hashrate (TH/s)</label>
                         <input type="number" id="hashrate" value="1" min="1" step="1">
-                        <span class="hint">1 TH/s (niveau 1) à 5000 TH/s (niveau 20)</span>
+                        <span class="hint" data-i18n="hint_hashrate">1 TH/s (level 1) to 5000 TH/s (level 20)</span>
                     </div>
                     <div class="form-group">
-                        <label>Efficacité énergétique (W/TH)</label>
+                        <label data-i18n="lbl_efficiency">Energy Efficiency (W/TH)</label>
                         <input type="number" id="efficiency" value="15" min="15" max="50" step="1">
-                        <span class="hint">15 W/TH (meilleur) à 50 W/TH (pire)</span>
+                        <span class="hint" data-i18n="hint_efficiency">15 W/TH (best) to 50 W/TH (worst)</span>
                     </div>
                     <div class="form-group">
-                        <label>Coût électricité ($/kWh)</label>
+                        <label data-i18n="lbl_elec_cost">Electricity Cost ($/kWh)</label>
                         <input type="number" id="elec-cost" value="0.05" min="0.01" max="0.20" step="0.01">
-                        <span class="hint">GoMining : $0.05 - $0.07</span>
+                        <span class="hint" data-i18n="hint_elec_cost">GoMining: $0.05 - $0.07</span>
                     </div>
                     <div class="discount-group">
                         <div class="discount-group-header">
@@ -1206,19 +1206,19 @@
                         <input type="hidden" id="discount" value="0">
                     </div>
                     <div class="form-group">
-                        <label>GMT dans le wallet</label>
+                        <label data-i18n="lbl_gmt_wallet">GMT in Wallet</label>
                         <input type="number" id="gmt-prepaid" value="0" min="0" step="1">
-                        <span class="hint">Balance GMT virtuel wallet</span>
+                        <span class="hint" data-i18n="hint_gmt_wallet">Virtual GMT wallet balance</span>
                     </div>
                     <div class="form-group">
-                        <label>GMT locked (tokenomics)</label>
+                        <label data-i18n="lbl_gmt_locked">GMT Locked (tokenomics)</label>
                         <input type="number" id="gmt-locked" value="0" min="0" step="10">
-                        <span class="hint">Tokens lockés en veGOMINING</span>
+                        <span class="hint" data-i18n="hint_gmt_locked">Tokens locked in veGOMINING</span>
                     </div>
                     <div class="form-group">
-                        <label>sat/TH/jour (PR)</label>
+                        <label data-i18n="lbl_sat_per_th">sat/TH/day (PR)</label>
                         <input type="number" id="sat-per-th" value="47" min="1" max="500" step="1">
-                        <span class="hint">Auto-calculé — ajustable manuellement depuis ton dashboard</span>
+                        <span class="hint" data-i18n="hint_sat_per_th">Auto-calculated — manually adjustable from your dashboard</span>
                     </div>
                 </div>
                 </div> <!-- /collapsible-body -->
@@ -1230,27 +1230,27 @@
                     <h2 data-i18n="sec_results">Results</h2>
                     <div class="results-grid">
                         <div class="result-card">
-                            <h3>Revenu brut / jour</h3>
+                            <h3 data-i18n="res_gross_day">Gross Revenue / Day</h3>
                             <div class="big" id="res-gross-btc">--</div>
                             <div class="sub" id="res-gross-usd">--</div>
                         </div>
                         <div class="result-card">
-                            <h3>Frais / jour</h3>
+                            <h3 data-i18n="res_fees_day">Fees / Day</h3>
                             <div class="big negative" id="res-fees-btc">--</div>
                             <div class="sub" id="res-fees-usd">--</div>
                         </div>
                         <div class="result-card">
-                            <h3>Profit net / jour</h3>
+                            <h3 data-i18n="res_net_day">Net Profit / Day</h3>
                             <div class="big positive" id="res-net-btc">--</div>
                             <div class="sub" id="res-net-usd">--</div>
                         </div>
                         <div class="result-card">
-                            <h3>Profit net / mois</h3>
+                            <h3 data-i18n="res_net_month">Net Profit / Month</h3>
                             <div class="big positive" id="res-month-btc">--</div>
                             <div class="sub" id="res-month-usd">--</div>
                         </div>
                         <div class="result-card">
-                            <h3>Profit net / an</h3>
+                            <h3 data-i18n="res_net_year">Net Profit / Year</h3>
                             <div class="big positive" id="res-year-btc">--</div>
                             <div class="sub" id="res-year-usd">--</div>
                         </div>
@@ -1262,14 +1262,14 @@
 
                 <!-- TH Objective -->
                 <div class="section" id="th-objective-section" style="display:none;">
-                    <h2>Objectif TH</h2>
+                    <h2 data-i18n="sec_th_objective">TH Objective</h2>
                     <div class="form-grid">
                         <div class="form-group">
-                            <label>TH cible</label>
+                            <label data-i18n="lbl_th_target">Target TH</label>
                             <input type="number" id="th-target" value="128" min="1" max="5000" step="1">
                         </div>
                         <div class="form-group">
-                            <label>Résultat</label>
+                            <label data-i18n="lbl_result">Result</label>
                             <div id="th-target-result" style="padding:10px;background:var(--bg);border-radius:8px;font-weight:600;color:var(--green);">--</div>
                         </div>
                     </div>
@@ -1279,13 +1279,13 @@
 
                 <!-- Validation GoMining -->
                 <div class="section" id="validation-section" style="display:none;">
-                    <h2>Validation vs GoMining</h2>
+                    <h2 data-i18n="sec_validation">Validation vs GoMining</h2>
                     <div id="validation-content"></div>
                 </div>
 
                 <!-- Reward History Chart -->
                 <div class="section" id="history-section" style="display:none;">
-                    <h2>Historique des rewards</h2>
+                    <h2 data-i18n="sec_reward_history_mining">Reward History</h2>
                     <div id="history-chart" style="height:200px;position:relative;"></div>
                     <div id="history-table" style="margin-top:10px;overflow-x:auto;"></div>
                 </div>
@@ -1296,12 +1296,12 @@
         <div class="tab-content" id="tab-scenarios">
             <div class="section">
                 <h2 data-i18n="sec_btc_scenarios">Profits by Bitcoin Price</h2>
-                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 15px;">
-                    Basé sur tes paramètres NFT ci-dessus. La ligne orange = prix actuel.
+                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 15px;" data-i18n="scenarios_desc">
+                    Based on your NFT parameters above. Orange line = current price.
                 </p>
                 <div class="form-grid" style="margin-bottom:15px;">
                     <div class="form-group">
-                        <label>Prix BTC personnalisé à ajouter ($)</label>
+                        <label data-i18n="lbl_custom_btc">Custom BTC Price to Add ($)</label>
                         <div style="display:flex;gap:8px;">
                             <input type="number" id="custom-btc" placeholder="ex: 250000" step="1000">
                             <button class="btn-calculate" style="margin:0;padding:10px 20px;" onclick="addCustomBtc()">+</button>
@@ -1312,12 +1312,12 @@
                     <table id="scenario-table">
                         <thead>
                             <tr>
-                                <th>Prix BTC</th>
-                                <th>Revenu brut/jour</th>
-                                <th>Frais/jour</th>
-                                <th>Profit net/jour</th>
-                                <th>Profit net/mois</th>
-                                <th>Profit net/an</th>
+                                <th data-i18n="th_btc_price">BTC Price</th>
+                                <th data-i18n="th_gross_day">Gross/Day</th>
+                                <th data-i18n="th_fees_day">Fees/Day</th>
+                                <th data-i18n="th_net_day">Net/Day</th>
+                                <th data-i18n="th_net_month">Net/Month</th>
+                                <th data-i18n="th_net_year">Net/Year</th>
                             </tr>
                         </thead>
                         <tbody id="scenario-body"></tbody>
@@ -1330,35 +1330,35 @@
         <div class="tab-content" id="tab-reinvest">
             <div class="section">
                 <h2 data-i18n="sec_strategy_map">Strategy Map — BTC × GMT</h2>
-                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;">
-                    Selon les prix futurs de BTC et GMT, quelle est la meilleure action ?
+                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;" data-i18n="reinvest_desc">
+                    Based on future BTC and GMT prices, what is the best action?
                 </p>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Coût par TH upgrade ($)</label>
+                        <label data-i18n="lbl_cost_per_th_upgrade">Cost per TH Upgrade ($)</label>
                         <input type="number" id="reinv-cost-per-th" value="12.34" min="1" step="0.5">
                     </div>
                     <div class="form-group">
-                        <label>Bonus TH réinvestissement (%)</label>
+                        <label data-i18n="lbl_reinv_bonus">TH Reinvestment Bonus (%)</label>
                         <input type="number" id="reinv-bonus" value="5" min="0" max="20" step="1">
                     </div>
                     <div class="form-group">
-                        <label>Horizon (jours)</label>
+                        <label data-i18n="lbl_horizon">Horizon (days)</label>
                         <input type="number" id="reinv-horizon" value="180" min="30" max="730" step="30">
                     </div>
                     <div class="form-group">
-                        <label>Balance GMT actuelle</label>
+                        <label data-i18n="lbl_gmt_balance">Current GMT Balance</label>
                         <input type="number" id="reinv-gmt-balance" value="0" min="0" step="1">
-                        <span class="hint">Combien de GMT tu as dans ton wallet</span>
+                        <span class="hint" data-i18n="hint_gmt_balance">How much GMT you have in your wallet</span>
                     </div>
                     <div class="form-group">
-                        <label>Jours de réserve GMT souhaités</label>
+                        <label data-i18n="lbl_reserve_days">Desired GMT Reserve Days</label>
                         <input type="number" id="reinv-reserve-days" value="30" min="7" max="365" step="1">
-                        <span class="hint">Combien de jours de frais tu veux en réserve</span>
+                        <span class="hint" data-i18n="hint_reserve_days">How many days of fees you want in reserve</span>
                     </div>
                 </div>
-                <button class="btn-calculate" onclick="calcStrategy()">Générer la carte</button>
+                <button class="btn-calculate" onclick="calcStrategy()" data-i18n="btn_generate_map">Generate Map</button>
             </div>
 
             <div id="strat-map" style="display:none;">
@@ -1371,19 +1371,19 @@
                 <!-- Legend -->
                 <div class="section">
                     <div class="map-legend">
-                        <div class="legend-item"><span class="legend-color" style="background:#f5c542"></span> Garder BTC</div>
-                        <div class="legend-item"><span class="legend-color" style="background:#2ecc71"></span> Convertir en GMT</div>
-                        <div class="legend-item"><span class="legend-color" style="background:#3498db"></span> Réinvestir en TH</div>
-                        <div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span> Non rentable</div>
-                        <div class="legend-item"><span class="legend-dot"></span> Position actuelle</div>
+                        <div class="legend-item"><span class="legend-color" style="background:#f5c542"></span> <span data-i18n="legend_hold_btc">Hold BTC</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#2ecc71"></span> <span data-i18n="legend_convert_gmt">Convert to GMT</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#3498db"></span> <span data-i18n="legend_reinvest_th">Reinvest in TH</span></div>
+                        <div class="legend-item"><span class="legend-color" style="background:#e74c3c"></span> <span data-i18n="legend_unprofitable">Unprofitable</span></div>
+                        <div class="legend-item"><span class="legend-dot"></span> <span data-i18n="legend_current_pos">Current Position</span></div>
                     </div>
 
                     <!-- The map grid -->
                     <div class="map-container">
-                        <div class="map-ylabel">Prix GMT (USD)</div>
+                        <div class="map-ylabel" data-i18n="map_ylabel">GMT Price (USD)</div>
                         <div class="map-inner">
                             <div id="strat-grid" class="strat-grid"></div>
-                            <div class="map-xlabel">Prix BTC (USD)</div>
+                            <div class="map-xlabel" data-i18n="map_xlabel">BTC Price (USD)</div>
                         </div>
                     </div>
                 </div>
@@ -1394,53 +1394,53 @@
         <div class="tab-content" id="tab-compare">
             <div class="section">
                 <h2 data-i18n="sec_compare">Compare: Buy vs Upgrade vs Lock GMT</h2>
-                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;">
-                    Pour un même budget, quelle stratégie rapporte le plus ?
+                <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;" data-i18n="compare_desc">
+                    For the same budget, which strategy yields the most?
                 </p>
 
                 <div class="form-grid">
                     <div class="form-group">
-                        <label>Budget disponible ($)</label>
+                        <label data-i18n="lbl_budget">Available Budget ($)</label>
                         <input type="number" id="budget" value="1000" min="100" step="100">
                     </div>
                     <div class="form-group">
-                        <label>Prix moyen par TH/s ($) — achat NFT</label>
+                        <label data-i18n="lbl_cost_per_th_buy">Avg Price per TH/s ($) — Buy NFT</label>
                         <input type="number" id="cost-per-th-buy" value="21" min="1" step="0.5">
-                        <span class="hint">Marketplace: $21-26/TH (API confirmé)</span>
+                        <span class="hint" data-i18n="hint_cost_per_th_buy">Marketplace: $21-26/TH (API confirmed)</span>
                     </div>
                     <div class="form-group">
-                        <label>Prix par TH/s ($) — upgrade existant</label>
+                        <label data-i18n="lbl_cost_per_th_upg">Price per TH/s ($) — Upgrade Existing</label>
                         <input type="number" id="cost-per-th-upgrade" value="12.34" min="1" step="0.5">
-                        <span class="hint">$12.34/TH (confirmé app GoMining)</span>
+                        <span class="hint" data-i18n="hint_cost_per_th_upg">$12.34/TH (confirmed GoMining app)</span>
                     </div>
                     <div class="form-group">
-                        <label>Efficacité du nouveau/upgrade (W/TH)</label>
+                        <label data-i18n="lbl_new_efficiency">New/Upgrade Efficiency (W/TH)</label>
                         <input type="number" id="new-efficiency" value="15" min="15" max="50" step="1">
                     </div>
                     <div class="form-group">
-                        <label>Durée de lock GMT (années)</label>
+                        <label data-i18n="lbl_lock_duration">GMT Lock Duration (years)</label>
                         <select id="lock-duration">
-                            <option value="0.25">3 mois</option>
-                            <option value="0.5">6 mois</option>
-                            <option value="1" selected>1 an</option>
-                            <option value="2">2 ans</option>
-                            <option value="4">4 ans</option>
+                            <option value="0.25" data-i18n="opt_3months">3 months</option>
+                            <option value="0.5" data-i18n="opt_6months">6 months</option>
+                            <option value="1" selected data-i18n="opt_1year">1 year</option>
+                            <option value="2" data-i18n="opt_2years">2 years</option>
+                            <option value="4" data-i18n="opt_4years">4 years</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>APR estimé veGOMINING (%)</label>
+                        <label data-i18n="lbl_vegmt_apr">Estimated veGOMINING APR (%)</label>
                         <input type="number" id="vegmt-apr" value="40" min="1" max="200" step="1">
-                        <span class="hint">Variable — vérifier les rewards actuels</span>
+                        <span class="hint" data-i18n="hint_vegmt_apr">Variable — check current rewards</span>
                     </div>
                 </div>
-                <button class="btn-calculate" onclick="compareStrategies()">Comparer</button>
+                <button class="btn-calculate" onclick="compareStrategies()" data-i18n="btn_compare">Compare</button>
             </div>
 
             <div id="compare-results" style="display:none;">
                 <div class="strategy-cards" id="strategy-cards"></div>
 
                 <div class="lock-info">
-                    <h4>Info veGOMINING Lock</h4>
+                    <h4 data-i18n="sec_vegmt_lock_info">veGOMINING Lock Info</h4>
                     <div id="lock-details"></div>
                 </div>
             </div>
@@ -1449,21 +1449,21 @@
         <div class="tab-content" id="tab-multisim">
             <div class="section">
                 <h2 data-i18n="sec_multisim">Multi-Scenario Simulation</h2>
-                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;">Projette tes profits sur 12 mois en variant BTC et la difficulté réseau.</p>
+                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;" data-i18n="multisim_desc">Project your profits over 12 months by varying BTC and network difficulty.</p>
                 <div class="slider-group">
-                    <label>Variation BTC</label>
+                    <label data-i18n="lbl_btc_variation">BTC Variation</label>
                     <input type="range" id="sim-btc-change" min="-50" max="200" value="0" step="5">
                     <span class="slider-val" id="sim-btc-val" style="color:var(--accent);">0%</span>
                 </div>
                 <div class="slider-group">
-                    <label>Variation difficulté</label>
+                    <label data-i18n="lbl_diff_variation">Difficulty Variation</label>
                     <input type="range" id="sim-diff-change" min="-20" max="100" value="0" step="5">
                     <span class="slider-val" id="sim-diff-val" style="color:var(--accent2);">0%</span>
                 </div>
                 <div class="slider-group">
-                    <label>Réinvestir en TH</label>
+                    <label data-i18n="lbl_reinvest_th">Reinvest in TH</label>
                     <input type="checkbox" id="sim-reinvest" style="width:auto;accent-color:var(--green);">
-                    <span class="slider-val" style="font-size:0.85em;color:var(--text-dim);">Compound les gains en TH</span>
+                    <span class="slider-val" style="font-size:0.85em;color:var(--text-dim);" data-i18n="hint_compound_th">Compound gains into TH</span>
                 </div>
                 <canvas id="sim-chart" class="chart-canvas" style="margin-top:15px;"></canvas>
                 <div id="sim-summary" style="margin-top:12px;display:flex;gap:20px;flex-wrap:wrap;font-size:0.85em;"></div>
@@ -1474,19 +1474,19 @@
         <div class="tab-content" id="tab-performance">
             <div class="section">
                 <h2 data-i18n="sec_performance">Performance Tracking</h2>
-                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;">Compare tes gains réels (extension) vs les projections du simulateur.</p>
+                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;" data-i18n="perf_desc">Compare your actual gains (extension) vs simulator projections.</p>
                 <div id="perf-score-box" style="display:none;">
                     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;">
                         <div class="result-card" style="flex:1;min-width:200px;text-align:center;">
-                            <h3>Précision simulateur</h3>
+                            <h3 data-i18n="perf_accuracy">Simulator Accuracy</h3>
                             <div class="perf-score positive" id="perf-accuracy">--</div>
                         </div>
                         <div class="result-card" style="flex:1;min-width:200px;text-align:center;">
-                            <h3>Gains réels cumulés</h3>
+                            <h3 data-i18n="perf_actual_cum">Cumulative Actual Gains</h3>
                             <div class="perf-score" id="perf-actual" style="color:var(--accent);">--</div>
                         </div>
                         <div class="result-card" style="flex:1;min-width:200px;text-align:center;">
-                            <h3>Gains projetés cumulés</h3>
+                            <h3 data-i18n="perf_projected_cum">Cumulative Projected Gains</h3>
                             <div class="perf-score" id="perf-projected" style="color:var(--accent2);">--</div>
                         </div>
                     </div>
@@ -1494,8 +1494,8 @@
                 <canvas id="perf-chart" class="chart-canvas"></canvas>
                 <div id="perf-table" style="margin-top:15px;overflow-x:auto;"></div>
                 <div style="margin-top:10px;display:flex;justify-content:space-between;align-items:center;">
-                    <span style="font-size:0.75em;color:var(--text-dim);">Les données se remplissent automatiquement à chaque sync depuis l'extension.</span>
-                    <button class="refresh-btn" style="margin:0;font-size:0.75em;color:var(--red);border-color:var(--red);" onclick="localStorage.removeItem('gomining_performance');updatePerformance();alert('Données de performance réinitialisées.');">Reset données</button>
+                    <span style="font-size:0.75em;color:var(--text-dim);" data-i18n="perf_auto_fill">Data fills automatically with each sync from the extension.</span>
+                    <button class="refresh-btn" style="margin:0;font-size:0.75em;color:var(--red);border-color:var(--red);" onclick="localStorage.removeItem('gomining_performance');updatePerformance();alert(t('perf_reset_confirm'));" data-i18n="btn_reset_data">Reset Data</button>
                 </div>
             </div>
         </div>
@@ -1507,37 +1507,37 @@
                 <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;" data-i18n="alerts_desc">Set price thresholds and get notified when they are triggered.</p>
                 <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:15px;">
                     <div class="form-group">
-                        <label>Alerte si BTC &gt; ($)</label>
+                        <label data-i18n="lbl_alert_btc_high">Alert if BTC > ($)</label>
                         <input type="number" id="alert-btc-high" value="" placeholder="100000" step="1000">
                     </div>
                     <div class="form-group">
-                        <label>Alerte si BTC &lt; ($)</label>
+                        <label data-i18n="lbl_alert_btc_low">Alert if BTC < ($)</label>
                         <input type="number" id="alert-btc-low" value="" placeholder="50000" step="1000">
                     </div>
                     <div class="form-group">
-                        <label>Alerte si GMT &gt; ($)</label>
+                        <label data-i18n="lbl_alert_gmt_high">Alert if GMT > ($)</label>
                         <input type="number" id="alert-gmt-high" value="" placeholder="0.50" step="0.01">
                     </div>
                     <div class="form-group">
-                        <label>Alerte si GMT &lt; ($)</label>
+                        <label data-i18n="lbl_alert_gmt_low">Alert if GMT < ($)</label>
                         <input type="number" id="alert-gmt-low" value="" placeholder="0.20" step="0.01">
                     </div>
                 </div>
                 <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px;">
-                    <button class="refresh-btn" id="notif-btn" style="font-size:0.8em;" onclick="requestNotifications()">🔔 Activer notifications navigateur</button>
+                    <button class="refresh-btn" id="notif-btn" style="font-size:0.8em;" onclick="requestNotifications()" data-i18n="btn_enable_notif">Enable Browser Notifications</button>
                 </div>
                 <div id="alert-status" style="font-size:0.9em;color:var(--text-dim);padding:15px;background:var(--bg2);border-radius:var(--radius-sm);"></div>
             </div>
 
             <div class="section">
-                <h2>Statut actuel</h2>
+                <h2 data-i18n="sec_current_status">Current Status</h2>
                 <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
                     <div class="live-card">
-                        <div class="label">BTC actuel</div>
+                        <div class="label" data-i18n="lbl_current_btc">Current BTC</div>
                         <div class="value btc" style="font-size:1.3em;" id="alert-btc-current">--</div>
                     </div>
                     <div class="live-card">
-                        <div class="label">GMT actuel</div>
+                        <div class="label" data-i18n="lbl_current_gmt">Current GMT</div>
                         <div class="value gmt" style="font-size:1.3em;" id="alert-gmt-current">--</div>
                     </div>
                 </div>
@@ -1549,9 +1549,9 @@
                 <h2 style="border:none;margin-bottom:10px;padding:0;" data-i18n="sec_staking">veGMT Lock Rewards</h2>
                 <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
                     <div class="form-group">
-                        <label>GMT reçus / semaine (lock veGMT)</label>
+                        <label data-i18n="lbl_staking_weekly">GMT Received / Week (veGMT lock)</label>
                         <input type="number" id="staking-gmt-weekly" value="0" min="0" step="0.1" placeholder="3.68">
-                        <span class="hint">Auto-rempli depuis l'extension (visite ta page veGMT lock)</span>
+                        <span class="hint" data-i18n="hint_staking_weekly">Auto-filled from extension (visit your veGMT lock page)</span>
                     </div>
                 </div>
             </div>
@@ -1560,43 +1560,43 @@
                 <h2 data-i18n="sec_add_invest">Add Investment</h2>
                 <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 0.6fr 0.8fr 1.2fr auto;margin-bottom:12px;">
                     <div class="form-group">
-                        <label>Date</label>
+                        <label data-i18n="lbl_date">Date</label>
                         <input type="date" id="tx-date">
                     </div>
                     <div class="form-group">
-                        <label>Catégorie</label>
+                        <label data-i18n="lbl_category">Category</label>
                         <select id="tx-category">
-                            <option value="nft">⛏ Achat NFT</option>
-                            <option value="upgrade">⬆ Upgrade TH</option>
-                            <option value="upgrade-wth">⚡ Upgrade W/TH</option>
-                            <option value="lock">🔒 Lock GMT</option>
-                            <option value="staking">💎 Staking veGMT</option>
-                            <option value="other">📦 Autre</option>
+                            <option value="nft" data-i18n="cat_nft">Buy NFT</option>
+                            <option value="upgrade" data-i18n="cat_upgrade">Upgrade TH</option>
+                            <option value="upgrade-wth" data-i18n="cat_upgrade_wth">Upgrade W/TH</option>
+                            <option value="lock" data-i18n="cat_lock">Lock GMT</option>
+                            <option value="staking" data-i18n="cat_staking">Staking veGMT</option>
+                            <option value="other" data-i18n="cat_other">Other</option>
                         </select>
                     </div>
                     <div class="form-group">
-                        <label>Montant</label>
+                        <label data-i18n="lbl_amount">Amount</label>
                         <input type="number" id="tx-amount" value="" min="0" step="1" placeholder="500">
                         <span class="hint" id="tx-preview"></span>
                     </div>
                     <div class="form-group">
-                        <label>Devise</label>
+                        <label data-i18n="lbl_currency">Currency</label>
                         <select id="tx-currency" onchange="updateTxPreview()">
                             <option value="usd">USD $</option>
                             <option value="gmt">GMT</option>
                         </select>
                     </div>
                     <div class="form-group" id="tx-th-group" style="display:none;">
-                        <label>TH ajoutés</label>
-                        <input type="number" id="tx-th" value="" min="0" step="1" placeholder="ex: 13">
-                        <span class="hint">Mis à jour auto dans le simulateur</span>
+                        <label data-i18n="lbl_th_added">TH Added</label>
+                        <input type="number" id="tx-th" value="" min="0" step="1" placeholder="e.g. 13">
+                        <span class="hint" data-i18n="hint_th_added">Auto-updated in the simulator</span>
                     </div>
                     <div class="form-group">
-                        <label>Note</label>
-                        <input type="text" id="tx-note" placeholder="ex: Upgrade 83→96 TH">
+                        <label data-i18n="lbl_note">Note</label>
+                        <input type="text" id="tx-note" placeholder="e.g. Upgrade 83→96 TH">
                     </div>
                     <div class="form-group" style="justify-content:flex-end;">
-                        <button class="btn-calculate" style="margin:0;" onclick="addTransaction()">+ Ajouter</button>
+                        <button class="btn-calculate" style="margin:0;" onclick="addTransaction()" data-i18n="btn_add">+ Add</button>
                     </div>
                 </div>
             </div>
@@ -1604,38 +1604,38 @@
             <!-- Portfolio KPIs -->
             <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:20px;">
                 <div class="live-card" style="border-bottom:3px solid var(--accent);">
-                    <div class="label">Total investi</div>
+                    <div class="label" data-i18n="port_total_invested">Total Invested</div>
                     <div class="value" id="port-total-invested" style="color:var(--red);font-size:1.4em;">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--green);">
-                    <div class="label">Gains cumulés</div>
+                    <div class="label" data-i18n="port_cumulative">Cumulative Gains</div>
                     <div class="value positive" id="port-cumulative" style="font-size:1.4em;">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent2);">
-                    <div class="label">Profit / Perte</div>
+                    <div class="label" data-i18n="port_pnl">Profit / Loss</div>
                     <div class="value" id="port-pnl" style="font-size:1.4em;">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--purple);">
-                    <div class="label">ROI</div>
+                    <div class="label" data-i18n="port_roi_label">ROI</div>
                     <div class="value" id="port-roi" style="font-size:1.4em;">--</div>
                 </div>
             </div>
 
             <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));margin-bottom:20px;">
                 <div class="live-card">
-                    <div class="label">Jours actifs</div>
+                    <div class="label" data-i18n="port_active_days">Active Days</div>
                     <div class="value net" id="port-days" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label">Gain moyen / jour</div>
+                    <div class="label" data-i18n="port_daily_avg">Avg Gain / Day</div>
                     <div class="value positive" id="port-daily-avg" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label">Retour investissement</div>
+                    <div class="label" data-i18n="port_payback">Investment Payback</div>
                     <div class="value" id="port-payback" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Valeur actuelle de ton mineur + GMT lockés sur le marché">Valeur actifs</span></div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="Current value of your miner + locked GMT on the market" data-i18n="port_asset_value">Asset Value</span></div>
                     <div class="value" id="port-asset-value" style="color:var(--accent);font-size:1.3em;">--</div>
                 </div>
             </div>
@@ -1679,7 +1679,7 @@
             <span class="tab-icon">🔄</span><span>Strat</span>
         </div>
         <div class="mobile-tab-item" data-tab="scenarios" onclick="switchTab('scenarios')">
-            <span class="tab-icon">📈</span><span>Scénarios</span>
+            <span class="tab-icon">📈</span><span data-i18n="mob_scenarios">Scenarios</span>
         </div>
         <div class="mobile-tab-item" data-tab="performance" onclick="switchTab('performance')">
             <span class="tab-icon">📉</span><span>Perf</span>
@@ -1834,7 +1834,7 @@
         async function fetchLiveData() {
             const btn = document.querySelector('.refresh-btn');
             btn.classList.add('loading');
-            btn.innerHTML = '<span class="spinner"></span> Chargement...';
+            btn.innerHTML = '<span class="spinner"></span> ' + t('loading');
 
             try {
                 // Fetch each independently so one failure doesn't break all
@@ -1858,12 +1858,10 @@
                 // Fallback prices if APIs fail (updated 2026-04-05)
                 const FALLBACK_BTC = 67100;
                 const FALLBACK_GMT = 0.296;
-                // Préférer les prix GoMining API (du sync) s'ils existent
-                if (!state.apiGmtPrice) {
-                    state.gmtPrice = prices['gmt-token']?.usd || state.gmtPrice || FALLBACK_GMT;
-                }
-                // BTC est fiable sur CoinGecko, on peut toujours le mettre à jour
+                // Always update display prices from CoinGecko (most current)
+                state.gmtPrice = prices['gmt-token']?.usd || state.gmtPrice || FALLBACK_GMT;
                 state.btcPrice = prices.bitcoin?.usd || state.btcPrice || FALLBACK_BTC;
+                // apiGmtPrice is kept separately for sat/TH conversion only
 
                 // Network hashrate from mempool.space (in H/s)
                 // Calculate sat/TH from mempool data if available
@@ -1901,7 +1899,7 @@
 
                 const now = new Date();
                 document.getElementById('last-update').textContent =
-                    `Dernière mise à jour : ${now.toLocaleTimeString('fr-FR')}`;
+                    t('last_update') + ': ' + now.toLocaleTimeString(currentLang === 'fr' ? 'fr-FR' : 'en-US');
 
                 // Auto-calculate after data loads
                 updatePrepaidDiscount();
@@ -1914,7 +1912,7 @@
             }
 
             btn.classList.remove('loading');
-            btn.innerHTML = '&#x21bb; Rafraîchir les données';
+            btn.innerHTML = '&#x21bb; ' + t('refresh_data');
         }
 
         // ===== CORE CALCULATIONS =====
@@ -1978,7 +1976,7 @@
             const discount = parseFloat(document.getElementById('discount').value);
             const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
             if (!state.btcPrice || !state.gmtPrice) {
-                alert('Veuillez d\'abord charger les données en direct.');
+                alert(t('alert_load_data'));
                 return;
             }
 
@@ -2047,45 +2045,45 @@
             dangerEl.style.display = 'block';
             dangerEl.innerHTML = `
                 <div class="danger-zone-box">
-                    <h3>Zone de danger — Seuils de rentabilité</h3>
+                    <h3>${t('danger_title')}</h3>
                     <div class="danger-levels">
                         <div class="danger-level">
-                            <div class="label">Prix BTC actuel</div>
+                            <div class="label">${t('danger_current_btc')}</div>
                             <div class="price" style="color:var(--green)">${formatUSD(bp)}</div>
                         </div>
                         <div class="danger-level">
-                            <div class="label">BTC Breakeven (profit = 0)</div>
+                            <div class="label">${t('danger_breakeven')}</div>
                             <div class="price" style="color:var(--red)">${breakevenBtc ? formatUSD(breakevenBtc) : 'N/A'}</div>
                             <div class="distance" style="color:${isClose ? 'var(--red)' : 'var(--green)'}">
-                                ${distanceBtc ? `${distanceBtc}% de marge` : ''}
+                                ${distanceBtc ? `${distanceBtc}% ${t('danger_margin')}` : ''}
                             </div>
                         </div>
                         <div class="danger-level">
-                            <div class="label">Marge de sécurité</div>
+                            <div class="label">${t('danger_safety')}</div>
                             <div class="price" style="color:${isClose ? 'var(--red)' : 'var(--green)'}">
                                 ${breakevenBtc ? formatUSD(bp - breakevenBtc) : 'N/A'}
                             </div>
                             <div class="distance" style="color:var(--text-dim)">
-                                BTC peut baisser de ce montant
+                                ${t('danger_btc_can_drop')}
                             </div>
                         </div>
                     </div>
                 </div>
                 <div style="margin-top:15px;background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:18px;">
-                    <h3 style="color:var(--accent2);margin-bottom:12px;font-size:1em;">Info Mineur</h3>
+                    <h3 style="color:var(--accent2);margin-bottom:12px;font-size:1em;">${t('miner_info')}</h3>
                     <div class="danger-levels">
                         <div class="danger-level">
-                            <div class="label">Niveau actuel</div>
+                            <div class="label">${t('miner_current_level')}</div>
                             <div class="price" style="color:var(--accent2)">Level ${currentLevel}</div>
                             <div class="distance" style="color:var(--text-dim)">${hashrate} TH / ${POWER_LEVELS[currentLevel]} TH (base)</div>
                         </div>
                         <div class="danger-level">
-                            <div class="label">Prochain palier</div>
+                            <div class="label">${t('miner_next_level')}</div>
                             <div class="price" style="color:var(--accent2)">${nextLevelTH ? nextLevelTH + ' TH' : 'MAX'}</div>
-                            <div class="distance" style="color:var(--text-dim)">${thToNextLevel ? '+' + thToNextLevel + ' TH nécessaires' : ''}</div>
+                            <div class="distance" style="color:var(--text-dim)">${thToNextLevel ? '+' + thToNextLevel + ' TH ' + t('miner_needed') : ''}</div>
                         </div>
                         <div class="danger-level">
-                            <div class="label">Coût upgrade direct</div>
+                            <div class="label">${t('miner_upgrade_cost')}</div>
                             <div class="price" style="color:var(--purple)">${costToNextLevel ? formatUSD(costToNextLevel) : 'N/A'}</div>
                             <div class="distance" style="color:var(--text-dim)">$${UPGRADE_PRICE_DIRECT}/TH × ${thToNextLevel || 0} TH</div>
                         </div>
@@ -2230,7 +2228,7 @@
         function calcStrategy() {
             const c = state.lastCalc;
             if (!c || !state.btcPrice || !state.gmtPrice) {
-                alert('Calcule d\'abord tes profits dans l\'onglet Simulateur Mining.');
+                alert(t('alert_calc_first'));
                 return;
             }
 
@@ -2262,12 +2260,12 @@
                     <div class="reserve-alert ok">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
-                                <strong style="color:var(--green);font-size:1.1em;">Réserve GMT OK</strong><br>
-                                <span style="color:var(--text-dim);">Tu as ${formatNumber(gmtBalance)} GMT — assez pour ${reserveCovered} jours de frais (objectif: ${reserveDays} jours)</span>
+                                <strong style="color:var(--green);font-size:1.1em;">${t('reserve_ok')}</strong><br>
+                                <span style="color:var(--text-dim);">${t('reserve_you_have')} ${formatNumber(gmtBalance)} GMT — ${t('reserve_enough_for')} ${reserveCovered} ${t('reserve_days_of_fees')} (${t('reserve_goal')}: ${reserveDays} ${t('days')})</span>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:0.85em;color:var(--text-dim)">Frais/jour: ${dailyFeesGmt.toFixed(2)} GMT</div>
-                                <div style="font-size:0.85em;color:var(--text-dim)">Réserve nécessaire: ${formatNumber(reserveNeeded)} GMT</div>
+                                <div style="font-size:0.85em;color:var(--text-dim)">${t('reserve_fees_day')}: ${dailyFeesGmt.toFixed(2)} GMT</div>
+                                <div style="font-size:0.85em;color:var(--text-dim)">${t('reserve_needed')}: ${formatNumber(reserveNeeded)} GMT</div>
                             </div>
                         </div>
                         <div class="reserve-bar">
@@ -2281,13 +2279,13 @@
                     <div class="reserve-alert">
                         <div style="display:flex;justify-content:space-between;align-items:center;">
                             <div>
-                                <strong style="color:var(--red);font-size:1.1em;">Remplis ta réserve GMT d'abord !</strong><br>
-                                <span style="color:var(--text-dim);">Tu as ${formatNumber(gmtBalance)} GMT mais il t'en faut ${formatNumber(reserveNeeded)} GMT pour ${reserveDays} jours de frais.</span><br>
-                                <span style="color:var(--accent2);">Manque ${formatNumber(reserveDeficit)} GMT — convertis en GMT pendant ~${daysToFillReserve} jours avant de faire BTC ou TH reinvest.</span>
+                                <strong style="color:var(--red);font-size:1.1em;">${t('reserve_fill_first')}</strong><br>
+                                <span style="color:var(--text-dim);">${t('reserve_you_have')} ${formatNumber(gmtBalance)} GMT ${t('reserve_but_need')} ${formatNumber(reserveNeeded)} GMT ${t('reserve_for')} ${reserveDays} ${t('reserve_days_of_fees')}.</span><br>
+                                <span style="color:var(--accent2);">${t('reserve_missing')} ${formatNumber(reserveDeficit)} GMT — ${t('reserve_convert_for')} ~${daysToFillReserve} ${t('days')} ${t('reserve_before_reinvest')}.</span>
                             </div>
                             <div style="text-align:right;">
-                                <div style="font-size:0.85em;color:var(--text-dim)">Frais/jour: ${dailyFeesGmt.toFixed(2)} GMT</div>
-                                <div style="font-size:0.85em;color:var(--text-dim)">Couvert: ${reserveCovered} / ${reserveDays} jours</div>
+                                <div style="font-size:0.85em;color:var(--text-dim)">${t('reserve_fees_day')}: ${dailyFeesGmt.toFixed(2)} GMT</div>
+                                <div style="font-size:0.85em;color:var(--text-dim)">${t('reserve_covered')}: ${reserveCovered} / ${reserveDays} ${t('days')}</div>
                             </div>
                         </div>
                         <div class="reserve-bar">
@@ -2337,15 +2335,14 @@
             // Current recommendation
             const { vBtc: vBtcNow, vGmt: vGmtNow, vTh: vThNow } = evalAtPrices(bp, gp);
             const nowAll = [
-                { key: 'Garder BTC', val: vBtcNow, bg: '#f5c542', detail: `${simBtc.btc.toFixed(8)} BTC` },
-                { key: 'Convertir GMT', val: vGmtNow, bg: '#2ecc71', detail: `${formatNumber(simGmt.gmt)} GMT` },
-                { key: 'Réinvestir TH', val: vThNow, bg: '#3498db', detail: `+${simTh.thAdded.toFixed(2)} TH (revenu annuel - frais)` }
+                { key: t('map_hold_btc'), val: vBtcNow, bg: '#f5c542', detail: `${simBtc.btc.toFixed(8)} BTC` },
+                { key: t('map_convert_gmt'), val: vGmtNow, bg: '#2ecc71', detail: `${formatNumber(simGmt.gmt)} GMT` },
+                { key: t('map_reinvest_th'), val: vThNow, bg: '#3498db', detail: `+${simTh.thAdded.toFixed(2)} TH (${t('map_annual_minus_fees')})` }
             ];
             const bestMarket = nowAll.reduce((a, b) => a.val > b.val ? a : b);
 
-            // Override: si réserve pas remplie, recommander GMT d'abord
             const bestNow = !reserveOk
-                ? { key: 'Convertir GMT', bg: '#2ecc71', override: true }
+                ? { key: t('map_convert_gmt'), bg: '#2ecc71', override: true }
                 : bestMarket;
 
             let recoHtml;
@@ -2354,13 +2351,13 @@
                     <div class="reco-banner">
                         <div class="reco-badge" style="background:#2ecc71">GMT</div>
                         <div>
-                            <div style="font-size:1.1em;"><strong>Priorité : remplir ta réserve GMT</strong></div>
+                            <div style="font-size:1.1em;"><strong>${t('reco_priority_reserve')}</strong></div>
                             <div style="color:var(--text-dim);margin-top:5px;">
-                                Il te manque <strong>${formatNumber(reserveDeficit)} GMT</strong> pour couvrir ${reserveDays} jours de frais.
-                                Convertis tes rewards en GMT pendant ~<strong>${daysToFillReserve} jours</strong>, ensuite passe à la stratégie optimale.
+                                ${t('reco_missing')} <strong>${formatNumber(reserveDeficit)} GMT</strong> ${t('reco_to_cover')} ${reserveDays} ${t('reserve_days_of_fees')}.
+                                ${t('reco_convert_rewards')} ~<strong>${daysToFillReserve} ${t('days')}</strong>, ${t('reco_then_optimal')}.
                             </div>
                             <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);">
-                                <span style="color:var(--text-dim);">Meilleure stratégie une fois la réserve OK :</span>
+                                <span style="color:var(--text-dim);">${t('reco_best_after_reserve')}:</span>
                                 <strong style="color:${bestMarket.bg};margin-left:8px;">${bestMarket.key}</strong>
                                 <span style="color:var(--text-dim);margin-left:5px;">(${formatUSD(bestMarket.val)})</span>
                             </div>
@@ -2372,7 +2369,7 @@
                     <div class="reco-banner">
                         <div class="reco-badge" style="background:${bestNow.bg}">${bestNow.key}</div>
                         <div>
-                            <div style="font-size:1.1em;">Aux prix actuels sur <strong>${days} jours</strong> :</div>
+                            <div style="font-size:1.1em;">${t('reco_at_current_prices')} <strong>${days} ${t('days')}</strong>:</div>
                             <div style="margin-top:8px;">
                                 ${nowAll.map(s => `<span style="margin-right:20px;${s.key === bestNow.key ? 'font-weight:700' : 'color:var(--text-dim)'}">${s.key}: ${formatUSD(s.val)}</span>`).join('')}
                             </div>
@@ -2421,7 +2418,7 @@
                     const isCurrent = bi === closestBtcIdx && gi === closestGmtIdx;
                     const cell = document.createElement('div');
                     cell.className = `grid-cell ${zone} ${isCurrent ? 'current' : ''}`;
-                    cell.title = `BTC ${formatUSD(futBtc)} | GMT $${futGmt.toFixed(4)}\n─────────────\nGarder BTC: ${formatUSD(vBtc)}\nConvertir GMT: ${formatUSD(vGmt)}\nRéinvestir TH: ${formatUSD(vTh)}`;
+                    cell.title = `BTC ${formatUSD(futBtc)} | GMT $${futGmt.toFixed(4)}\n─────────────\n${t('map_hold_btc')}: ${formatUSD(vBtc)}\n${t('map_convert_gmt')}: ${formatUSD(vGmt)}\n${t('map_reinvest_th')}: ${formatUSD(vTh)}`;
                     grid.appendChild(cell);
                 }
             }
@@ -2452,7 +2449,7 @@
             // Today's gain
             document.getElementById('dash-today').textContent = formatProfit(r.netBtc, bp, r.netGmt, r.grossBtc);
             document.getElementById('dash-today-sub').textContent =
-                `Brut: ${formatVal(r.grossBtc, bp, r.grossGmt)} | Frais: ${formatVal(r.feesBtc, bp, r.feesGmt)}`;
+                `${t('dash_gross')}: ${formatVal(r.grossBtc, bp, r.grossGmt)} | ${t('dash_fees')}: ${formatVal(r.feesBtc, bp, r.feesGmt)}`;
 
             // Month estimate
             document.getElementById('dash-month').textContent = formatProfit(r.netBtc * 30, bp, r.netGmt * 30, r.grossBtc * 30);
@@ -2462,7 +2459,7 @@
             const level = getCurrentLevel(hashrate);
             const nextTH = getNextLevelTH(hashrate);
             document.getElementById('dash-miner').textContent = `${hashrate} TH | Lv.${level}`;
-            document.getElementById('dash-miner-sub').textContent = nextTH ? `Prochain: ${nextTH} TH (${nextTH - hashrate} TH)` : 'MAX';
+            document.getElementById('dash-miner-sub').textContent = nextTH ? `${t('dash_next')}: ${nextTH} TH (${nextTH - hashrate} TH)` : 'MAX';
 
             // Optimal strategy (quick calc)
             const costPerTH = parseFloat(document.getElementById('reinv-cost-per-th').value) || 12.34;
@@ -2509,14 +2506,14 @@
                 card.style.animation = 'pulse 1s 3';
                 setTimeout(() => card.style.animation = '', 3000);
                 showStrategyAlert(lastStrategy, best.key);
-                sendNotification('GoMining Stratégie', `Changement recommandé: ${lastStrategy} → ${best.key}`);
+                sendNotification(t('notif_strategy'), `${t('notif_strategy_change')}: ${lastStrategy} → ${best.key}`);
             }
             if (previousStrategy === null) previousStrategy = best.key;
             lastStrategy = best.key;
 
             // Ticker
             document.getElementById('dash-ticker').textContent =
-                `BTC ${formatUSD(bp)} | GMT $${gp.toFixed(4)} | ${new Date().toLocaleTimeString('fr-FR')}`;
+                `BTC ${formatUSD(bp)} | GMT $${gp.toFixed(4)} | ${new Date().toLocaleTimeString(currentLang === 'fr' ? 'fr-FR' : 'en-US')}`;
 
             // === New dashboard cards ===
             // Profit per day
@@ -2560,7 +2557,7 @@
                 document.getElementById('dash-th-current').textContent = hashrate + ' TH (Lv.' + currentLevel2 + ')';
                 document.getElementById('dash-th-next').textContent = nextTH2 + ' TH (Lv.' + (currentLevel2 + 1) + ')';
                 const daysToNext = calcDaysToTarget(nextTH2);
-                document.getElementById('dash-th-label').textContent = daysToNext ? daysToNext.days + ' jours restants' : '';
+                document.getElementById('dash-th-label').textContent = daysToNext ? daysToNext.days + ' ' + t('days_remaining') : '';
             }
 
             // === Quick Stats ===
@@ -2625,7 +2622,7 @@
             const milestonesEl = document.getElementById('th-milestones');
 
             if (target <= currentTH) {
-                resultEl.textContent = 'Objectif déjà atteint !';
+                resultEl.textContent = t('th_already_reached');
                 resultEl.style.color = 'var(--green)';
                 milestonesEl.innerHTML = '';
                 return;
@@ -2634,10 +2631,10 @@
             const result = calcDaysToTarget(target);
             if (result) {
                 const months = (result.days / 30).toFixed(1);
-                resultEl.innerHTML = `<span style="font-size:1.3em">${result.days} jours</span> <span style="color:var(--text-dim)">(~${months} mois)</span>`;
+                resultEl.innerHTML = `<span style="font-size:1.3em">${result.days} ${t('days')}</span> <span style="color:var(--text-dim)">(~${months} ${t('months')})</span>`;
                 resultEl.style.color = 'var(--green)';
             } else {
-                resultEl.textContent = 'Non atteignable aux conditions actuelles';
+                resultEl.textContent = t('th_unreachable');
                 resultEl.style.color = 'var(--red)';
             }
 
@@ -2681,7 +2678,7 @@
         // ===== COMPARE STRATEGIES =====
         function compareStrategies() {
             if (!state.btcPrice || !state.gmtPrice) {
-                alert('Veuillez d\'abord charger les données en direct.');
+                alert(t('alert_load_data'));
                 return;
             }
 
@@ -2731,33 +2728,33 @@
             // Build cards
             const cardsHtml = `
                 <div class="strategy-card ${bestId === 'buy' ? 'best' : ''}">
-                    <h3>Acheter un nouveau NFT</h3>
-                    <div class="strategy-row"><span class="label">TH/s obtenus</span><span>${thBuy.toFixed(1)} TH/s</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/jour</span><span class="${rewardBuy?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit(rewardBuy?.netBtc || 0, bp, rewardBuy?.netGmt || 0, rewardBuy?.grossBtc || 0)}</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/mois</span><span class="${rewardBuy?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardBuy?.netBtc || 0) * 30, bp, (rewardBuy?.netGmt || 0) * 30, (rewardBuy?.grossBtc || 0) * 30)}</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/an</span><span class="${yearProfitBuy >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardBuy?.netBtc || 0) * 365, bp, (rewardBuy?.netGmt || 0) * 365, (rewardBuy?.grossBtc || 0) * 365)}</span></div>
-                    <div class="strategy-row"><span class="label">ROI annuel</span><span class="${roiBuy >= 0 ? 'positive' : 'negative'}">${roiBuy.toFixed(1)}%</span></div>
-                    <div class="strategy-row"><span class="label">Retour en</span><span>${rewardBuy?.netUsd > 0 ? Math.ceil(budget / rewardBuy.netUsd) + ' jours' : 'N/A'}</span></div>
+                    <h3>${t('strat_buy_nft')}</h3>
+                    <div class="strategy-row"><span class="label">${t('strat_th_obtained')}</span><span>${thBuy.toFixed(1)} TH/s</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_day')}</span><span class="${rewardBuy?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit(rewardBuy?.netBtc || 0, bp, rewardBuy?.netGmt || 0, rewardBuy?.grossBtc || 0)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_month')}</span><span class="${rewardBuy?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardBuy?.netBtc || 0) * 30, bp, (rewardBuy?.netGmt || 0) * 30, (rewardBuy?.grossBtc || 0) * 30)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_year')}</span><span class="${yearProfitBuy >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardBuy?.netBtc || 0) * 365, bp, (rewardBuy?.netGmt || 0) * 365, (rewardBuy?.grossBtc || 0) * 365)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_annual_roi')}</span><span class="${roiBuy >= 0 ? 'positive' : 'negative'}">${roiBuy.toFixed(1)}%</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_payback_in')}</span><span>${rewardBuy?.netUsd > 0 ? Math.ceil(budget / rewardBuy.netUsd) + ' ' + t('days') : 'N/A'}</span></div>
                 </div>
 
                 <div class="strategy-card ${bestId === 'upgrade' ? 'best' : ''}">
-                    <h3>Upgrader un NFT existant</h3>
-                    <div class="strategy-row"><span class="label">TH/s ajoutés</span><span>+${thUpgrade.toFixed(1)} TH/s</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/jour</span><span class="${rewardUpgrade?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit(rewardUpgrade?.netBtc || 0, bp, rewardUpgrade?.netGmt || 0, rewardUpgrade?.grossBtc || 0)}</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/mois</span><span class="${rewardUpgrade?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardUpgrade?.netBtc || 0) * 30, bp, (rewardUpgrade?.netGmt || 0) * 30, (rewardUpgrade?.grossBtc || 0) * 30)}</span></div>
-                    <div class="strategy-row"><span class="label">Profit net/an</span><span class="${yearProfitUpgrade >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardUpgrade?.netBtc || 0) * 365, bp, (rewardUpgrade?.netGmt || 0) * 365, (rewardUpgrade?.grossBtc || 0) * 365)}</span></div>
-                    <div class="strategy-row"><span class="label">ROI annuel</span><span class="${roiUpgrade >= 0 ? 'positive' : 'negative'}">${roiUpgrade.toFixed(1)}%</span></div>
-                    <div class="strategy-row"><span class="label">Retour en</span><span>${rewardUpgrade?.netUsd > 0 ? Math.ceil(budget / rewardUpgrade.netUsd) + ' jours' : 'N/A'}</span></div>
+                    <h3>${t('strat_upgrade_nft')}</h3>
+                    <div class="strategy-row"><span class="label">${t('strat_th_added')}</span><span>+${thUpgrade.toFixed(1)} TH/s</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_day')}</span><span class="${rewardUpgrade?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit(rewardUpgrade?.netBtc || 0, bp, rewardUpgrade?.netGmt || 0, rewardUpgrade?.grossBtc || 0)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_month')}</span><span class="${rewardUpgrade?.netGmt >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardUpgrade?.netBtc || 0) * 30, bp, (rewardUpgrade?.netGmt || 0) * 30, (rewardUpgrade?.grossBtc || 0) * 30)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_net_year')}</span><span class="${yearProfitUpgrade >= 0 ? 'positive' : 'negative'}">${formatProfit((rewardUpgrade?.netBtc || 0) * 365, bp, (rewardUpgrade?.netGmt || 0) * 365, (rewardUpgrade?.grossBtc || 0) * 365)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_annual_roi')}</span><span class="${roiUpgrade >= 0 ? 'positive' : 'negative'}">${roiUpgrade.toFixed(1)}%</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_payback_in')}</span><span>${rewardUpgrade?.netUsd > 0 ? Math.ceil(budget / rewardUpgrade.netUsd) + ' ' + t('days') : 'N/A'}</span></div>
                 </div>
 
                 <div class="strategy-card ${bestId === 'lock' ? 'best' : ''}">
-                    <h3>Lock GMT (veGOMINING)</h3>
-                    <div class="strategy-row"><span class="label">Tokens GMT</span><span>${formatNumber(gmtTokens)} GMT</span></div>
-                    <div class="strategy-row"><span class="label">veGOMINING reçus</span><span>${formatNumber(veGmt)} veGMT</span></div>
-                    <div class="strategy-row"><span class="label">Durée du lock</span><span>${lockYears >= 1 ? lockYears + ' an(s)' : (lockYears * 12) + ' mois'}</span></div>
-                    <div class="strategy-row"><span class="label">Rewards estimés/an</span><span class="positive">${formatVal(yearRewardGmtEffective / bp, bp)}</span></div>
-                    <div class="strategy-row"><span class="label">APR effectif</span><span class="positive">${roiGmtEffective.toFixed(1)}%</span></div>
-                    <div class="strategy-row"><span class="label">Retour en</span><span>${roiGmtEffective > 0 ? Math.ceil(365 / roiGmtEffective * 100) + ' jours' : 'N/A'}</span></div>
+                    <h3>${t('strat_lock_gmt')}</h3>
+                    <div class="strategy-row"><span class="label">${t('strat_gmt_tokens')}</span><span>${formatNumber(gmtTokens)} GMT</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_vegmt_received')}</span><span>${formatNumber(veGmt)} veGMT</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_lock_duration')}</span><span>${lockYears >= 1 ? lockYears + ' ' + t('years') : (lockYears * 12) + ' ' + t('months')}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_est_rewards_year')}</span><span class="positive">${formatVal(yearRewardGmtEffective / bp, bp)}</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_effective_apr')}</span><span class="positive">${roiGmtEffective.toFixed(1)}%</span></div>
+                    <div class="strategy-row"><span class="label">${t('strat_payback_in')}</span><span>${roiGmtEffective > 0 ? Math.ceil(365 / roiGmtEffective * 100) + ' ' + t('days') : 'N/A'}</span></div>
                 </div>
             `;
 
@@ -2765,9 +2762,9 @@
 
             // Lock details
             document.getElementById('lock-details').innerHTML = `
-                <div class="strategy-row"><span class="label">Prix GMT actuel</span><span>$${state.gmtPrice.toFixed(4)}</span></div>
-                <div class="strategy-row"><span class="label">Ratio veGMT</span><span>1 GMT locked ${lockYears}an(s) = ${veGmtRatio.toFixed(2)} veGMT</span></div>
-                <div class="strategy-row"><span class="label">Note</span><span style="color:var(--text-dim);font-size:0.85em;">Les veGMT décroissent linéairement jusqu'à expiration. L'APR est une estimation.</span></div>
+                <div class="strategy-row"><span class="label">${t('lock_current_gmt')}</span><span>$${state.gmtPrice.toFixed(4)}</span></div>
+                <div class="strategy-row"><span class="label">${t('lock_ratio')}</span><span>1 GMT locked ${lockYears} ${t('years')} = ${veGmtRatio.toFixed(2)} veGMT</span></div>
+                <div class="strategy-row"><span class="label">${t('lock_note_label')}</span><span style="color:var(--text-dim);font-size:0.85em;">${t('lock_note_text')}</span></div>
             `;
 
             document.getElementById('compare-results').style.display = 'block';
@@ -2896,12 +2893,12 @@
                     const json = text.substring(7);
                     const essentials = JSON.parse(json);
                     applyEssentials(essentials);
-                    alert('Données synchronisées depuis l\'extension !');
+                    alert(t('sync_success'));
                 } else {
-                    alert('Aucune donnée GoMining dans le presse-papier.\n\n1. Va sur app.gomining.com\n2. Clique "Copier données pour Simulateur" dans le panel de l\'extension\n3. Reviens ici et clique "Sync Extension"');
+                    alert(t('sync_no_data'));
                 }
             } catch(e) {
-                alert('Accès au presse-papier refusé.\nClique d\'abord quelque part sur la page, puis réessaie.');
+                alert(t('sync_clipboard_denied'));
             }
         }
 
@@ -3026,9 +3023,9 @@
             ];
 
             let html = `<div style="font-size:0.85em;color:var(--text-dim);margin-bottom:10px;">
-                Dernière donnée : ${latest.date} | ${latest.power} TH | Discount: ${(latest.totalDiscount * 100).toFixed(2)}% | GMT: $${latest.gmtPrice}
+                ${t('val_last_data')}: ${latest.date} | ${latest.power} TH | Discount: ${(latest.totalDiscount * 100).toFixed(2)}% | GMT: $${latest.gmtPrice}
             </div>`;
-            html += '<table><thead><tr><th style="text-align:left">Métrique</th><th>GoMining</th><th>Simulateur</th><th>Écart</th></tr></thead><tbody>';
+            html += `<table><thead><tr><th style="text-align:left">${t('val_metric')}</th><th>GoMining</th><th>${t('val_simulator')}</th><th>${t('perf_gap')}</th></tr></thead><tbody>`;
 
             for (const row of rows) {
                 const ecart = row.gm > 0 ? ((row.my - row.gm) / row.gm * 100).toFixed(2) : '--';
@@ -3044,9 +3041,9 @@
 
             const overallEcart = gmActualNet > 0 ? Math.abs((myR.netBtc - gmActualNet) / gmActualNet * 100) : 0;
             if (overallEcart < 1) {
-                html += `<div style="margin-top:10px;color:var(--green);font-weight:700;">Précision: ${(100 - overallEcart).toFixed(2)}% - Calculs validés !</div>`;
+                html += `<div style="margin-top:10px;color:var(--green);font-weight:700;">${t('val_accuracy')}: ${(100 - overallEcart).toFixed(2)}% - ${t('val_validated')}</div>`;
             } else {
-                html += `<div style="margin-top:10px;color:var(--accent);font-weight:700;">Écart net: ${overallEcart.toFixed(2)}% — vérifier les paramètres</div>`;
+                html += `<div style="margin-top:10px;color:var(--accent);font-weight:700;">${t('val_net_gap')}: ${overallEcart.toFixed(2)}% — ${t('val_check_params')}</div>`;
             }
 
             document.getElementById('validation-content').innerHTML = html;
@@ -3092,7 +3089,7 @@
             const endDate = new Date(lastDate);
             endDate.setDate(endDate.getDate() + (7 - endDate.getDay()) % 7); // Sunday
 
-            const dayNames = ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'];
+            const dayNames = currentLang === 'fr' ? ['Lun', 'Mar', 'Mer', 'Jeu', 'Ven', 'Sam', 'Dim'] : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
             let html = '<div style="display:flex;gap:15px;margin-bottom:10px;font-size:0.75em;color:var(--text-dim);">';
             html += '<span><span style="display:inline-block;width:10px;height:10px;background:var(--accent);border-radius:2px;"></span> BTC</span>';
@@ -3120,7 +3117,7 @@
             for (const name of dayNames) {
                 html += `<div style="text-align:center;font-size:0.75em;font-weight:700;color:var(--text-dim);padding:5px 0;">${name}</div>`;
             }
-            html += '<div style="text-align:center;font-size:0.75em;font-weight:700;color:var(--accent);padding:5px 0;">Semaine</div>';
+            html += `<div style="text-align:center;font-size:0.75em;font-weight:700;color:var(--accent);padding:5px 0;">${t('cal_week')}</div>`;
 
             // Days
             let weekDayCount = 0;
@@ -3206,9 +3203,9 @@
             }
             html += `<div style="margin-top:12px;display:flex;flex-wrap:wrap;gap:20px;font-size:0.85em;">
                 <span style="color:var(--text-dim);">Total: <strong style="color:var(--green)">${totalBtc.toFixed(8)} BTC</strong> (${formatUSD(totalBtc * state.btcPrice)})</span>
-                ${totalGmtNet > 0 ? `<span style="color:var(--text-dim);">Net GMT: <strong style="color:var(--purple)">${totalGmtNet.toFixed(2)} GMT</strong> (frais: ${totalGmtFees.toFixed(2)})</span>` : ''}
-                <span style="color:var(--text-dim);">Moyenne: <strong style="color:var(--accent2)">${(totalBtc / totalDays).toFixed(8)} BTC</strong>/jour</span>
-                <span style="color:var(--text-dim);">${totalDays} jours</span>
+                ${totalGmtNet > 0 ? `<span style="color:var(--text-dim);">Net GMT: <strong style="color:var(--purple)">${totalGmtNet.toFixed(2)} GMT</strong> (${t('dash_fees')}: ${totalGmtFees.toFixed(2)})</span>` : ''}
+                <span style="color:var(--text-dim);">${t('cal_average')}: <strong style="color:var(--accent2)">${(totalBtc / totalDays).toFixed(8)} BTC</strong>/${t('cal_day')}</span>
+                <span style="color:var(--text-dim);">${totalDays} ${t('days')}</span>
             </div>`;
 
             chartEl.style.height = 'auto';
@@ -3250,14 +3247,14 @@
 
             if (state.autoSyncActive) {
                 dot.className = 'sync-dot live';
-                label.textContent = 'Auto-sync actif';
+                label.textContent = t('sync_active');
             } else if (lastSync) {
                 const ago = Math.round((Date.now() - lastSync) / 60000);
                 dot.className = 'sync-dot' + (ago < 10 ? ' live' : '');
-                label.textContent = ago < 1 ? 'Sync < 1 min' : `Sync il y a ${ago} min`;
+                label.textContent = ago < 1 ? t('sync_less_1min') : `${t('sync_ago')} ${ago} min`;
             } else {
                 dot.className = 'sync-dot';
-                label.textContent = 'Pas de sync';
+                label.textContent = t('sync_none');
             }
         }
 
@@ -3273,8 +3270,8 @@
             el.innerHTML = `
                 <span class="alert-icon">${newStrat === 'TH' ? '⛏' : newStrat === 'GMT' ? '💎' : '₿'}</span>
                 <span class="alert-text">
-                    <strong>Changement de stratégie recommandé :</strong> ${oldStrat} → <strong style="color:${colors[newStrat]}">${newStrat}</strong><br>
-                    <span style="color:var(--text-dim);font-size:0.85em;">Les conditions actuelles (BTC/GMT/difficulté) suggèrent de changer.</span>
+                    <strong>${t('alert_strategy_change')}:</strong> ${oldStrat} → <strong style="color:${colors[newStrat]}">${newStrat}</strong><br>
+                    <span style="color:var(--text-dim);font-size:0.85em;">${t('alert_conditions_suggest')}</span>
                 </span>
                 <span class="alert-close" onclick="this.parentElement.style.display='none'">✕</span>
             `;
@@ -3502,10 +3499,10 @@
             // Summary
             const finalTH = reinvest ? base[months].th : c.hashrate;
             document.getElementById('sim-summary').innerHTML = `
-                <span style="color:var(--accent2);">Profit cumulé 12 mois: <strong>${formatUSD(base[months].val)}</strong></span>
-                <span style="color:rgba(63,185,80,0.8);">Optimiste: ${formatUSD(opti[months].val)}</span>
-                <span style="color:rgba(248,81,73,0.8);">Pessimiste: ${formatUSD(pess[months].val)}</span>
-                ${reinvest ? `<span style="color:var(--green);">TH final: ${Math.round(finalTH)}</span>` : ''}
+                <span style="color:var(--accent2);">${t('sim_cum_profit')}: <strong>${formatUSD(base[months].val)}</strong></span>
+                <span style="color:rgba(63,185,80,0.8);">${t('sim_optimistic')}: ${formatUSD(opti[months].val)}</span>
+                <span style="color:rgba(248,81,73,0.8);">${t('sim_pessimistic')}: ${formatUSD(pess[months].val)}</span>
+                ${reinvest ? `<span style="color:var(--green);">${t('sim_final_th')}: ${Math.round(finalTH)}</span>` : ''}
             `;
         }
 
@@ -3577,7 +3574,7 @@
             const perf = loadPerformance();
             if (perf.length < 2) {
                 document.getElementById('perf-score-box').style.display = 'none';
-                document.getElementById('perf-table').innerHTML = '<p style="color:var(--text-dim);">Pas assez de données. Fais quelques syncs depuis l\'extension pour accumuler des données.</p>';
+                document.getElementById('perf-table').innerHTML = '<p style="color:var(--text-dim);">' + t('perf_no_data') + '</p>';
                 return;
             }
 
@@ -3639,8 +3636,8 @@
 
             // Legend
             ctx.font = '11px sans-serif';
-            ctx.fillStyle = '#f7931a'; ctx.fillText('Réel', pad.left + 5, pad.top + 12);
-            ctx.fillStyle = '#58a6ff'; ctx.fillText('Projeté', pad.left + 45, pad.top + 12);
+            ctx.fillStyle = '#f7931a'; ctx.fillText(t('perf_actual'), pad.left + 5, pad.top + 12);
+            ctx.fillStyle = '#58a6ff'; ctx.fillText(t('perf_projected'), pad.left + 45, pad.top + 12);
 
             // Axes
             ctx.fillStyle = '#8b949e'; ctx.textAlign = 'center';
@@ -3655,7 +3652,7 @@
             }
 
             // Table
-            let tableHtml = '<table><thead><tr><th>Date</th><th>Réel</th><th>Projeté</th><th>Écart</th></tr></thead><tbody>';
+            let tableHtml = `<table><thead><tr><th>Date</th><th>${t('perf_actual')}</th><th>${t('perf_projected')}</th><th>${t('perf_gap')}</th></tr></thead><tbody>`;
             perf.slice(-15).reverse().forEach(p => {
                 const ecart = p.actual.valueUsd - p.projected.valueUsd;
                 const pct = p.projected.valueUsd > 0 ? (ecart / p.projected.valueUsd * 100).toFixed(1) : '0';
@@ -3720,8 +3717,8 @@
             reader.onload = function(e) {
                 try {
                     const data = JSON.parse(e.target.result);
-                    if (!data.version) { alert('Fichier invalide.'); return; }
-                    if (!confirm(`Importer le backup du ${data.exportDate?.substring(0, 10)} ?\nCeci va écraser tes données actuelles.`)) return;
+                    if (!data.version) { alert(t('import_invalid')); return; }
+                    if (!confirm(t('import_confirm', 'Import backup from') + ' ' + (data.exportDate?.substring(0, 10) || '?') + '?\n' + t('import_overwrite'))) return;
 
                     if (data.settings) localStorage.setItem('gomining_settings', JSON.stringify(data.settings));
                     if (data.transactions) localStorage.setItem(TX_KEY, JSON.stringify(data.transactions));
@@ -3729,10 +3726,10 @@
                     if (data.changelog) localStorage.setItem(CHANGELOG_KEY, JSON.stringify(data.changelog));
                     if (data.theme) localStorage.setItem('gomining_theme', data.theme);
 
-                    alert('Import réussi ! La page va se recharger.');
+                    alert(t('import_success'));
                     location.reload();
                 } catch(err) {
-                    alert('Erreur de lecture du fichier: ' + err.message);
+                    alert(t('import_error') + ': ' + err.message);
                 }
             };
             reader.readAsText(file);
@@ -3767,11 +3764,11 @@
             document.getElementById('goal-bar').style.background = pct >= 100
                 ? 'linear-gradient(90deg,var(--green),var(--accent2))'
                 : 'linear-gradient(90deg,var(--accent),var(--red))';
-            document.getElementById('goal-current').textContent = `${formatUSD(monthlyEstimate)}/mois estimé (${pct.toFixed(0)}%)`;
+            document.getElementById('goal-current').textContent = `${formatUSD(monthlyEstimate)}/${t('goal_month_est')} (${pct.toFixed(0)}%)`;
             document.getElementById('goal-current').style.color = pct >= 100 ? 'var(--green)' : 'var(--accent)';
             document.getElementById('goal-remaining').textContent = diff >= 0
-                ? `+${formatUSD(diff)} au-dessus de l'objectif`
-                : `${formatUSD(Math.abs(diff))} manquants — Mining: ${formatUSD(miningDailyUsd * daysInMonth)} + Staking: ${formatUSD(stakingDailyUsd * daysInMonth)}`;
+                ? `+${formatUSD(diff)} ${t('goal_above')}`
+                : `${formatUSD(Math.abs(diff))} ${t('goal_missing')} — Mining: ${formatUSD(miningDailyUsd * daysInMonth)} + Staking: ${formatUSD(stakingDailyUsd * daysInMonth)}`;
         }
 
         document.getElementById('monthly-goal')?.addEventListener('change', () => { updateMonthlyGoal(); saveSettings(); });
@@ -3922,20 +3919,33 @@
 
         let currentLang = localStorage.getItem('gomining_lang') || 'en';
 
+        // Helper: get translated string by key
+        function t(key, fallback) {
+            const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+            return dict[key] || TRANSLATIONS.en[key] || fallback || key;
+        }
+
         function setLang(lang) {
             currentLang = lang;
             localStorage.setItem('gomining_lang', lang);
+            document.documentElement.lang = lang;
             document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+            document.documentElement.style.setProperty('--best-label', lang === 'fr' ? "'MEILLEUR'" : "'BEST'");
             applyTranslations();
+            // Re-run dynamic sections if data is loaded
+            if (state.lastCalc && state.btcPrice) {
+                calculate();
+            }
         }
 
         function applyTranslations() {
-            const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+            const dict = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
             document.querySelectorAll('[data-i18n]').forEach(el => {
                 const key = el.dataset.i18n;
-                if (t[key]) {
-                    if (el.tagName === 'INPUT') el.placeholder = t[key];
-                    else el.innerHTML = t[key];
+                if (dict[key]) {
+                    if (el.tagName === 'INPUT') el.placeholder = dict[key];
+                    else if (el.tagName === 'OPTION') el.textContent = dict[key];
+                    else el.innerHTML = dict[key];
                 }
             });
         }
@@ -4034,7 +4044,7 @@
                 });
                 if (cache._btcPrice) state.btcPrice = cache._btcPrice;
                 if (cache._gmtPrice) state.gmtPrice = cache._gmtPrice;
-                if (cache._apiGmtPrice) { state.apiGmtPrice = cache._apiGmtPrice; state.gmtPrice = cache._apiGmtPrice; }
+                if (cache._apiGmtPrice) { state.apiGmtPrice = cache._apiGmtPrice; }
                 if (cache._apiBtcPrice) { state.apiBtcPrice = cache._apiBtcPrice; }
                 if (cache._apiSatPerTH) { state.apiSatPerTH = cache._apiSatPerTH; state.satPerTH = cache._apiSatPerTH; }
                 if (cache._satPerTH && !state.satPerTH) state.satPerTH = cache._satPerTH;
@@ -4076,9 +4086,9 @@
             const statusEl = document.getElementById('alert-status');
             if (alerts.length > 0) {
                 statusEl.innerHTML = alerts.map(a => `<span style="color:var(--red);font-weight:600;">⚠ ${a}</span>`).join('<br>');
-                alerts.forEach(a => sendNotification('GoMining Alerte Prix', a));
+                alerts.forEach(a => sendNotification(t('notif_price_alert'), a));
             } else {
-                statusEl.textContent = 'Aucune alerte déclenchée. Configure des seuils ci-dessus.';
+                statusEl.textContent = t('alerts_none');
             }
 
             // Update current prices in alerts tab
@@ -4090,14 +4100,17 @@
 
         // ===== PORTFOLIO (Transaction-based) =====
         const TX_KEY = 'gomining_transactions';
-        const CAT_META = {
-            nft:     { label: 'Achat NFT',     icon: '⛏' },
-            upgrade: { label: 'Upgrade TH',    icon: '⬆' },
-            'upgrade-wth': { label: 'Upgrade W/TH', icon: '⚡' },
-            lock:    { label: 'Lock GMT',       icon: '🔒' },
-            staking: { label: 'Staking veGMT', icon: '💎' },
-            other:   { label: 'Autre',          icon: '📦' }
-        };
+        function getCatMeta() {
+            return {
+                nft:     { label: t('cat_nft_label'), icon: '⛏' },
+                upgrade: { label: t('cat_upgrade_label'), icon: '⬆' },
+                'upgrade-wth': { label: t('cat_upgrade_wth_label'), icon: '⚡' },
+                lock:    { label: t('cat_lock_label'), icon: '🔒' },
+                staking: { label: t('cat_staking_label'), icon: '💎' },
+                other:   { label: t('cat_other_label'), icon: '📦' }
+            };
+        }
+        const CAT_META = getCatMeta();
 
         function loadTransactions() {
             try { return JSON.parse(localStorage.getItem(TX_KEY)) || []; } catch(e) { return []; }
@@ -4139,7 +4152,7 @@
             const thAdded = parseFloat(document.getElementById('tx-th').value) || 0;
 
             if (!date || !rawAmount || rawAmount <= 0) {
-                alert('Remplis la date et le montant.');
+                alert(t('tx_fill_date_amount'));
                 return;
             }
 
@@ -4147,7 +4160,7 @@
             let amountUsd = rawAmount;
             let gmtAmount = null;
             if (currency === 'gmt') {
-                if (!state.gmtPrice) { alert('Prix GMT non disponible. Rafraîchis les données.'); return; }
+                if (!state.gmtPrice) { alert(t('tx_gmt_unavailable')); return; }
                 amountUsd = rawAmount * state.gmtPrice;
                 gmtAmount = rawAmount;
             }
@@ -4244,13 +4257,13 @@
             const remaining = invested - cumUsd;
             const payEl = document.getElementById('port-payback');
             if (remaining <= 0) {
-                payEl.textContent = 'Remboursé !';
+                payEl.textContent = t('port_paid_back');
                 payEl.style.color = 'var(--green)';
             } else if (totalDailyUsd > 0) {
                 const daysLeft = Math.ceil(remaining / totalDailyUsd);
                 const years = Math.floor(daysLeft / 365);
                 const daysRem = daysLeft % 365;
-                payEl.textContent = years > 0 ? `${years} an${years > 1 ? 's' : ''} et ${daysRem}j` : `${daysLeft}j`;
+                payEl.textContent = years > 0 ? `${years} ${t('years')} ${t('and')} ${daysRem}${t('d_suffix')}` : `${daysLeft}${t('d_suffix')}`;
                 payEl.style.color = 'var(--accent2)';
             } else {
                 payEl.textContent = 'N/A';
@@ -4263,9 +4276,10 @@
             document.getElementById('port-asset-value').textContent = formatUSD(hashrate * costPerTH + gmtLocked * (state.gmtPrice || 0));
 
             // Breakdown par catégorie
+            const bdCatMeta = getCatMeta();
             let bdHtml = '<div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">';
-            Object.keys(CAT_META).forEach(cat => {
-                const meta = CAT_META[cat];
+            Object.keys(bdCatMeta).forEach(cat => {
+                const meta = bdCatMeta[cat];
                 const val = totals[cat] || 0;
                 const pct = invested > 0 ? (val / invested * 100).toFixed(0) : 0;
                 const count = txs.filter(t => t.category === cat).length;
@@ -4284,32 +4298,33 @@
             if (totalDailyUsd > 0) {
                 const m3 = totalDailyUsd * 90, m6 = totalDailyUsd * 180, m12 = totalDailyUsd * 365;
                 projHtml = `<div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
-                    <div class="live-card"><div class="label">3 mois</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m3)}</div></div>
-                    <div class="live-card"><div class="label">6 mois</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m6)}</div></div>
-                    <div class="live-card"><div class="label">1 an</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m12)}</div></div>
-                    <div class="live-card"><div class="label">ROI annualisé</div><div class="value positive" style="font-size:1.2em;">${invested > 0 ? (m12 / invested * 100).toFixed(1) : 0}%</div></div>
+                    <div class="live-card"><div class="label">${t('proj_3months')}</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m3)}</div></div>
+                    <div class="live-card"><div class="label">${t('proj_6months')}</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m6)}</div></div>
+                    <div class="live-card"><div class="label">${t('proj_1year')}</div><div class="value positive" style="font-size:1.2em;">+${formatUSD(m12)}</div></div>
+                    <div class="live-card"><div class="label">${t('proj_annualized_roi')}</div><div class="value positive" style="font-size:1.2em;">${invested > 0 ? (m12 / invested * 100).toFixed(1) : 0}%</div></div>
                 </div>
                 <div style="font-size:0.75em;color:var(--text-dim);margin-top:8px;">
-                    Mining: ${formatUSD(currentDailyUsd)}/jour (${hashrate} TH) + Staking: ${formatUSD(stakingDailyUsd)}/jour (${stakingGmtWeekly.toFixed(2)} GMT/sem) = <strong>${formatUSD(totalDailyUsd)}/jour</strong>
+                    Mining: ${formatUSD(currentDailyUsd)}/${t('cal_day')} (${hashrate} TH) + Staking: ${formatUSD(stakingDailyUsd)}/${t('cal_day')} (${stakingGmtWeekly.toFixed(2)} GMT/${t('cal_week_short')}) = <strong>${formatUSD(totalDailyUsd)}/${t('cal_day')}</strong>
                 </div>`;
             }
             document.getElementById('port-projection').innerHTML = projHtml;
 
             // Transaction table
             let tHtml = '';
+            const catMeta = getCatMeta();
             if (txs.length === 0) {
-                tHtml = '<p style="color:var(--text-dim);">Aucune transaction. Ajoute ton premier investissement ci-dessus.</p>';
+                tHtml = '<p style="color:var(--text-dim);">' + t('tx_no_transactions') + '</p>';
             } else {
-                tHtml = '<table><thead><tr><th>Date</th><th>Catégorie</th><th>Montant</th><th>TH</th><th>Note</th><th></th></tr></thead><tbody>';
-                [...txs].reverse().forEach(t => {
-                    const meta = CAT_META[t.category] || { icon: '?', label: t.category };
+                tHtml = `<table><thead><tr><th>Date</th><th>${t('tx_category')}</th><th>${t('lbl_amount')}</th><th>TH</th><th>${t('lbl_note')}</th><th></th></tr></thead><tbody>`;
+                [...txs].reverse().forEach(tx => {
+                    const meta = catMeta[tx.category] || { icon: '?', label: tx.category };
                     tHtml += `<tr>
-                        <td>${t.date}</td>
+                        <td>${tx.date}</td>
                         <td>${meta.icon} ${meta.label}</td>
-                        <td style="font-weight:700;">${formatUSD(t.amount)}${t.gmtAmount ? `<div style="font-size:0.72em;color:var(--purple);">${t.gmtAmount.toFixed(1)} GMT</div>` : ''}</td>
-                        <td style="color:var(--green);font-weight:600;">${t.th ? '+' + t.th + ' TH' : ''}</td>
-                        <td style="color:var(--text-dim);font-size:0.85em;">${t.note || ''}</td>
-                        <td><span style="cursor:pointer;color:var(--red);font-size:0.8em;" onclick="if(confirm('Supprimer cette transaction ?')) deleteTransaction(${t.id})">✕</span></td>
+                        <td style="font-weight:700;">${formatUSD(tx.amount)}${tx.gmtAmount ? `<div style="font-size:0.72em;color:var(--purple);">${tx.gmtAmount.toFixed(1)} GMT</div>` : ''}</td>
+                        <td style="color:var(--green);font-weight:600;">${tx.th ? '+' + tx.th + ' TH' : ''}</td>
+                        <td style="color:var(--text-dim);font-size:0.85em;">${tx.note || ''}</td>
+                        <td><span style="cursor:pointer;color:var(--red);font-size:0.8em;" onclick="if(confirm('${t('tx_delete_confirm')}')) deleteTransaction(${tx.id})">✕</span></td>
                     </tr>`;
                 });
                 tHtml += '</tbody></table>';
@@ -4341,21 +4356,21 @@
             document.getElementById('dash-whatif-content').innerHTML = `
                 <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(150px,1fr));">
                     <div class="live-card">
-                        <div class="label">Upgrade vers</div>
+                        <div class="label">${t('whatif_upgrade_to')}</div>
                         <div class="value net" style="font-size:1.3em;">${nextLevel} TH</div>
                         <div style="font-size:0.72em;color:var(--text-dim);">+${thNeeded} TH</div>
                     </div>
                     <div class="live-card">
-                        <div class="label">Coût</div>
+                        <div class="label">${t('whatif_cost')}</div>
                         <div class="value" style="color:var(--red);font-size:1.3em;">${formatUSD(upgradeCost)}</div>
                     </div>
                     <div class="live-card">
-                        <div class="label">Gain supplémentaire/jour</div>
+                        <div class="label">${t('whatif_extra_gain')}</div>
                         <div class="value positive" style="font-size:1.3em;">+${formatUSD(dailyDiff)}</div>
                     </div>
                     <div class="live-card">
-                        <div class="label">Rentabilisé en</div>
-                        <div class="value net" style="font-size:1.3em;">${paybackDays < 9999 ? paybackDays + 'j' : 'N/A'}</div>
+                        <div class="label">${t('whatif_payback')}</div>
+                        <div class="value net" style="font-size:1.3em;">${paybackDays < 9999 ? paybackDays + t('d_suffix') : 'N/A'}</div>
                     </div>
                 </div>
             `;
