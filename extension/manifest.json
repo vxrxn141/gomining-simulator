@@ -4,7 +4,9 @@
   "version": "1.0",
   "description": "Auto-sync your GoMining data with the GoMining Simulator",
   "icons": {
-    "128": "icon.png"
+    "16": "icon-16.png",
+    "48": "icon-48.png",
+    "128": "icon-128.png"
   },
   "permissions": ["storage"],
   "host_permissions": ["https://app.gomining.com/*", "https://api.gomining.com/*"],
@@ -26,7 +28,7 @@
   },
   "web_accessible_resources": [
     {
-      "resources": ["interceptor.js", "icon.png"],
+      "resources": ["interceptor.js", "icon.png", "icon-128.png", "icon-48.png", "icon-16.png"],
       "matches": ["https://app.gomining.com/*"]
     }
   ]

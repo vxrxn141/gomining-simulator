@@ -212,7 +212,7 @@
         // Toggle button
         const toggle = document.createElement('button');
         toggle.id = 'gm-extractor-toggle';
-        toggle.innerHTML = '<img src="' + chrome.runtime.getURL('icon.png') + '" style="width:24px;height:24px;border-radius:4px;">';
+        toggle.innerHTML = '<img src="' + chrome.runtime.getURL('icon-128.png') + '" style="width:30px;height:30px;border-radius:6px;">';
         toggle.title = 'GoMining Extractor';
         document.body.appendChild(toggle);
 
