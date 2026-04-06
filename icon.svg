@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0d1117"/>
+      <stop offset="100%" stop-color="#161b22"/>
+    </linearGradient>
+    <linearGradient id="pick" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#f7931a"/>
+      <stop offset="100%" stop-color="#e8820a"/>
+    </linearGradient>
+  </defs>
+  <!-- Background -->
+  <rect width="512" height="512" rx="96" fill="url(#bg)"/>
+  <!-- Pickaxe handle -->
+  <line x1="148" y1="364" x2="310" y2="202" stroke="#8b6914" stroke-width="28" stroke-linecap="round"/>
+  <!-- Pickaxe head - left blade -->
+  <path d="M290 202 C290 202 240 140 200 110 Q188 102 180 114 L260 194Z" fill="url(#pick)"/>
+  <!-- Pickaxe head - right blade -->
+  <path d="M310 182 C310 182 372 132 402 92 Q410 80 398 78 L318 158Z" fill="url(#pick)"/>
+  <!-- Pickaxe head join -->
+  <circle cx="305" cy="197" r="18" fill="url(#pick)"/>
+  <!-- Sparkle dots -->
+  <circle cx="170" cy="100" r="6" fill="#f7931a" opacity="0.7"/>
+  <circle cx="400" cy="140" r="5" fill="#f7931a" opacity="0.5"/>
+  <circle cx="130" cy="200" r="4" fill="#f7931a" opacity="0.4"/>
+  <!-- BTC symbol hint -->
+  <text x="356" y="420" font-family="Arial, sans-serif" font-size="120" font-weight="bold" fill="#f7931a" opacity="0.15">&#x20bf;</text>
+</svg>
