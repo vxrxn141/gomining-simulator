@@ -6,9 +6,18 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="theme-color" content="#f7931a">
+    <meta name="description" content="GoMining NFT Mining Simulator - Calculate profits, compare strategies, track investments, and optimize your mining rewards.">
+    <meta property="og:title" content="GoMining Simulator">
+    <meta property="og:description" content="Investment calculator & strategy tools for GoMining NFT miners. Auto-sync with Chrome extension.">
+    <meta property="og:type" content="website">
+    <meta property="og:image" content="icon.svg">
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="GoMining Simulator">
+    <meta name="twitter:description" content="Mining profitability calculator for GoMining NFT miners.">
+    <link rel="icon" type="image/svg+xml" href="icon.svg">
     <link rel="manifest" href="pwa-manifest.json">
     <link rel="apple-touch-icon" href="icon.svg">
-    <title>GoMining Simulateur d'Investissement</title>
+    <title>GoMining Simulator</title>
     <style>
         :root {
             --bg: #0a0e14;
@@ -790,6 +799,77 @@
             to { opacity: 1; transform: translateY(0); }
         }
 
+        /* Onboarding overlay */
+        .onboarding-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.85); z-index: 500;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .onboarding-card {
+            background: var(--card-solid); border-radius: var(--radius);
+            padding: 40px; max-width: 600px; width: 100%; text-align: center;
+        }
+        .onboarding-card h2 { font-size: 1.5em; margin-bottom: 15px; color: var(--accent); }
+        .onboarding-card p { color: var(--text-dim); margin-bottom: 20px; line-height: 1.7; }
+        .onboarding-steps { text-align: left; margin: 20px 0; }
+        .onboarding-step {
+            display: flex; gap: 12px; align-items: flex-start; margin-bottom: 15px;
+        }
+        .step-num {
+            background: var(--accent); color: #000; width: 28px; height: 28px;
+            border-radius: 50%; display: flex; align-items: center; justify-content: center;
+            font-weight: 800; font-size: 0.85em; flex-shrink: 0;
+        }
+        .onboarding-btn {
+            background: var(--accent); color: #000; border: none; padding: 12px 32px;
+            border-radius: var(--radius-sm); font-size: 1em; font-weight: 700;
+            cursor: pointer; margin-top: 10px;
+        }
+        .onboarding-btn:hover { opacity: 0.85; }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.7); z-index: 400;
+            display: flex; align-items: center; justify-content: center;
+            padding: 20px;
+        }
+        .modal-card {
+            background: var(--card-solid); border-radius: var(--radius);
+            padding: 30px; max-width: 650px; width: 100%; max-height: 80vh; overflow-y: auto;
+        }
+        .modal-card h2 { margin-bottom: 15px; }
+        .modal-close { float: right; cursor: pointer; color: var(--text-dim); font-size: 1.3em; }
+
+        /* Disclaimer banner */
+        .disclaimer-banner {
+            background: rgba(248,81,73,0.08); border: 1px solid rgba(248,81,73,0.2);
+            border-radius: var(--radius-sm); padding: 10px 16px;
+            font-size: 0.75em; color: var(--text-dim); text-align: center;
+            margin-bottom: 16px;
+        }
+
+        /* Loading skeleton */
+        .skeleton { background: linear-gradient(90deg, var(--bg2) 25%, rgba(255,255,255,0.05) 50%, var(--bg2) 75%);
+            background-size: 200% 100%; animation: shimmer 1.5s infinite; border-radius: 4px; }
+        @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+
+        /* Footer */
+        .site-footer {
+            text-align: center; padding: 20px; margin-top: 30px;
+            border-top: 1px solid var(--border); font-size: 0.75em; color: var(--text-dim);
+        }
+        .site-footer a { color: var(--accent2); text-decoration: none; }
+
+        /* Language toggle in sidebar */
+        .lang-toggle { display: flex; gap: 4px; margin-bottom: 8px; }
+        .lang-btn {
+            flex: 1; padding: 4px 8px; border: 1px solid var(--border); background: transparent;
+            color: var(--text-dim); border-radius: 4px; cursor: pointer; font-size: 0.75em; font-weight: 600;
+        }
+        .lang-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
+
         @media (max-width: 768px) {
             .sidebar { display: none; }
             .mobile-tab-bar { display: flex; }
@@ -847,14 +927,19 @@
             </div>
         </nav>
         <div class="sidebar-footer">
-            <div style="display:flex;gap:8px;margin-bottom:10px;">
+            <div class="lang-toggle">
+                <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
+                <button class="lang-btn" data-lang="fr" onclick="setLang('fr')">FR</button>
+            </div>
+            <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <button class="refresh-btn" style="flex:1;justify-content:center;" onclick="fetchLiveData()">
-                    &#x21bb; Rafraîchir
+                    &#x21bb; <span data-i18n="refresh">Refresh</span>
                 </button>
-                <button class="refresh-btn" style="justify-content:center;padding:8px 12px;" onclick="toggleTheme()" title="Thème clair/sombre" id="theme-btn">
+                <button class="refresh-btn" style="justify-content:center;padding:8px 12px;" onclick="toggleTheme()" title="Theme" id="theme-btn">
                     ☀
                 </button>
             </div>
+            <button class="refresh-btn" style="width:100%;justify-content:center;font-size:0.72em;margin-bottom:8px;" onclick="showExtensionGuide()" data-i18n="sidebar_guide">Extension Guide</button>
             <div style="display:flex;gap:6px;margin-bottom:8px;">
                 <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="exportAllData()">↓ Export</button>
                 <button class="refresh-btn" style="flex:1;justify-content:center;font-size:0.72em;padding:5px 8px;" onclick="document.getElementById('import-file').click()">↑ Import</button>
@@ -870,6 +955,48 @@
 
     <!-- Main Content -->
     <main class="main-content" id="main-content">
+
+    <!-- Onboarding Overlay (first visit) -->
+    <div class="onboarding-overlay" id="onboarding" style="display:none;">
+        <div class="onboarding-card">
+            <h2 data-i18n="onboard_title">Welcome to GoMining Simulator</h2>
+            <p data-i18n="onboard_desc">The most complete investment tool for GoMining NFT miners. Track your profits, compare strategies, and optimize your mining rewards.</p>
+            <div class="onboarding-steps">
+                <div class="onboarding-step">
+                    <span class="step-num">1</span>
+                    <div><strong data-i18n="onboard_s1_title">Install the Chrome Extension</strong><br><span style="color:var(--text-dim);font-size:0.9em;" data-i18n="onboard_s1_desc">It auto-syncs your GoMining data. Load it from the extension/ folder in developer mode.</span></div>
+                </div>
+                <div class="onboarding-step">
+                    <span class="step-num">2</span>
+                    <div><strong data-i18n="onboard_s2_title">Visit app.gomining.com</strong><br><span style="color:var(--text-dim);font-size:0.9em;" data-i18n="onboard_s2_desc">Navigate through your miner and rewards pages. The extension captures your data automatically.</span></div>
+                </div>
+                <div class="onboarding-step">
+                    <span class="step-num">3</span>
+                    <div><strong data-i18n="onboard_s3_title">Come back here</strong><br><span style="color:var(--text-dim);font-size:0.9em;" data-i18n="onboard_s3_desc">Your dashboard fills automatically. Or enter your miner details manually in the Simulator tab.</span></div>
+                </div>
+            </div>
+            <button class="onboarding-btn" onclick="dismissOnboarding()" data-i18n="onboard_btn">Get Started</button>
+            <div style="margin-top:12px;">
+                <button style="background:none;border:none;color:var(--accent2);cursor:pointer;font-size:0.85em;" onclick="showExtensionGuide()" data-i18n="onboard_guide">How to install the extension</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Extension Guide Modal -->
+    <div class="modal-overlay" id="extension-guide" style="display:none;" onclick="if(event.target===this)this.style.display='none'">
+        <div class="modal-card">
+            <span class="modal-close" onclick="document.getElementById('extension-guide').style.display='none'">&times;</span>
+            <h2 data-i18n="guide_title">Chrome Extension Installation</h2>
+            <div class="onboarding-steps">
+                <div class="onboarding-step"><span class="step-num">1</span><div data-i18n="guide_s1">Open <strong>chrome://extensions/</strong> in your browser</div></div>
+                <div class="onboarding-step"><span class="step-num">2</span><div data-i18n="guide_s2">Enable <strong>"Developer mode"</strong> (toggle in the top right corner)</div></div>
+                <div class="onboarding-step"><span class="step-num">3</span><div data-i18n="guide_s3">Click <strong>"Load unpacked"</strong></div></div>
+                <div class="onboarding-step"><span class="step-num">4</span><div data-i18n="guide_s4">Select the <strong>extension/</strong> folder from the downloaded files</div></div>
+                <div class="onboarding-step"><span class="step-num">5</span><div data-i18n="guide_s5">Visit <strong>app.gomining.com</strong> — the extension icon should appear</div></div>
+                <div class="onboarding-step"><span class="step-num">6</span><div data-i18n="guide_s6">Navigate to your miner rewards page, then come back here. Data syncs automatically!</div></div>
+            </div>
+        </div>
+    </div>
 
     <!-- Live Ticker -->
     <div class="live-ticker" id="live-ticker" style="display:none;">
@@ -894,6 +1021,20 @@
 
         <!-- TAB: Dashboard (Homepage) -->
         <div class="tab-content active" id="tab-dashboard">
+            <!-- Disclaimer -->
+            <div class="disclaimer-banner" data-i18n="disclaimer">This tool provides estimates only and is not financial advice. Calculations are based on current conditions and may not reflect actual returns. Always do your own research.</div>
+
+            <!-- Empty state (shown when no data) -->
+            <div id="empty-state" style="display:none;text-align:center;padding:40px 20px;">
+                <div style="font-size:3em;margin-bottom:15px;">⛏</div>
+                <h2 style="color:var(--accent);margin-bottom:10px;" data-i18n="empty_title">Welcome to GoMining Simulator</h2>
+                <p style="color:var(--text-dim);margin-bottom:20px;max-width:500px;margin-left:auto;margin-right:auto;" data-i18n="empty_desc">Install the Chrome extension and visit app.gomining.com to auto-sync your miner data. Or enter your details manually in the Simulator tab.</p>
+                <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+                    <button class="onboarding-btn" onclick="showExtensionGuide()" data-i18n="empty_guide">Install Extension</button>
+                    <button class="onboarding-btn" style="background:var(--accent2);" onclick="switchTab('mining')" data-i18n="empty_manual">Enter Manually</button>
+                </div>
+            </div>
+
             <!-- KPI Dashboard -->
             <div id="live-dashboard" class="live-data" style="margin-bottom:16px;">
                 <div class="live-card" style="border-bottom:3px solid var(--accent);">
@@ -1516,6 +1657,11 @@
             </div>
         </div>
     </div>
+    <footer class="site-footer">
+        <span data-i18n="footer_text">GoMining Simulator</span> v1.0 &mdash;
+        <a href="https://github.com/Jaygauvin2002/gomining-simulator" target="_blank">GitHub</a> &mdash;
+        <span data-i18n="footer_disclaimer">Not financial advice. Use at your own risk.</span>
+    </footer>
     </main>
     </div> <!-- /app-layout -->
 
@@ -1759,6 +1905,7 @@
                 updatePrepaidDiscount();
                 calculate();
                 checkPriceAlerts();
+                updateEmptyState();
 
             } catch (e) {
                 console.error('Erreur fetch:', e);
@@ -1955,6 +2102,8 @@
 
             // Start live ticker
             startTicker(r.netUsd);
+            updateEmptyState();
+            validateInputs();
 
             // Update TH objective with curve
             updateThObjectiveWithCurve(hashrate);
@@ -3652,6 +3801,117 @@
             });
         }
 
+        // ===== i18n TRANSLATION =====
+        const TRANSLATIONS = {
+            en: {
+                // Sidebar
+                refresh: 'Refresh', sidebar_guide: 'Extension Guide',
+                // Onboarding
+                onboard_title: 'Welcome to GoMining Simulator', onboard_desc: 'The most complete investment tool for GoMining NFT miners. Track your profits, compare strategies, and optimize your mining rewards.',
+                onboard_s1_title: 'Install the Chrome Extension', onboard_s1_desc: 'It auto-syncs your GoMining data. Load it from the extension/ folder in developer mode.',
+                onboard_s2_title: 'Visit app.gomining.com', onboard_s2_desc: 'Navigate through your miner and rewards pages. The extension captures your data automatically.',
+                onboard_s3_title: 'Come back here', onboard_s3_desc: 'Your dashboard fills automatically. Or enter your miner details manually in the Simulator tab.',
+                onboard_btn: 'Get Started', onboard_guide: 'How to install the extension',
+                // Guide
+                guide_title: 'Chrome Extension Installation',
+                guide_s1: 'Open <strong>chrome://extensions/</strong> in your browser',
+                guide_s2: 'Enable <strong>"Developer mode"</strong> (toggle in the top right corner)',
+                guide_s3: 'Click <strong>"Load unpacked"</strong>',
+                guide_s4: 'Select the <strong>extension/</strong> folder from the downloaded files',
+                guide_s5: 'Visit <strong>app.gomining.com</strong> — the extension icon should appear',
+                guide_s6: 'Navigate to your miner rewards page, then come back here. Data syncs automatically!',
+                // Disclaimer
+                disclaimer: 'This tool provides estimates only and is not financial advice. Calculations are based on current conditions and may not reflect actual returns. DYOR.',
+                // Empty state
+                empty_title: 'Welcome to GoMining Simulator', empty_desc: 'Install the Chrome extension and visit app.gomining.com to auto-sync your miner data. Or enter your details manually in the Simulator tab.',
+                empty_guide: 'Install Extension', empty_manual: 'Enter Manually',
+                // Footer
+                footer_text: 'GoMining Simulator', footer_disclaimer: 'Not financial advice. Use at your own risk.'
+            },
+            fr: {
+                refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
+                onboard_title: 'Bienvenue sur GoMining Simulator', onboard_desc: "L'outil d'investissement le plus complet pour les mineurs NFT GoMining. Suivez vos profits, comparez les stratégies et optimisez vos revenus de minage.",
+                onboard_s1_title: "Installez l'extension Chrome", onboard_s1_desc: "Elle synchronise automatiquement vos données GoMining. Chargez-la depuis le dossier extension/ en mode développeur.",
+                onboard_s2_title: 'Visitez app.gomining.com', onboard_s2_desc: "Naviguez dans vos pages de mineur et rewards. L'extension capture vos données automatiquement.",
+                onboard_s3_title: 'Revenez ici', onboard_s3_desc: "Votre dashboard se remplit automatiquement. Ou entrez vos détails manuellement dans l'onglet Simulateur.",
+                onboard_btn: 'Commencer', onboard_guide: "Comment installer l'extension",
+                guide_title: "Installation de l'extension Chrome",
+                guide_s1: 'Ouvrez <strong>chrome://extensions/</strong> dans votre navigateur',
+                guide_s2: 'Activez le <strong>"Mode développeur"</strong> (en haut à droite)',
+                guide_s3: 'Cliquez sur <strong>"Charger l\'extension non empaquetée"</strong>',
+                guide_s4: 'Sélectionnez le dossier <strong>extension/</strong> des fichiers téléchargés',
+                guide_s5: 'Visitez <strong>app.gomining.com</strong> — l\'icône de l\'extension devrait apparaître',
+                guide_s6: 'Naviguez vers votre page de rewards, puis revenez ici. Les données se synchronisent automatiquement !',
+                disclaimer: "Cet outil fournit des estimations uniquement et ne constitue pas un conseil financier. Les calculs sont basés sur les conditions actuelles. Faites vos propres recherches.",
+                empty_title: 'Bienvenue sur GoMining Simulator', empty_desc: "Installez l'extension Chrome et visitez app.gomining.com pour synchroniser vos données. Ou entrez vos détails manuellement dans l'onglet Simulateur.",
+                empty_guide: "Installer l'extension", empty_manual: 'Entrer manuellement',
+                footer_text: 'GoMining Simulator', footer_disclaimer: "Pas un conseil financier. Utilisez à vos risques."
+            }
+        };
+
+        let currentLang = localStorage.getItem('gomining_lang') || 'en';
+
+        function setLang(lang) {
+            currentLang = lang;
+            localStorage.setItem('gomining_lang', lang);
+            document.querySelectorAll('.lang-btn').forEach(b => b.classList.toggle('active', b.dataset.lang === lang));
+            applyTranslations();
+        }
+
+        function applyTranslations() {
+            const t = TRANSLATIONS[currentLang] || TRANSLATIONS.en;
+            document.querySelectorAll('[data-i18n]').forEach(el => {
+                const key = el.dataset.i18n;
+                if (t[key]) {
+                    if (el.tagName === 'INPUT') el.placeholder = t[key];
+                    else el.innerHTML = t[key];
+                }
+            });
+        }
+
+        // ===== ONBOARDING =====
+        function showOnboarding() {
+            if (!localStorage.getItem('gomining_onboarded')) {
+                document.getElementById('onboarding').style.display = 'flex';
+            }
+        }
+
+        function dismissOnboarding() {
+            document.getElementById('onboarding').style.display = 'none';
+            localStorage.setItem('gomining_onboarded', '1');
+        }
+
+        function showExtensionGuide() {
+            document.getElementById('extension-guide').style.display = 'flex';
+            document.getElementById('onboarding').style.display = 'none';
+        }
+
+        // ===== EMPTY STATE =====
+        function updateEmptyState() {
+            const hasData = state.btcPrice > 0 && state.lastCalc;
+            document.getElementById('empty-state').style.display = hasData ? 'none' : 'block';
+        }
+
+        // ===== INPUT VALIDATION =====
+        function validateInputs() {
+            const rules = {
+                'hashrate': { min: 0.001, max: 10000 },
+                'efficiency': { min: 15, max: 50 },
+                'elec-cost': { min: 0.01, max: 1 },
+                'sat-per-th': { min: 1, max: 1000 },
+                'gmt-prepaid': { min: 0, max: 100000 },
+                'gmt-locked': { min: 0, max: 1000000 }
+            };
+            Object.keys(rules).forEach(id => {
+                const el = document.getElementById(id);
+                if (!el) return;
+                const val = parseFloat(el.value);
+                const r = rules[id];
+                if (isNaN(val) || val < r.min) el.value = r.min;
+                if (val > r.max) el.value = r.max;
+            });
+        }
+
         // ===== THEME TOGGLE =====
         function toggleTheme() {
             document.body.classList.toggle('light');
@@ -4026,6 +4286,8 @@
         loadDashCache();
         loadSettings();
         calcTotalDiscount();
+        setLang(currentLang);
+        showOnboarding();
         fetchLiveData();
 
         // Register PWA service worker
