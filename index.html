@@ -416,25 +416,6 @@
         }
         .discount-group-total { margin-left: auto; color: var(--green); font-size: 1.2em; font-weight: 800; }
 
-        /* Mobile bottom tab bar */
-        .mobile-tab-bar {
-            display: none; position: fixed; bottom: 0; left: 0; right: 0;
-            height: var(--tab-bar-h);
-            background: #0d1117;
-            border-top: 1px solid var(--border);
-            justify-content: space-around; align-items: center;
-            z-index: 300;
-            padding-bottom: env(safe-area-inset-bottom);
-        }
-        .mobile-tab-item {
-            display: flex; flex-direction: column; align-items: center; gap: 2px;
-            color: var(--text-dim); font-size: 0.65em; font-weight: 600;
-            cursor: pointer; padding: 6px 12px; border-radius: 8px;
-            transition: all 0.2s;
-        }
-        .mobile-tab-item .tab-icon { font-size: 1.5em; }
-        .mobile-tab-item.active { color: var(--current-accent); }
-        .mobile-tab-item:active { transform: scale(0.95); }
 
         .currency-toggle {
             display: flex;
@@ -870,22 +851,6 @@
         }
         .lang-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
-        @media (max-width: 768px) {
-            .sidebar { display: none; }
-            .mobile-tab-bar { display: flex; }
-            .main-content {
-                margin-left: 0;
-                padding: 16px;
-                padding-bottom: calc(var(--tab-bar-h) + 20px);
-            }
-            .live-data { grid-template-columns: repeat(2, 1fr); }
-            .form-grid { grid-template-columns: 1fr; }
-            .strategy-cards { grid-template-columns: 1fr; }
-            .results-grid { grid-template-columns: repeat(2, 1fr); }
-            .live-ticker { flex-direction: column; gap: 5px; padding: 8px 12px; margin: -16px -16px 16px -16px; border-radius: 0; }
-            .ticker-prices { flex-wrap: wrap; gap: 8px; justify-content: center; }
-            .result-card .big { font-size: 1.5em; }
-        }
     </style>
 </head>
 <body>
@@ -1667,24 +1632,6 @@
     </main>
     </div> <!-- /app-layout -->
 
-    <!-- Mobile Bottom Tab Bar -->
-    <nav class="mobile-tab-bar" id="mobile-tab-bar">
-        <div class="mobile-tab-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-            <span class="tab-icon">📊</span><span>Home</span>
-        </div>
-        <div class="mobile-tab-item" data-tab="mining" onclick="switchTab('mining')">
-            <span class="tab-icon">⛏</span><span>Mining</span>
-        </div>
-        <div class="mobile-tab-item" data-tab="reinvest" onclick="switchTab('reinvest')">
-            <span class="tab-icon">🔄</span><span>Strat</span>
-        </div>
-        <div class="mobile-tab-item" data-tab="scenarios" onclick="switchTab('scenarios')">
-            <span class="tab-icon">📈</span><span data-i18n="mob_scenarios">Scenarios</span>
-        </div>
-        <div class="mobile-tab-item" data-tab="performance" onclick="switchTab('performance')">
-            <span class="tab-icon">📉</span><span>Perf</span>
-        </div>
-    </nav>
 
     <script>
         // ===== STATE =====
@@ -1885,15 +1832,13 @@
                 // Display
                 if (state.btcPrice) document.getElementById('btc-price').textContent = formatUSD(state.btcPrice);
                 if (state.gmtPrice) {
-                    const gmtSrc = state.apiGmtPrice ? ' (API)' : '';
-                    document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4) + gmtSrc;
+                    document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4);
                 }
                 if (state.networkHashrate) {
                     const ehps = state.networkHashrate / 1e18;
                     document.getElementById('net-difficulty').textContent = ehps.toFixed(1) + ' EH/s';
                 }
                 if (state.satPerTH) {
-                    const src = state.apiSatPerTH ? ' (API)' : ' (mempool)';
                     document.getElementById('net-hashrate').textContent = state.satPerTH + ' PR';
                 }
 
@@ -2801,7 +2746,7 @@
         function switchTab(name) {
             // Remove active from all tabs and nav items
             document.querySelectorAll('.tab-content').forEach(t => { t.classList.remove('active'); t.style.display = 'none'; });
-            document.querySelectorAll('.nav-item, .mobile-tab-item').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(t => t.classList.remove('active'));
 
             // Activate target
             const target = document.querySelector(`#tab-${name}`);
@@ -2932,7 +2877,7 @@
             if (apiGmt) {
                 state.gmtPrice = apiGmt;
                 state.apiGmtPrice = apiGmt;
-                document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4) + ' (API)';
+                document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4);
             }
 
             // Income / sat per TH — utiliser les prix GoMining pour la conversion (pas CoinGecko)
@@ -3768,7 +3713,7 @@
             document.getElementById('goal-current').style.color = pct >= 100 ? 'var(--green)' : 'var(--accent)';
             document.getElementById('goal-remaining').textContent = diff >= 0
                 ? `+${formatUSD(diff)} ${t('goal_above')}`
-                : `${formatUSD(Math.abs(diff))} ${t('goal_missing')} — Mining: ${formatUSD(miningDailyUsd * daysInMonth)} + Staking: ${formatUSD(stakingDailyUsd * daysInMonth)}`;
+                : `${formatUSD(Math.abs(diff))} ${t('goal_missing')} — Mining: ${formatUSD(miningDailyUsd * daysInMonth)}${stakingDailyUsd > 0 ? ' + Staking: ' + formatUSD(stakingDailyUsd * daysInMonth) : ''}`;
         }
 
         document.getElementById('monthly-goal')?.addEventListener('change', () => { updateMonthlyGoal(); saveSettings(); });
@@ -4542,7 +4487,7 @@
                     <div class="live-card"><div class="label">${t('proj_annualized_roi')}</div><div class="value positive" style="font-size:1.2em;">${invested > 0 ? (m12 / invested * 100).toFixed(1) : 0}%</div></div>
                 </div>
                 <div style="font-size:0.75em;color:var(--text-dim);margin-top:8px;">
-                    Mining: ${formatUSD(currentDailyUsd)}/${t('cal_day')} (${hashrate} TH) + Staking: ${formatUSD(stakingDailyUsd)}/${t('cal_day')} (${stakingGmtWeekly.toFixed(2)} GMT/${t('cal_week_short')}) = <strong>${formatUSD(totalDailyUsd)}/${t('cal_day')}</strong>
+                    Mining: ${formatUSD(currentDailyUsd)}/${t('cal_day')} (${hashrate} TH)${stakingDailyUsd > 0 ? ` + Staking: ${formatUSD(stakingDailyUsd)}/${t('cal_day')} (${stakingGmtWeekly.toFixed(2)} GMT/${t('cal_week_short')})` : ''} = <strong>${formatUSD(totalDailyUsd)}/${t('cal_day')}</strong>
                 </div>`;
             }
             document.getElementById('port-projection').innerHTML = projHtml;
