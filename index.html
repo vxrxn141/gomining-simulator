@@ -931,11 +931,6 @@
                 <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
                 <button class="lang-btn" data-lang="fr" onclick="setLang('fr')">FR</button>
             </div>
-            <div class="currency-toggle" style="margin-bottom:8px;">
-                <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">$</button>
-                <button class="cur-btn" data-cur="btc" onclick="setCurrency('btc')">₿</button>
-                <button class="cur-btn" data-cur="gmt" onclick="setCurrency('gmt')">G</button>
-            </div>
             <div style="display:flex;gap:8px;margin-bottom:8px;">
                 <button class="refresh-btn" style="flex:1;justify-content:center;" onclick="fetchLiveData()">
                     &#x21bb; <span data-i18n="refresh">Refresh</span>
@@ -1003,9 +998,15 @@
         </div>
     </div>
 
-    <!-- Hidden ticker elements for JS compatibility -->
-    <div style="display:none;" id="live-ticker">
-        <span id="ticker-gain"></span><span id="ticker-btc"></span><span id="ticker-gmt"></span><span id="ticker-pr"></span>
+    <!-- Top bar: today's gain + currency toggle -->
+    <div id="live-ticker" style="display:none;padding:8px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <div><span class="ticker-gain" id="ticker-gain">$0.00</span> <span style="color:var(--text-dim);font-size:0.8em;">today</span></div>
+        <span id="ticker-btc" style="display:none;"></span><span id="ticker-gmt" style="display:none;"></span><span id="ticker-pr" style="display:none;"></span>
+        <div class="currency-toggle" style="font-size:0.9em;">
+            <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">$</button>
+            <button class="cur-btn" data-cur="btc" onclick="setCurrency('btc')">₿</button>
+            <button class="cur-btn" data-cur="gmt" onclick="setCurrency('gmt')">G</button>
+        </div>
     </div>
 
     <!-- Strategy Alert -->
