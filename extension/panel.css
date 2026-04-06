@@ -135,15 +135,15 @@
 
 #gm-extractor-toggle {
     position: fixed;
-    top: 48px;
-    right: 12px;
-    width: 44px;
-    height: 44px;
+    top: 44px;
+    right: 16px;
+    width: 36px;
+    height: 36px;
     background: #1e1e2e;
     border: 1px solid #2d2d3d;
-    border-radius: 12px;
+    border-radius: 10px;
     color: #8b8b8b;
-    font-size: 18px;
+    font-size: 15px;
     cursor: pointer;
     z-index: 999998;
     display: none;
