@@ -4590,8 +4590,11 @@
         fetchLiveData();
 
         // Register PWA service worker
+        // Unregister any old service workers (causes caching issues)
         if ('serviceWorker' in navigator) {
-            navigator.serviceWorker.register('sw.js').catch(() => {});
+            navigator.serviceWorker.getRegistrations().then(regs => {
+                regs.forEach(r => r.unregister());
+            });
         }
 
         // Init transaction date to today
