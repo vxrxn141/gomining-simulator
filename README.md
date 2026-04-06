@@ -2,6 +2,10 @@
 
 A comprehensive investment simulator and strategy tool for [GoMining](https://gomining.com) NFT miners.
 
+**[Live Demo →](https://jaygauvin2002.github.io/gomining-simulator/)**
+
+![GoMining Simulator Dashboard](screenshot.png)
+
 ## Features
 
 - **Dashboard** - Real-time KPIs, progress tracking, reward calendar
