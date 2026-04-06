@@ -1,7 +1,7 @@
 #gm-extractor-panel {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;
     width: 380px;
     max-height: 80vh;
     background: #1a1a2e;
@@ -136,7 +136,7 @@
 #gm-extractor-toggle {
     position: fixed;
     bottom: 20px;
-    right: 20px;
+    left: 20px;
     width: 50px;
     height: 50px;
     background: #6c63ff;
