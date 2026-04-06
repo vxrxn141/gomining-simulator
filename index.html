@@ -1035,8 +1035,8 @@
                 </div>
             </div>
 
-            <!-- KPI Dashboard -->
-            <div id="live-dashboard" class="live-data" style="margin-bottom:16px;">
+            <!-- Row 1: 5 KPIs -->
+            <div id="live-dashboard" class="live-data" style="grid-template-columns:repeat(5,1fr);margin-bottom:12px;">
                 <div class="live-card" style="border-bottom:3px solid var(--accent);">
                     <div class="label">Gain estimé aujourd'hui</div>
                     <div class="value positive" id="dash-today">--</div>
@@ -1052,15 +1052,19 @@
                     <div class="value net" id="dash-miner">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-miner-sub"></div>
                 </div>
-                <div class="live-card" id="dash-strategy-card" style="border-bottom:3px solid var(--purple);">
+                <div class="live-card" style="border-bottom:3px solid var(--purple);">
+                    <div class="label"><span class="has-tooltip" data-tooltip="Daily net profit from mining">Profit / Day</span></div>
+                    <div class="value positive" id="dash-profit-day">--</div>
+                </div>
+                <div class="live-card" id="dash-strategy-card" style="border-bottom:3px solid var(--green);">
                     <div class="label">Stratégie optimale</div>
                     <div class="value" id="dash-strategy" style="font-weight:800;">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-strategy-sub"></div>
                 </div>
             </div>
 
-            <!-- Price & Info Cards -->
-            <div class="live-data" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
+            <!-- Row 2: 6 Info Cards -->
+            <div class="live-data" style="grid-template-columns:repeat(6,1fr);">
                 <div class="live-card">
                     <div class="label">Bitcoin</div>
                     <div class="value btc" id="btc-price">--</div>
@@ -1072,10 +1076,6 @@
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees">Pool Reward</span></div>
                     <div class="value net" id="net-hashrate">--</div>
-                </div>
-                <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Daily net profit from mining">Profit / Day</span></div>
-                    <div class="value positive" id="dash-profit-day">--</div>
                 </div>
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="GMT balance in your wallet">GMT Wallet</span></div>
