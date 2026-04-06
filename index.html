@@ -4246,7 +4246,12 @@
                 if (cache._gmtPrice) state.gmtPrice = cache._gmtPrice;
                 if (cache._apiGmtPrice) { state.apiGmtPrice = cache._apiGmtPrice; }
                 if (cache._apiBtcPrice) { state.apiBtcPrice = cache._apiBtcPrice; }
-                if (cache._apiSatPerTH) { state.apiSatPerTH = cache._apiSatPerTH; state.satPerTH = cache._apiSatPerTH; }
+                if (cache._apiSatPerTH) {
+                    state.apiSatPerTH = cache._apiSatPerTH;
+                    state.satPerTH = cache._apiSatPerTH;
+                    const satEl = document.getElementById('sat-per-th');
+                    if (satEl) satEl.value = cache._apiSatPerTH;
+                }
                 if (cache._satPerTH && !state.satPerTH) state.satPerTH = cache._satPerTH;
             } catch(e) {}
         }
@@ -4587,8 +4592,8 @@
 
         // ===== INIT =====
         loadTheme();
-        loadDashCache();
         loadSettings();
+        loadDashCache(); // After loadSettings so API prices override saved values
         calcTotalDiscount();
         setLang(currentLang);
         showOnboarding();
