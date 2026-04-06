@@ -895,35 +895,35 @@
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
             <h1>GoMining</h1>
-            <p>Simulateur & Stratégies</p>
+            <p data-i18n="nav_subtitle">Simulator & Strategies</p>
         </div>
         <nav class="sidebar-nav">
             <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
-                <span class="nav-icon">📊</span> Dashboard
+                <span class="nav-icon">📊</span> <span data-i18n="nav_dashboard">Dashboard</span>
             </div>
             <div class="nav-item" data-tab="mining" onclick="switchTab('mining')">
-                <span class="nav-icon">⛏</span> Simulateur
+                <span class="nav-icon">⛏</span> <span data-i18n="nav_simulator">Simulator</span>
             </div>
             <div class="nav-item" data-tab="scenarios" onclick="switchTab('scenarios')">
-                <span class="nav-icon">📈</span> Scénarios BTC
+                <span class="nav-icon">📈</span> <span data-i18n="nav_scenarios">BTC Scenarios</span>
             </div>
             <div class="nav-item" data-tab="reinvest" onclick="switchTab('reinvest')">
-                <span class="nav-icon">🔄</span> Réinvestissement
+                <span class="nav-icon">🔄</span> <span data-i18n="nav_reinvest">Reinvestment</span>
             </div>
             <div class="nav-item" data-tab="compare" onclick="switchTab('compare')">
-                <span class="nav-icon">⚖</span> Comparer
+                <span class="nav-icon">⚖</span> <span data-i18n="nav_compare">Compare</span>
             </div>
             <div class="nav-item" data-tab="multisim" onclick="switchTab('multisim')">
-                <span class="nav-icon">🎛</span> Simulation
+                <span class="nav-icon">🎛</span> <span data-i18n="nav_simulation">Simulation</span>
             </div>
             <div class="nav-item" data-tab="performance" onclick="switchTab('performance')">
-                <span class="nav-icon">📉</span> Performance
+                <span class="nav-icon">📉</span> <span data-i18n="nav_performance">Performance</span>
             </div>
             <div class="nav-item" data-tab="alerts" onclick="switchTab('alerts')">
-                <span class="nav-icon">🔔</span> Alertes
+                <span class="nav-icon">🔔</span> <span data-i18n="nav_alerts">Alerts</span>
             </div>
             <div class="nav-item" data-tab="portfolio" onclick="switchTab('portfolio')">
-                <span class="nav-icon">💰</span> Portfolio
+                <span class="nav-icon">💰</span> <span data-i18n="nav_portfolio">Portfolio</span>
             </div>
         </nav>
         <div class="sidebar-footer">
@@ -1000,7 +1000,7 @@
 
     <!-- Top bar: today's gain + currency toggle -->
     <div id="live-ticker" style="display:none;padding:8px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <div><span class="ticker-gain" id="ticker-gain">$0.00</span> <span style="color:var(--text-dim);font-size:0.8em;">today</span></div>
+        <div><span class="ticker-gain" id="ticker-gain">$0.00</span> <span style="color:var(--text-dim);font-size:0.8em;" data-i18n="lbl_today_label">today</span></div>
         <span id="ticker-btc" style="display:none;"></span><span id="ticker-gmt" style="display:none;"></span><span id="ticker-pr" style="display:none;"></span>
         <div class="currency-toggle" style="font-size:0.9em;">
             <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">$</button>
@@ -1035,22 +1035,22 @@
                     <div class="value btc" id="btc-price">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent);">
-                    <div class="label">Gain estimé aujourd'hui</div>
+                    <div class="label" data-i18n="kpi_today">Est. Gain Today</div>
                     <div class="value positive" id="dash-today">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-today-sub"></div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--green);">
-                    <div class="label">Gain ce mois</div>
+                    <div class="label" data-i18n="kpi_month">Gain This Month</div>
                     <div class="value positive" id="dash-month">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-month-sub"></div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent2);">
-                    <div class="label">Mineur</div>
+                    <div class="label" data-i18n="kpi_miner">Miner</div>
                     <div class="value net" id="dash-miner">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-miner-sub"></div>
                 </div>
                 <div class="live-card" id="dash-strategy-card" style="border-bottom:3px solid var(--green);">
-                    <div class="label">Stratégie optimale</div>
+                    <div class="label" data-i18n="kpi_strategy">Optimal Strategy</div>
                     <div class="value" id="dash-strategy" style="font-weight:800;">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-strategy-sub"></div>
                 </div>
@@ -1085,7 +1085,7 @@
             <!-- TH Progress -->
             <div class="section" id="dash-th-progress" style="display:none;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <h2 style="margin:0;border:none;padding:0;">Progression TH</h2>
+                    <h2 style="margin:0;border:none;padding:0;" data-i18n="sec_th_progress">TH Progress</h2>
                     <span id="dash-th-label" style="font-size:0.85em;color:var(--text-dim);"></span>
                 </div>
                 <div style="background:var(--bg2);border-radius:8px;height:28px;overflow:hidden;position:relative;">
@@ -1102,19 +1102,19 @@
             <!-- Quick Stats -->
             <div class="live-data" id="dash-quick-stats" style="display:none;">
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Prix BTC où tes gains = tes frais (profit = 0)">Breakeven BTC</span></div>
+                    <div class="label" data-i18n="lbl_breakeven">Breakeven BTC</div>
                     <div class="value" id="dash-breakeven" style="color:var(--red);font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="Jours pour atteindre le prochain palier de puissance">Jours prochain level</span></div>
+                    <div class="label" data-i18n="lbl_days_next">Days to Next Level</div>
                     <div class="value net" id="dash-days-next" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label">ROI annuel estimé</div>
+                    <div class="label" data-i18n="lbl_roi">Est. Annual ROI</div>
                     <div class="value positive" id="dash-roi" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label">Frais GMT / jour</div>
+                    <div class="label" data-i18n="lbl_daily_fees">Daily Fees GMT</div>
                     <div class="value" id="dash-daily-fees" style="color:var(--red);font-size:1.3em;">--</div>
                 </div>
             </div>
@@ -1122,7 +1122,7 @@
             <!-- Monthly Goal -->
             <div class="section" id="dash-goal-section">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <h2 style="margin:0;border:none;padding:0;">Objectif Mensuel</h2>
+                    <h2 style="margin:0;border:none;padding:0;" data-i18n="sec_monthly_goal">Monthly Goal</h2>
                     <div class="form-group" style="flex-direction:row;align-items:center;gap:8px;margin:0;">
                         <label style="margin:0;white-space:nowrap;">Objectif $</label>
                         <input type="number" id="monthly-goal" value="20" min="1" step="5" style="width:80px;padding:6px 10px;">
@@ -1139,14 +1139,14 @@
 
             <!-- What-if Upgrade -->
             <div class="section" id="dash-whatif" style="display:none;">
-                <h2>Et si j'upgrade ?</h2>
+                <h2 data-i18n="sec_whatif">What If I Upgrade?</h2>
                 <div id="dash-whatif-content"></div>
             </div>
 
 
             <!-- Reward Calendar -->
             <div class="section" id="dash-history-section" style="display:none;">
-                <h2>Historique des Rewards</h2>
+                <h2 data-i18n="sec_reward_history">Reward History</h2>
                 <div id="dash-history-chart" style="position:relative;"></div>
             </div>
         </div>
@@ -1159,7 +1159,7 @@
             <div class="section">
                 <div class="collapsible" id="params-collapsible">
                 <div class="collapsible-header" onclick="toggleCollapsible('params-collapsible')">
-                    <h2 style="margin:0;border:none;padding:0;">Paramètres NFT Mineur</h2>
+                    <h2 style="margin:0;border:none;padding:0;" data-i18n="sec_mining_params">NFT Miner Parameters</h2>
                     <span class="collapsible-summary" id="params-summary"></span>
                     <span class="collapsible-chevron">▾</span>
                 </div>
@@ -1227,7 +1227,7 @@
 
             <div id="mining-results" style="display:none;">
                 <div class="section">
-                    <h2>Résultats</h2>
+                    <h2 data-i18n="sec_results">Results</h2>
                     <div class="results-grid">
                         <div class="result-card">
                             <h3>Revenu brut / jour</h3>
@@ -1295,7 +1295,7 @@
         <!-- TAB: BTC Scenarios -->
         <div class="tab-content" id="tab-scenarios">
             <div class="section">
-                <h2>Profits selon le prix du Bitcoin</h2>
+                <h2 data-i18n="sec_btc_scenarios">Profits by Bitcoin Price</h2>
                 <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 15px;">
                     Basé sur tes paramètres NFT ci-dessus. La ligne orange = prix actuel.
                 </p>
@@ -1329,7 +1329,7 @@
         <!-- TAB: Reinvestment Strategy -->
         <div class="tab-content" id="tab-reinvest">
             <div class="section">
-                <h2>Carte Stratégique — BTC × GMT</h2>
+                <h2 data-i18n="sec_strategy_map">Strategy Map — BTC × GMT</h2>
                 <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;">
                     Selon les prix futurs de BTC et GMT, quelle est la meilleure action ?
                 </p>
@@ -1393,7 +1393,7 @@
         <!-- TAB: Compare Strategies -->
         <div class="tab-content" id="tab-compare">
             <div class="section">
-                <h2>Comparer : Acheter vs Upgrader vs Lock GMT</h2>
+                <h2 data-i18n="sec_compare">Compare: Buy vs Upgrade vs Lock GMT</h2>
                 <p style="color: var(--text-dim); font-size: 0.9em; margin-bottom: 20px;">
                     Pour un même budget, quelle stratégie rapporte le plus ?
                 </p>
@@ -1448,7 +1448,7 @@
         <!-- TAB: Multi-Scenario Simulation -->
         <div class="tab-content" id="tab-multisim">
             <div class="section">
-                <h2>Simulation Multi-Scénarios</h2>
+                <h2 data-i18n="sec_multisim">Multi-Scenario Simulation</h2>
                 <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;">Projette tes profits sur 12 mois en variant BTC et la difficulté réseau.</p>
                 <div class="slider-group">
                     <label>Variation BTC</label>
@@ -1473,7 +1473,7 @@
         <!-- TAB: Performance Tracking -->
         <div class="tab-content" id="tab-performance">
             <div class="section">
-                <h2>Suivi de Performance</h2>
+                <h2 data-i18n="sec_performance">Performance Tracking</h2>
                 <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;">Compare tes gains réels (extension) vs les projections du simulateur.</p>
                 <div id="perf-score-box" style="display:none;">
                     <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:20px;">
@@ -1503,8 +1503,8 @@
         <!-- TAB: Alertes -->
         <div class="tab-content" id="tab-alerts">
             <div class="section">
-                <h2>Alertes de Prix</h2>
-                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;">Configure des seuils et reçois une notification quand ils sont dépassés.</p>
+                <h2 data-i18n="sec_price_alerts">Price Alerts</h2>
+                <p style="color:var(--text-dim);font-size:0.9em;margin-bottom:20px;" data-i18n="alerts_desc">Set price thresholds and get notified when they are triggered.</p>
                 <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(220px,1fr));margin-bottom:15px;">
                     <div class="form-group">
                         <label>Alerte si BTC &gt; ($)</label>
@@ -1546,7 +1546,7 @@
 
         <div class="tab-content" id="tab-portfolio">
             <div class="section" style="margin-bottom:12px;">
-                <h2 style="border:none;margin-bottom:10px;padding:0;">Revenus veGMT Lock</h2>
+                <h2 style="border:none;margin-bottom:10px;padding:0;" data-i18n="sec_staking">veGMT Lock Rewards</h2>
                 <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr));">
                     <div class="form-group">
                         <label>GMT reçus / semaine (lock veGMT)</label>
@@ -1557,7 +1557,7 @@
             </div>
 
             <div class="section">
-                <h2>Ajouter un investissement</h2>
+                <h2 data-i18n="sec_add_invest">Add Investment</h2>
                 <div class="form-grid" style="grid-template-columns:1fr 1fr 1fr 0.6fr 0.8fr 1.2fr auto;margin-bottom:12px;">
                     <div class="form-group">
                         <label>Date</label>
@@ -1642,19 +1642,19 @@
 
             <!-- Breakdown par catégorie -->
             <div class="section">
-                <h2>Répartition</h2>
+                <h2 data-i18n="sec_breakdown">Breakdown</h2>
                 <div id="port-breakdown"></div>
             </div>
 
             <!-- Projection -->
             <div class="section">
-                <h2>Projection</h2>
+                <h2 data-i18n="sec_projection">Projection</h2>
                 <div id="port-projection"></div>
             </div>
 
             <!-- Transaction History -->
             <div class="section">
-                <h2>Historique des Transactions</h2>
+                <h2 data-i18n="sec_transactions">Transaction History</h2>
                 <div id="port-transactions" style="overflow-x:auto;"></div>
             </div>
         </div>
@@ -3837,7 +3837,26 @@
         const TRANSLATIONS = {
             en: {
                 // Sidebar
+                nav_subtitle: 'Simulator & Strategies',
+                nav_dashboard: 'Dashboard', nav_simulator: 'Simulator', nav_scenarios: 'BTC Scenarios',
+                nav_reinvest: 'Reinvestment', nav_compare: 'Compare', nav_simulation: 'Simulation',
+                nav_performance: 'Performance', nav_alerts: 'Alerts', nav_portfolio: 'Portfolio',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
+                // KPIs
+                kpi_today: 'Est. Gain Today', kpi_month: 'Gain This Month', kpi_miner: 'Miner', kpi_strategy: 'Optimal Strategy',
+                // Section titles
+                sec_th_progress: 'TH Progress', sec_monthly_goal: 'Monthly Goal', sec_whatif: 'What If I Upgrade?',
+                sec_reward_history: 'Reward History', sec_price_alerts: 'Price Alerts', sec_portfolio: 'My Portfolio',
+                sec_add_invest: 'Add Investment', sec_staking: 'veGMT Lock Rewards', sec_breakdown: 'Breakdown',
+                sec_projection: 'Projection', sec_transactions: 'Transaction History',
+                sec_performance: 'Performance Tracking', sec_multisim: 'Multi-Scenario Simulation',
+                sec_mining_params: 'NFT Miner Parameters', sec_results: 'Results',
+                sec_btc_scenarios: 'Profits by Bitcoin Price', sec_strategy_map: 'Strategy Map — BTC × GMT',
+                sec_compare: 'Compare: Buy vs Upgrade vs Lock GMT',
+                // Labels
+                lbl_breakeven: 'Breakeven BTC', lbl_days_next: 'Days to Next Level', lbl_roi: 'Est. Annual ROI', lbl_daily_fees: 'Daily Fees GMT',
+                lbl_objective: 'Objective $', lbl_today_label: 'today',
+                alerts_desc: 'Set price thresholds and get notified when they are triggered.',
                 // Onboarding
                 onboard_title: 'Welcome to GoMining Simulator', onboard_desc: 'The most complete investment tool for GoMining NFT miners. Track your profits, compare strategies, and optimize your mining rewards.',
                 onboard_s1_title: 'Install the Chrome Extension', onboard_s1_desc: 'It auto-syncs your GoMining data. Load it from the extension/ folder in developer mode.',
@@ -3861,7 +3880,27 @@
                 footer_text: 'GoMining Simulator', footer_disclaimer: 'Not financial advice. Use at your own risk.'
             },
             fr: {
+                // Sidebar
+                nav_subtitle: 'Simulateur & Stratégies',
+                nav_dashboard: 'Dashboard', nav_simulator: 'Simulateur', nav_scenarios: 'Scénarios BTC',
+                nav_reinvest: 'Réinvestissement', nav_compare: 'Comparer', nav_simulation: 'Simulation',
+                nav_performance: 'Performance', nav_alerts: 'Alertes', nav_portfolio: 'Portfolio',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
+                // KPIs
+                kpi_today: "Gain estimé aujourd'hui", kpi_month: 'Gain ce mois', kpi_miner: 'Mineur', kpi_strategy: 'Stratégie optimale',
+                // Section titles
+                sec_th_progress: 'Progression TH', sec_monthly_goal: 'Objectif Mensuel', sec_whatif: "Et si j'upgrade ?",
+                sec_reward_history: 'Historique des Rewards', sec_price_alerts: 'Alertes de Prix', sec_portfolio: 'Mon Portfolio',
+                sec_add_invest: 'Ajouter un investissement', sec_staking: 'Revenus veGMT Lock', sec_breakdown: 'Répartition',
+                sec_projection: 'Projection', sec_transactions: 'Historique des Transactions',
+                sec_performance: 'Suivi de Performance', sec_multisim: 'Simulation Multi-Scénarios',
+                sec_mining_params: 'Paramètres NFT Mineur', sec_results: 'Résultats',
+                sec_btc_scenarios: 'Profits selon le prix du Bitcoin', sec_strategy_map: 'Carte Stratégique — BTC × GMT',
+                sec_compare: 'Comparer : Acheter vs Upgrader vs Lock GMT',
+                // Labels
+                lbl_breakeven: 'Breakeven BTC', lbl_days_next: 'Jours prochain level', lbl_roi: 'ROI annuel estimé', lbl_daily_fees: 'Frais GMT / jour',
+                lbl_objective: 'Objectif $', lbl_today_label: "aujourd'hui",
+                alerts_desc: "Configurez des seuils de prix et recevez une notification quand ils sont dépassés.",
                 onboard_title: 'Bienvenue sur GoMining Simulator', onboard_desc: "L'outil d'investissement le plus complet pour les mineurs NFT GoMining. Suivez vos profits, comparez les stratégies et optimisez vos revenus de minage.",
                 onboard_s1_title: "Installez l'extension Chrome", onboard_s1_desc: "Elle synchronise automatiquement vos données GoMining. Chargez-la depuis le dossier extension/ en mode développeur.",
                 onboard_s2_title: 'Visitez app.gomining.com', onboard_s2_desc: "Naviguez dans vos pages de mineur et rewards. L'extension capture vos données automatiquement.",
