@@ -2496,7 +2496,7 @@
             const btcWalletEl = document.getElementById('dash-btc-wallet');
             if (btcWalletEl) {
                 const btcBalance = state.btcWalletBalance || 0;
-                btcWalletEl.textContent = btcBalance > 0 ? btcBalance.toFixed(8) + ' BTC' : '0 BTC';
+                btcWalletEl.textContent = btcBalance > 0 ? btcBalance.toFixed(10) + ' BTC' : '0.00000000 BTC';
             }
 
             // === New dashboard cards ===
