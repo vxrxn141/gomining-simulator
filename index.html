@@ -957,13 +957,17 @@
         <div class="modal-card">
             <span class="modal-close" onclick="document.getElementById('extension-guide').style.display='none'">&times;</span>
             <h2 data-i18n="guide_title">Chrome Extension Installation</h2>
+            <div style="text-align:center;margin-bottom:20px;">
+                <a href="https://github.com/Jaygauvin2002/gomining-simulator/archive/refs/heads/main.zip" class="onboarding-btn" style="display:inline-block;text-decoration:none;" data-i18n="guide_download">⬇ Download Extension</a>
+            </div>
             <div class="onboarding-steps">
-                <div class="onboarding-step"><span class="step-num">1</span><div data-i18n="guide_s1">Open <strong>chrome://extensions/</strong> in your browser</div></div>
-                <div class="onboarding-step"><span class="step-num">2</span><div data-i18n="guide_s2">Enable <strong>"Developer mode"</strong> (toggle in the top right corner)</div></div>
-                <div class="onboarding-step"><span class="step-num">3</span><div data-i18n="guide_s3">Click <strong>"Load unpacked"</strong></div></div>
-                <div class="onboarding-step"><span class="step-num">4</span><div data-i18n="guide_s4">Select the <strong>extension/</strong> folder from the downloaded files</div></div>
-                <div class="onboarding-step"><span class="step-num">5</span><div data-i18n="guide_s5">Visit <strong>app.gomining.com</strong> — the extension icon should appear</div></div>
-                <div class="onboarding-step"><span class="step-num">6</span><div data-i18n="guide_s6">Navigate to your miner rewards page, then come back here. Data syncs automatically!</div></div>
+                <div class="onboarding-step"><span class="step-num">1</span><div data-i18n="guide_s1">Download and <strong>unzip</strong> the file above</div></div>
+                <div class="onboarding-step"><span class="step-num">2</span><div data-i18n="guide_s2">Open <strong>chrome://extensions/</strong> in your browser</div></div>
+                <div class="onboarding-step"><span class="step-num">3</span><div data-i18n="guide_s3">Enable <strong>"Developer mode"</strong> (toggle in the top right corner)</div></div>
+                <div class="onboarding-step"><span class="step-num">4</span><div data-i18n="guide_s4">Click <strong>"Load unpacked"</strong></div></div>
+                <div class="onboarding-step"><span class="step-num">5</span><div data-i18n="guide_s5">Select the <strong>extension/</strong> folder from the unzipped files</div></div>
+                <div class="onboarding-step"><span class="step-num">6</span><div data-i18n="guide_s6">Visit <strong>app.gomining.com</strong> — the extension icon should appear</div></div>
+                <div class="onboarding-step"><span class="step-num">7</span><div data-i18n="guide_s7">Navigate to your miner rewards page, then come back here. Data syncs automatically!</div></div>
             </div>
         </div>
     </div>
@@ -3956,7 +3960,14 @@
                 guide_s3: 'Click <strong>"Load unpacked"</strong>',
                 guide_s4: 'Select the <strong>extension/</strong> folder from the downloaded files',
                 guide_s5: 'Visit <strong>app.gomining.com</strong> — the extension icon should appear',
-                guide_s6: 'Navigate to your miner rewards page, then come back here. Data syncs automatically!',
+                guide_download: '⬇ Download Extension',
+                guide_s1: 'Download and <strong>unzip</strong> the file above',
+                guide_s2: 'Open <strong>chrome://extensions/</strong> in your browser',
+                guide_s3: 'Enable <strong>"Developer mode"</strong> (toggle in the top right corner)',
+                guide_s4: 'Click <strong>"Load unpacked"</strong>',
+                guide_s5: 'Select the <strong>extension/</strong> folder from the unzipped files',
+                guide_s6: 'Visit <strong>app.gomining.com</strong> — the extension icon should appear',
+                guide_s7: 'Navigate to your miner rewards page, then come back here. Data syncs automatically!',
                 disclaimer: 'This tool provides estimates only and is not financial advice. Calculations are based on current conditions and may not reflect actual returns. DYOR.',
                 empty_title: 'Welcome to GoMining Simulator', empty_desc: 'Install the Chrome extension and visit app.gomining.com to auto-sync your miner data. Or enter your details manually in the Simulator tab.',
                 empty_guide: 'Install Extension', empty_manual: 'Enter Manually',
@@ -4117,7 +4128,14 @@
                 guide_s3: 'Cliquez sur <strong>"Charger l\'extension non empaquetée"</strong>',
                 guide_s4: 'Sélectionnez le dossier <strong>extension/</strong> des fichiers téléchargés',
                 guide_s5: 'Visitez <strong>app.gomining.com</strong> — l\'icône de l\'extension devrait apparaître',
-                guide_s6: 'Naviguez vers votre page de rewards, puis revenez ici. Les données se synchronisent automatiquement !',
+                guide_download: "⬇ Télécharger l'extension",
+                guide_s1: 'Téléchargez et <strong>décompressez</strong> le fichier ci-dessus',
+                guide_s2: 'Ouvrez <strong>chrome://extensions/</strong> dans votre navigateur',
+                guide_s3: 'Activez le <strong>"Mode développeur"</strong> (en haut à droite)',
+                guide_s4: 'Cliquez sur <strong>"Charger l\'extension non empaquetée"</strong>',
+                guide_s5: 'Sélectionnez le dossier <strong>extension/</strong> des fichiers décompressés',
+                guide_s6: 'Visitez <strong>app.gomining.com</strong> — l\'icône de l\'extension devrait apparaître',
+                guide_s7: 'Naviguez vers votre page de rewards, puis revenez ici. Les données se synchronisent automatiquement !',
                 disclaimer: "Cet outil fournit des estimations uniquement et ne constitue pas un conseil financier. Les calculs sont basés sur les conditions actuelles. Faites vos propres recherches.",
                 empty_title: 'Bienvenue sur GoMining Simulator', empty_desc: "Installez l'extension Chrome et visitez app.gomining.com pour synchroniser vos données. Ou entrez vos détails manuellement dans l'onglet Simulateur.",
                 empty_guide: "Installer l'extension", empty_manual: 'Entrer manuellement',
