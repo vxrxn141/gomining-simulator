@@ -1865,6 +1865,11 @@
 
                 // Auto-calculate after data loads
                 updatePrepaidDiscount();
+                // Force API sat/TH if available (prevents mempool from overriding)
+                if (state.apiSatPerTH) {
+                    document.getElementById('sat-per-th').value = state.apiSatPerTH;
+                    state.satPerTH = state.apiSatPerTH;
+                }
                 calculate();
                 checkPriceAlerts();
                 updateEmptyState();
@@ -2806,7 +2811,7 @@
         const SAVE_FIELDS = [
             'hashrate', 'efficiency', 'elec-cost',
             'discount-maintenance', 'discount-vip', 'discount-streak', 'discount-solo',
-            'gmt-prepaid', 'gmt-locked', 'sat-per-th',
+            'gmt-prepaid', 'gmt-locked',
             'reinv-cost-per-th', 'reinv-bonus', 'reinv-horizon', 'th-target',
             'reinv-gmt-balance', 'reinv-reserve-days',
             'budget', 'cost-per-th-buy', 'cost-per-th-upgrade',
