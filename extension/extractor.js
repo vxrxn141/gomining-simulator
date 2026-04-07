@@ -429,6 +429,10 @@
                     result.wallet.gmtBalance = parseFloat(gmtW.gmtValueAtSyncDate) || 0;
                     result.wallet.gmtLocked = Math.round(parseFloat(gmtW.lockedGmtInWei || '0') / 1e18);
                 }
+                const btcW = m.data.data.array.find(w => w.type === 'VIRTUAL_BTC');
+                if (btcW) {
+                    result.wallet.btcBalance = parseFloat(btcW.valueNumericAtSyncDate || '0') / 1e8;
+                }
             }
         }
 

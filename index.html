@@ -1004,15 +1004,21 @@
                     <div class="label">Bitcoin</div>
                     <div class="value btc" id="btc-price">--</div>
                 </div>
-                <div class="live-card" style="border-bottom:3px solid var(--accent);">
-                    <div class="label" data-i18n="kpi_today">Est. Gain Today</div>
+                <div class="live-card" style="border-bottom:3px solid var(--green);">
+                    <div style="display:flex;justify-content:center;gap:4px;margin-bottom:4px;">
+                        <button onclick="setGainPeriod('day')" id="gain-btn-day" style="background:var(--green);color:#000;border:none;padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">D</button>
+                        <button onclick="setGainPeriod('month')" id="gain-btn-month" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">M</button>
+                        <button onclick="setGainPeriod('year')" id="gain-btn-year" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">Y</button>
+                    </div>
                     <div class="value positive" id="dash-today">--</div>
                     <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-today-sub"></div>
+                    <!-- Hidden elements for JS compatibility -->
+                    <div style="display:none;" id="dash-month">--</div>
+                    <div style="display:none;" id="dash-month-sub"></div>
                 </div>
-                <div class="live-card" style="border-bottom:3px solid var(--green);">
-                    <div class="label" data-i18n="kpi_month">Gain This Month</div>
-                    <div class="value positive" id="dash-month">--</div>
-                    <div style="font-size:0.72em;color:var(--text-dim);margin-top:4px;" id="dash-month-sub"></div>
+                <div class="live-card" style="border-bottom:3px solid var(--accent);">
+                    <div class="label">BTC Wallet</div>
+                    <div class="value btc" id="dash-btc-wallet" style="font-size:1.3em;">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent2);">
                     <div class="label" data-i18n="kpi_miner">Miner</div>
@@ -2482,6 +2488,17 @@
             document.getElementById('dash-ticker').textContent =
                 `BTC ${formatUSD(bp)} | GMT $${gp.toFixed(4)} | ${new Date().toLocaleTimeString(currentLang === 'fr' ? 'fr-FR' : 'en-US')}`;
 
+            // === Gain period toggle ===
+            state._lastReward = r;
+            updateGainDisplay();
+
+            // === BTC Wallet ===
+            const btcWalletEl = document.getElementById('dash-btc-wallet');
+            if (btcWalletEl) {
+                const btcBalance = state.btcWalletBalance || 0;
+                btcWalletEl.textContent = btcBalance > 0 ? btcBalance.toFixed(8) + ' BTC' : '0 BTC';
+            }
+
             // === New dashboard cards ===
             // Profit per day
             const profitEl = document.getElementById('dash-profit-day');
@@ -2876,6 +2893,7 @@
             // Wallet
             if (data.wallet?.gmtBalance !== undefined) document.getElementById('gmt-prepaid').value = parseFloat(data.wallet.gmtBalance).toFixed(2);
             if (data.wallet?.gmtLocked !== undefined) document.getElementById('gmt-locked').value = data.wallet.gmtLocked;
+            if (data.wallet?.btcBalance !== undefined) state.btcWalletBalance = data.wallet.btcBalance;
 
             // Discounts (API returns decimals: 0.03 = 3%)
             if (data.discount?.streak !== undefined) document.getElementById('discount-streak').value = (data.discount.streak * 100).toFixed(1);
@@ -3221,6 +3239,42 @@
             } else {
                 dot.className = 'sync-dot';
                 label.textContent = t('sync_none');
+            }
+        }
+
+        // ===== GAIN PERIOD TOGGLE =====
+        let gainPeriod = 'day';
+
+        function setGainPeriod(period) {
+            gainPeriod = period;
+            ['day', 'month', 'year'].forEach(p => {
+                const btn = document.getElementById('gain-btn-' + p);
+                if (btn) {
+                    btn.style.background = p === period ? 'var(--green)' : 'transparent';
+                    btn.style.color = p === period ? '#000' : 'var(--text-dim)';
+                    btn.style.border = p === period ? 'none' : '1px solid var(--border)';
+                }
+            });
+            updateGainDisplay();
+        }
+
+        function updateGainDisplay() {
+            const r = state._lastReward;
+            if (!r) return;
+            const bp = state.btcPrice;
+            const el = document.getElementById('dash-today');
+            const sub = document.getElementById('dash-today-sub');
+            if (!el) return;
+
+            if (gainPeriod === 'day') {
+                el.textContent = formatProfit(r.netBtc, bp, r.netGmt, r.grossBtc);
+                if (sub) sub.textContent = `${t('dash_gross')}: ${formatVal(r.grossBtc, bp, r.grossGmt)} | ${t('dash_fees')}: ${formatVal(r.feesBtc, bp, r.feesGmt)}`;
+            } else if (gainPeriod === 'month') {
+                el.textContent = formatProfit(r.netBtc * 30, bp, r.netGmt * 30, r.grossBtc * 30);
+                if (sub) sub.textContent = `~${(r.grossBtc * 365).toFixed(8)} BTC/${t('cal_year_short')}`;
+            } else {
+                el.textContent = formatProfit(r.netBtc * 365, bp, r.netGmt * 365, r.grossBtc * 365);
+                if (sub) sub.textContent = `~${(r.grossBtc * 365).toFixed(8)} BTC`;
             }
         }
 
