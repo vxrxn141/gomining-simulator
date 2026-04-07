@@ -2811,7 +2811,6 @@
         const SAVE_FIELDS = [
             'hashrate', 'efficiency', 'elec-cost',
             'discount-maintenance', 'discount-vip', 'discount-streak', 'discount-solo',
-            'gmt-prepaid', 'gmt-locked',
             'reinv-cost-per-th', 'reinv-bonus', 'reinv-horizon', 'th-target',
             'reinv-gmt-balance', 'reinv-reserve-days',
             'budget', 'cost-per-th-buy', 'cost-per-th-upgrade',
@@ -4233,6 +4232,11 @@
             cache._apiBtcPrice = state.apiBtcPrice || null;
             cache._apiSatPerTH = state.apiSatPerTH || null;
             cache._satPerTH = state.satPerTH || null;
+            // Save synced wallet values
+            const gmtPrepaidEl = document.getElementById('gmt-prepaid');
+            const gmtLockedEl = document.getElementById('gmt-locked');
+            if (gmtPrepaidEl) cache._gmtPrepaid = parseFloat(gmtPrepaidEl.value) || 0;
+            if (gmtLockedEl) cache._gmtLocked = parseFloat(gmtLockedEl.value) || 0;
             localStorage.setItem(DASH_CACHE_KEY, JSON.stringify(cache));
         }
 
@@ -4258,6 +4262,15 @@
                     if (satEl) satEl.value = cache._apiSatPerTH;
                 }
                 if (cache._satPerTH && !state.satPerTH) state.satPerTH = cache._satPerTH;
+                // Restore synced wallet values
+                if (cache._gmtPrepaid !== undefined) {
+                    const el = document.getElementById('gmt-prepaid');
+                    if (el) el.value = cache._gmtPrepaid;
+                }
+                if (cache._gmtLocked !== undefined) {
+                    const el = document.getElementById('gmt-locked');
+                    if (el) el.value = cache._gmtLocked;
+                }
             } catch(e) {}
         }
 
