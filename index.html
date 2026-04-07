@@ -2874,7 +2874,7 @@
             if (data.miner?.energyEfficiency) document.getElementById('efficiency').value = data.miner.energyEfficiency;
 
             // Wallet
-            if (data.wallet?.gmtBalance !== undefined) document.getElementById('gmt-prepaid').value = Math.floor(data.wallet.gmtBalance);
+            if (data.wallet?.gmtBalance !== undefined) document.getElementById('gmt-prepaid').value = parseFloat(data.wallet.gmtBalance).toFixed(2);
             if (data.wallet?.gmtLocked !== undefined) document.getElementById('gmt-locked').value = data.wallet.gmtLocked;
 
             // Discounts (API returns decimals: 0.03 = 3%)
