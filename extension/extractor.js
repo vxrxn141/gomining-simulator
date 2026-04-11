@@ -368,13 +368,19 @@
 
         // Find miner data (DATA.miners est maintenant un objet clé=endpoint)
         for (const m of Object.values(DATA.miners)) {
-            if (m.url?.includes('/nft/get-my') && m.data?.data?.array?.[0]) {
-                const nft = m.data.data.array[0];
+            if (m.url?.includes('/nft/get-my') && m.data?.data?.array?.length > 0) {
+                const nfts = m.data.data.array;
+                const totalPower = nfts.reduce((sum, n) => sum + (n.power || 0), 0);
+                // Use weighted average for efficiency
+                const totalWatts = nfts.reduce((sum, n) => sum + (n.power || 0) * (n.energyEfficiency || 15), 0);
+                const avgEfficiency = totalPower > 0 ? totalWatts / totalPower : 15;
+                const main = nfts.reduce((a, b) => (b.power || 0) > (a.power || 0) ? b : a, nfts[0]);
                 result.miner = {
-                    power: nft.power,
-                    energyEfficiency: nft.energyEfficiency,
-                    level: nft.level,
-                    name: nft.name
+                    power: totalPower,
+                    energyEfficiency: avgEfficiency,
+                    level: main.level,
+                    name: main.name,
+                    minerCount: nfts.length
                 };
             }
             if (m.url?.includes('/wallet/find-by-user') && m.data?.data?.array) {
