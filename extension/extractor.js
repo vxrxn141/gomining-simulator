@@ -7,13 +7,17 @@
     const MAX_AGE_HOURS = 24; // Durée de vie max des données
     const MAX_HISTORY_DAYS = 30; // Garder seulement 30 jours de reward history
     const AUTOSYNC_DEBOUNCE_MS = 30000; // 30 seconds debounce for auto-sync
+    const AUTOSYNC_FIRST_MS = 3000; // 3 seconds for first sync
 
     // === Auto-sync: debounced save to chrome.storage.local ===
     let _autoSyncTimer = null;
+    let _firstSyncDone = false;
     function scheduleAutoSync() {
         if (_autoSyncTimer) return; // already scheduled
+        const delay = _firstSyncDone ? AUTOSYNC_DEBOUNCE_MS : AUTOSYNC_FIRST_MS;
         _autoSyncTimer = setTimeout(() => {
             _autoSyncTimer = null;
+            _firstSyncDone = true;
             try {
                 const essentials = extractEssentials();
                 // Only save if we have at least some meaningful data
@@ -221,61 +225,31 @@
         panel.id = 'gm-extractor-panel';
         panel.innerHTML = `
             <div class="gm-header">
-                <span>⛏ GoMining Extractor</span>
-                <div>
-                    <button id="gm-minimize">−</button>
-                    <button id="gm-close">×</button>
-                </div>
+                <span>GoMining Extractor</span>
+                <button id="gm-close">×</button>
             </div>
             <div class="gm-body">
-                <div class="gm-section">
-                    <div class="gm-section-title">Statut</div>
-                    <div class="gm-row">
-                        <span class="gm-label">Intercepteur</span>
-                        <span class="gm-value">Actif</span>
-                    </div>
-                    <div class="gm-row">
-                        <span class="gm-label">Requêtes captées</span>
-                        <span class="gm-value" id="gm-req-count">0</span>
-                    </div>
-                    <div class="gm-row">
-                        <span class="gm-label">Taille données</span>
-                        <span class="gm-value" id="gm-data-size">0 KB</span>
-                    </div>
-                    <div class="gm-row">
-                        <span class="gm-label">Page</span>
-                        <span class="gm-value" id="gm-page">${window.location.pathname}</span>
-                    </div>
+                <div class="gm-status" id="gm-status">
+                    <span class="gm-dot"></span>
+                    <span id="gm-status-text">En attente de données...</span>
                 </div>
 
-                <div class="gm-section">
-                    <div class="gm-section-title">Données extraites du DOM</div>
-                    <div id="gm-dom-data">Cliquer "Scanner" pour analyser</div>
-                </div>
+                <div class="gm-meta" id="gm-meta"></div>
 
-                <div class="gm-section">
-                    <div class="gm-section-title">Actions</div>
-                    <button class="gm-btn" id="gm-scan">Scanner la page</button>
-                    <button class="gm-btn" id="gm-sync-sim" style="background:#bc8cff">Copier données pour Simulateur</button>
-                    <button class="gm-btn secondary" id="gm-export">Exporter toutes les données (JSON)</button>
-                    <button class="gm-btn secondary" id="gm-copy-api">Copier les requêtes API</button>
-                    <button class="gm-btn secondary" id="gm-purge" style="background:#ff4444;color:#fff">Purger les données</button>
-                </div>
-
-                <div class="gm-section">
-                    <div class="gm-section-title">Log des requêtes API</div>
-                    <div class="gm-log" id="gm-log"></div>
+                <div class="gm-footer">
+                    <span id="gm-req-count" style="display:none">0</span>
+                    <span id="gm-data-size" style="display:none">0</span>
+                    <span id="gm-page" style="display:none">${window.location.pathname}</span>
+                    <button class="gm-link" id="gm-purge">Purger</button>
+                    <button class="gm-link" id="gm-export">Exporter JSON</button>
                 </div>
             </div>
+            <div id="gm-dom-data" style="display:none"></div>
+            <div class="gm-log" id="gm-log" style="display:none"></div>
         `;
         document.body.appendChild(panel);
 
         // Events
-        document.getElementById('gm-minimize').addEventListener('click', () => {
-            panel.style.display = 'none';
-            toggle.style.display = 'block';
-        });
-
         document.getElementById('gm-close').addEventListener('click', () => {
             panel.style.display = 'none';
             toggle.style.display = 'block';
@@ -284,13 +258,6 @@
         toggle.addEventListener('click', () => {
             panel.style.display = 'block';
             toggle.style.display = 'none';
-        });
-
-        document.getElementById('gm-scan').addEventListener('click', () => {
-            const domData = scanDOM();
-            DATA.dom = domData;
-            updateDomDisplay(domData);
-            log('Scan DOM terminé');
         });
 
         document.getElementById('gm-export').addEventListener('click', () => {
@@ -303,32 +270,6 @@
             a.download = `gomining-data-${new Date().toISOString().slice(0, 10)}.json`;
             a.click();
             URL.revokeObjectURL(url);
-            log('Données exportées !');
-        });
-
-        document.getElementById('gm-sync-sim').addEventListener('click', async () => {
-            const essentials = extractEssentials();
-            const json = JSON.stringify(essentials);
-            navigator.clipboard.writeText('GMDATA:' + json).then(() => {
-                log('Données copiées ! GMT=$' + (essentials.prices.gmtPrice || 'N/A') + ' BTC=$' + (essentials.prices.btcPrice || 'N/A'));
-                const gmt = essentials.prices.gmtPrice ? '$' + essentials.prices.gmtPrice.toFixed(4) + ' (' + (essentials.prices.gmtPriceSource || 'api') + ')' : 'non capturé';
-                const btc = essentials.prices.btcPrice ? '$' + Math.round(essentials.prices.btcPrice) + ' (' + (essentials.prices.btcPriceSource || 'api') + ')' : 'non capturé';
-                const gmtP = essentials.prices.gmtPrice;
-                const btcP = essentials.prices.btcPrice;
-                const satPerTH = essentials.income.prPerThGmt && gmtP && btcP
-                    ? Math.round(essentials.income.prPerThGmt * gmtP / btcP * 1e8) : '?';
-                const hist = essentials.rewardHistory?.length || 0;
-                alert(`Données copiées !\nGMT: ${gmt} | BTC: ${btc}\nPR: ${satPerTH} sat/TH | ${hist} jours\n\nVa sur le simulateur et clique "Sync Extension".`);
-            }).catch(() => {
-                prompt('Copie ce texte et colle-le dans le simulateur:', 'GMDATA:' + json);
-            });
-        });
-
-        document.getElementById('gm-copy-api').addEventListener('click', () => {
-            const text = DATA.apiCalls.map(c => `${c.time} | ${c.url} | ${c.keys}`).join('\n');
-            navigator.clipboard.writeText(text).then(() => {
-                log('Requêtes API copiées !');
-            });
         });
 
         document.getElementById('gm-purge').addEventListener('click', () => {
@@ -339,8 +280,6 @@
             DATA.discount = {};
             DATA.dom = null;
             updatePanel();
-            log('Toutes les données purgées !');
-            alert('Données purgées ! Recharge la page GoMining pour recapturer les données fraîches.');
         });
     }
 
@@ -366,20 +305,35 @@
     }
 
     function updatePanel() {
-        const countEl = document.getElementById('gm-req-count');
-        if (countEl) countEl.textContent = DATA.apiCalls.length;
-
-        const sizeEl = document.getElementById('gm-data-size');
-        if (sizeEl) {
-            const bytes = new Blob([JSON.stringify(DATA)]).size;
-            sizeEl.textContent = bytes < 1024 ? bytes + ' B' : Math.round(bytes / 1024) + ' KB';
+        // Status indicator
+        const statusText = document.getElementById('gm-status-text');
+        const statusDot = document.querySelector('.gm-dot');
+        const hasData = Object.keys(DATA.miners).length > 0 || Object.keys(DATA.rewards).length > 0;
+        if (statusText && statusDot) {
+            if (hasData) {
+                statusText.textContent = 'Sync auto actif · ' + DATA.apiCalls.length + ' requêtes';
+                statusDot.classList.add('active');
+            } else {
+                statusText.textContent = 'En attente de données...';
+                statusDot.classList.remove('active');
+            }
         }
 
-        const logEl = document.getElementById('gm-log');
-        if (logEl) {
-            logEl.innerHTML = DATA.apiCalls.slice(0, 20).map(c =>
-                `<div><strong>${c.url.split('/').pop().split('?')[0]}</strong> — ${c.keys}</div>`
-            ).join('');
+        // Meta: show summary of captured data
+        const metaEl = document.getElementById('gm-meta');
+        if (metaEl) {
+            const essentials = hasData ? extractEssentials() : null;
+            if (essentials) {
+                const items = [];
+                if (essentials.miner?.power) items.push(essentials.miner.power + ' TH');
+                if (essentials.prices?.gmtPrice) items.push('GMT $' + essentials.prices.gmtPrice.toFixed(4));
+                if (essentials.prices?.btcPrice) items.push('BTC $' + Math.round(essentials.prices.btcPrice).toLocaleString());
+                if (essentials.rewardHistory?.length) items.push(essentials.rewardHistory.length + 'j hist.');
+                metaEl.textContent = items.join(' · ');
+                metaEl.style.display = items.length ? 'block' : 'none';
+            } else {
+                metaEl.style.display = 'none';
+            }
         }
     }
 
@@ -429,10 +383,8 @@
                     result.wallet.gmtBalance = parseFloat(gmtW.gmtValueAtSyncDate) || 0;
                     result.wallet.gmtLocked = Math.round(parseFloat(gmtW.lockedGmtInWei || '0') / 1e18);
                 }
-                const btcW = m.data.data.array.find(w => w.type === 'VIRTUAL_BTC');
-                if (btcW) {
-                    result.wallet.btcBalance = parseFloat(btcW.valueNumericAtSyncDate || '0') / 1e8;
-                }
+                // BTC wallet: no reliable balance field (no btcValueAtSyncDate equivalent)
+                // valueNumericAtSyncDate is an internal counter, not the balance
             }
         }
 

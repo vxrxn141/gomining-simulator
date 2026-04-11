@@ -1703,7 +1703,7 @@
             }
         }
 
-        const SERVICE_COST_PER_TH = 0.0089; // $/TH/day
+        let SERVICE_COST_PER_TH = 0.0089; // $/TH/day — updated from reward history if available
 
         // Power levels from GoMining API (get-power-upgrade-info)
         const POWER_LEVELS = [0, 1, 2, 4, 8, 16, 32, 48, 64, 96, 128, 192, 256, 384, 512, 768, 1024, 1536, 2560, 3584, 5000];
@@ -2890,6 +2890,7 @@
         }
 
         function applyEssentials(data) {
+
             // Miner
             if (data.miner?.power) document.getElementById('hashrate').value = data.miner.power;
             if (data.miner?.energyEfficiency) document.getElementById('efficiency').value = data.miner.energyEfficiency;
@@ -2923,20 +2924,6 @@
                 document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4);
             }
 
-            // Income / sat per TH — utiliser les prix GoMining pour la conversion (pas CoinGecko)
-            if (data.income?.prPerThGmt) {
-                const gmtP = apiGmt || state.apiGmtPrice || state.gmtPrice;
-                const btcP = apiBtc || state.apiBtcPrice || state.btcPrice;
-                if (gmtP && btcP) {
-                    const prBtcPerTH = data.income.prPerThGmt * gmtP / btcP;
-                    const satPerTH = Math.round(prBtcPerTH * 1e8);
-                    document.getElementById('sat-per-th').value = satPerTH;
-                    state.satPerTH = satPerTH;
-                    state.apiSatPerTH = satPerTH;
-                    document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
-                }
-            }
-
             // Store reward history
             if (data.rewardHistory?.length > 0) {
                 state.rewardHistory = data.rewardHistory;
@@ -2944,6 +2931,62 @@
                 showRewardChart(data.rewardHistory);
                 // Record performance tracking
                 recordPerformance(data.rewardHistory);
+            }
+
+            // Income / sat per TH — prefer last complete day from reward history
+            // totalIncomePerThToday is accumulated since midnight UTC (partial day = wrong PR)
+            {
+                const gmtP = apiGmt || state.apiGmtPrice || state.gmtPrice;
+                const btcP = apiBtc || state.apiBtcPrice || state.btcPrice;
+                let satPerTH = null;
+
+                // Primary: last complete day from reward history (poolReward / power)
+                if (data.rewardHistory?.length > 0) {
+                    const latest = data.rewardHistory[data.rewardHistory.length - 1];
+                    if (latest.poolReward && latest.power) {
+                        satPerTH = Math.round(latest.poolReward / latest.power * 1e8);
+                    }
+                }
+
+                // Fallback: totalIncomePerThToday (partial day, less accurate)
+                if (!satPerTH && data.income?.prPerThGmt && gmtP && btcP) {
+                    const prBtcPerTH = data.income.prPerThGmt * gmtP / btcP;
+                    satPerTH = Math.round(prBtcPerTH * 1e8);
+                }
+
+                if (satPerTH) {
+                    document.getElementById('sat-per-th').value = satPerTH;
+                    state.satPerTH = satPerTH;
+                    state.apiSatPerTH = satPerTH;
+                    document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
+                }
+            }
+
+            // Derive actual electricity and service costs from reward history
+            // Derive actual electricity and service costs from reward history
+            if (data.rewardHistory?.length > 0) {
+                const latest = data.rewardHistory[data.rewardHistory.length - 1];
+                const btcP = latest.btcPrice || apiBtc || state.apiBtcPrice || state.btcPrice;
+                const power = latest.power;
+                const discount = latest.totalDiscount || 0;
+                const discountMult = 1 - discount;
+                const efficiency = parseFloat(document.getElementById('efficiency').value) || 15;
+
+                // Derive actual $/kWh from C1
+                if (latest.c1 && power && btcP && efficiency && discountMult > 0) {
+                    const actualElec = latest.c1 * btcP * 1000 / (power * 24 * efficiency * discountMult);
+                    if (actualElec > 0.001 && actualElec < 0.50) {
+                        document.getElementById('elec-cost').value = actualElec.toFixed(4);
+                    }
+                }
+
+                // Derive actual $/TH/day service cost from C2
+                if (latest.c2 && power && btcP && discountMult > 0) {
+                    const actualService = latest.c2 * btcP / (power * discountMult);
+                    if (actualService > 0.0001 && actualService < 0.05) {
+                        SERVICE_COST_PER_TH = actualService;
+                    }
+                }
             }
 
             // Auto-fill staking weekly GMT from extension data

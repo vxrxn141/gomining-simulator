@@ -1,40 +1,45 @@
-// GoMining Sync Bridge - Content script for simulator pages
-// Polls chrome.storage.local and writes data to window.localStorage
-// so the simulator can read it without manual copy/paste.
+// GoMining Sync Bridge — Content script for simulator pages
+// Receives push from background worker + polls as fallback
 
 (function() {
     'use strict';
 
-    const POLL_INTERVAL = 15000; // 15 seconds
+    const POLL_INTERVAL = 15000;
     const STORAGE_KEY = 'gomining_autosync';
 
+    function writeToLocalStorage(data) {
+        const json = JSON.stringify(data);
+        const prev = window.localStorage.getItem(STORAGE_KEY);
+        if (json === prev) return;
+
+        window.localStorage.setItem(STORAGE_KEY, json);
+        window.dispatchEvent(new StorageEvent('storage', {
+            key: STORAGE_KEY,
+            oldValue: prev,
+            newValue: json,
+            storageArea: window.localStorage
+        }));
+    }
+
+    // Receive push from background worker (instant)
+    chrome.runtime.onMessage.addListener((msg) => {
+        if (msg.type === 'GOMINING_SYNC_PUSH' && msg.data) {
+            writeToLocalStorage(msg.data);
+        }
+    });
+
+    // Poll fallback
     function syncData() {
         chrome.storage.local.get('gominingAutoSync', (result) => {
             if (chrome.runtime.lastError || !result.gominingAutoSync) return;
-
-            const json = JSON.stringify(result.gominingAutoSync);
-            const prev = window.localStorage.getItem(STORAGE_KEY);
-
-            // Only write + dispatch if data actually changed
-            if (json !== prev) {
-                window.localStorage.setItem(STORAGE_KEY, json);
-
-                // Dispatch a storage event so same-tab listeners get notified
-                window.dispatchEvent(new StorageEvent('storage', {
-                    key: STORAGE_KEY,
-                    oldValue: prev,
-                    newValue: json,
-                    storageArea: window.localStorage
-                }));
-
-                console.log('[GoMining Sync Bridge] Data synced to localStorage');
-            }
+            writeToLocalStorage(result.gominingAutoSync);
         });
     }
 
-    // Initial sync after a short delay, then poll
-    setTimeout(syncData, 2000);
-    setInterval(syncData, POLL_INTERVAL);
+    // Signal to the simulator that the extension is present
+    document.dispatchEvent(new Event('gomining-bridge-ready'));
 
-    console.log('[GoMining Sync Bridge] Active - polling every ' + (POLL_INTERVAL / 1000) + 's');
+    // Initial sync + polling fallback
+    setTimeout(syncData, 1000);
+    setInterval(syncData, POLL_INTERVAL);
 })();
