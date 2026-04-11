@@ -2980,13 +2980,6 @@
             saveSettings();
             calculate();
 
-            // DEBUG: show available reward history fields in page title
-            if (data.rewardHistory?.length > 0) {
-                const _l = data.rewardHistory[data.rewardHistory.length - 1];
-                const _fields = Object.entries(_l).map(([k,v]) => k + '=' + (v === null ? 'null' : v === undefined ? 'undef' : typeof v === 'number' ? v.toFixed(6) : v)).join(' | ');
-                document.title = _fields;
-            }
-
             // Override dashboard with ACTUAL reward from last complete day
             // No formula — uses GoMining's real numbers directly
             if (data.rewardHistory?.length > 0 && state.btcPrice && state.gmtPrice) {
@@ -3757,9 +3750,18 @@
         function checkAutoSync() {
             try {
                 const raw = localStorage.getItem('gomining_autosync');
-                if (!raw) return;
+                if (!raw) { document.title = 'NO SYNC DATA'; return; }
                 const data = JSON.parse(raw);
-                if (!data || !data.timestamp) return;
+                if (!data || !data.timestamp) { document.title = 'NO TIMESTAMP'; return; }
+
+                // DEBUG: show reward history fields in title (always, even on repeat sync)
+                if (data.rewardHistory?.length > 0) {
+                    const _l = data.rewardHistory[data.rewardHistory.length - 1];
+                    document.title = Object.keys(_l).filter(k => _l[k] != null).join(', ');
+                } else {
+                    document.title = 'hist=0 income=' + JSON.stringify(data.income || {}).substring(0, 80);
+                }
+
                 // Only apply if newer than last sync
                 if (state.lastAutoSyncTimestamp === data.timestamp) return;
                 state.lastAutoSyncTimestamp = data.timestamp;
