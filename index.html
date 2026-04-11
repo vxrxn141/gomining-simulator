@@ -2962,26 +2962,26 @@
                 }
             }
 
-            // Use actual GoMining fee rates from API (c1PerThPerWt, c2PerTh are GMT rates)
-            // These are normalized rates, not accumulated — reliable at any time of day
-            {
-                const gp = state.gmtPrice;
-                const disc = parseFloat(document.getElementById('discount').value) / 100 || 0;
-                const dm = 1 - disc;
-
-                // c2PerTh (GMT) = SERVICE_COST_USD / gmtPrice * discountMult
-                // → SERVICE_COST_USD = c2PerTh * gmtPrice / discountMult
-                if (data.income?.c2PerTh && gp && dm > 0) {
-                    const svc = data.income.c2PerTh * gp / dm;
-                    if (svc > 0.001 && svc < 0.05) SERVICE_COST_PER_TH = svc;
-                }
-
-                // c1PerThPerWt (GMT) = (kWh * 24 / gmtPrice / 1000) * discountMult
-                // → kWh = c1PerThPerWt * gmtPrice * 1000 / (24 * discountMult)
-                if (data.income?.c1PerThPerWt && gp && dm > 0) {
-                    const kWh = data.income.c1PerThPerWt * gp * 1000 / (24 * dm);
-                    if (kWh > 0.001 && kWh < 0.50) {
-                        document.getElementById('elec-cost').value = kWh.toFixed(4);
+            // Derive actual electricity cost from reward history maintenanceGmt
+            // maintenanceGmt = total fees in GMT = (C1 + C2) per TH * discountMult * TH
+            // Solve for kWh: kWh = (feesGmt/TH - C2) * gmtPrice * 1000 / (24 * W/TH * discountMult)
+            if (data.rewardHistory?.length > 0) {
+                const latest = data.rewardHistory[data.rewardHistory.length - 1];
+                if (latest.maintenanceGmt && latest.power && latest.totalDiscount !== undefined) {
+                    const gp = latest.gmtPrice || state.gmtPrice;
+                    const dm = 1 - latest.totalDiscount;
+                    const eff = parseFloat(document.getElementById('efficiency').value) || 15;
+                    const feesGmtPerTH = latest.maintenanceGmt / latest.power;
+                    // C2 per TH in GMT = SERVICE_COST_PER_TH / gmtPrice * discountMult
+                    const c2gmt = (SERVICE_COST_PER_TH / gp) * dm;
+                    // C1 per TH in GMT = feesPerTH - C2
+                    const c1gmt = feesGmtPerTH - c2gmt;
+                    if (c1gmt > 0 && dm > 0) {
+                        // c1gmt = (kWh * 24 * W/TH / gmtPrice / 1000) * discountMult
+                        const kWh = c1gmt * gp * 1000 / (24 * eff * dm);
+                        if (kWh > 0.01 && kWh < 0.20) {
+                            document.getElementById('elec-cost').value = kWh.toFixed(4);
+                        }
                     }
                 }
             }
