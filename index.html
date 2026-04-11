@@ -2962,29 +2962,26 @@
                 }
             }
 
-            // Derive actual electricity and service costs from reward history
-            // Derive actual electricity and service costs from reward history
-            if (data.rewardHistory?.length > 0) {
-                const latest = data.rewardHistory[data.rewardHistory.length - 1];
-                const btcP = latest.btcPrice || apiBtc || state.apiBtcPrice || state.btcPrice;
-                const power = latest.power;
-                const discount = latest.totalDiscount || 0;
-                const discountMult = 1 - discount;
-                const efficiency = parseFloat(document.getElementById('efficiency').value) || 15;
+            // Use actual GoMining fee rates from API (c1PerThPerWt, c2PerTh are GMT rates)
+            // These are normalized rates, not accumulated — reliable at any time of day
+            {
+                const gp = state.gmtPrice;
+                const disc = parseFloat(document.getElementById('discount').value) / 100 || 0;
+                const dm = 1 - disc;
 
-                // Derive actual $/kWh from C1
-                if (latest.c1 && power && btcP && efficiency && discountMult > 0) {
-                    const actualElec = latest.c1 * btcP * 1000 / (power * 24 * efficiency * discountMult);
-                    if (actualElec > 0.001 && actualElec < 0.50) {
-                        document.getElementById('elec-cost').value = actualElec.toFixed(4);
-                    }
+                // c2PerTh (GMT) = SERVICE_COST_USD / gmtPrice * discountMult
+                // → SERVICE_COST_USD = c2PerTh * gmtPrice / discountMult
+                if (data.income?.c2PerTh && gp && dm > 0) {
+                    const svc = data.income.c2PerTh * gp / dm;
+                    if (svc > 0.001 && svc < 0.05) SERVICE_COST_PER_TH = svc;
                 }
 
-                // Derive actual $/TH/day service cost from C2
-                if (latest.c2 && power && btcP && discountMult > 0) {
-                    const actualService = latest.c2 * btcP / (power * discountMult);
-                    if (actualService > 0.0001 && actualService < 0.05) {
-                        SERVICE_COST_PER_TH = actualService;
+                // c1PerThPerWt (GMT) = (kWh * 24 / gmtPrice / 1000) * discountMult
+                // → kWh = c1PerThPerWt * gmtPrice * 1000 / (24 * discountMult)
+                if (data.income?.c1PerThPerWt && gp && dm > 0) {
+                    const kWh = data.income.c1PerThPerWt * gp * 1000 / (24 * dm);
+                    if (kWh > 0.001 && kWh < 0.50) {
+                        document.getElementById('elec-cost').value = kWh.toFixed(4);
                     }
                 }
             }
