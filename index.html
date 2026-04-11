@@ -2980,6 +2980,13 @@
             saveSettings();
             calculate();
 
+            // DEBUG: show available reward history fields in page title
+            if (data.rewardHistory?.length > 0) {
+                const _l = data.rewardHistory[data.rewardHistory.length - 1];
+                const _fields = Object.entries(_l).map(([k,v]) => k + '=' + (v === null ? 'null' : v === undefined ? 'undef' : typeof v === 'number' ? v.toFixed(6) : v)).join(' | ');
+                document.title = _fields;
+            }
+
             // Override dashboard with ACTUAL reward from last complete day
             // No formula — uses GoMining's real numbers directly
             if (data.rewardHistory?.length > 0 && state.btcPrice && state.gmtPrice) {
