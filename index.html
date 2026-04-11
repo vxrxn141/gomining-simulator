@@ -2962,30 +2962,6 @@
                 }
             }
 
-            // Derive actual electricity cost from reward history maintenanceGmt
-            // maintenanceGmt = total fees in GMT = (C1 + C2) per TH * discountMult * TH
-            // Solve for kWh: kWh = (feesGmt/TH - C2) * gmtPrice * 1000 / (24 * W/TH * discountMult)
-            if (data.rewardHistory?.length > 0) {
-                const latest = data.rewardHistory[data.rewardHistory.length - 1];
-                if (latest.maintenanceGmt && latest.power && latest.totalDiscount !== undefined) {
-                    const gp = latest.gmtPrice || state.gmtPrice;
-                    const dm = 1 - latest.totalDiscount;
-                    const eff = parseFloat(document.getElementById('efficiency').value) || 15;
-                    const feesGmtPerTH = latest.maintenanceGmt / latest.power;
-                    // C2 per TH in GMT = SERVICE_COST_PER_TH / gmtPrice * discountMult
-                    const c2gmt = (SERVICE_COST_PER_TH / gp) * dm;
-                    // C1 per TH in GMT = feesPerTH - C2
-                    const c1gmt = feesGmtPerTH - c2gmt;
-                    if (c1gmt > 0 && dm > 0) {
-                        // c1gmt = (kWh * 24 * W/TH / gmtPrice / 1000) * discountMult
-                        const kWh = c1gmt * gp * 1000 / (24 * eff * dm);
-                        if (kWh > 0.01 && kWh < 0.20) {
-                            document.getElementById('elec-cost').value = kWh.toFixed(4);
-                        }
-                    }
-                }
-            }
-
             // Auto-fill staking weekly GMT from extension data
             if (data.staking?.weeklyGmtReward) {
                 const stakingEl = document.getElementById('staking-gmt-weekly');
@@ -3003,6 +2979,45 @@
             calcTotalDiscount();
             saveSettings();
             calculate();
+
+            // Override dashboard with ACTUAL reward from last complete day
+            // No formula — uses GoMining's real numbers directly
+            if (data.rewardHistory?.length > 0 && state.btcPrice && state.gmtPrice) {
+                const last = data.rewardHistory[data.rewardHistory.length - 1];
+                const currentTH = parseFloat(document.getElementById('hashrate').value) || last.power;
+                const scale = currentTH / (last.power || currentTH);
+                const gp = state.gmtPrice;
+                const bp = state.btcPrice;
+
+                // gmtIncome = gross GMT, maintenanceGmt = fees GMT
+                if (last.gmtIncome && last.maintenanceGmt) {
+                    const grossGmt = last.gmtIncome * scale;
+                    const feesGmt = last.maintenanceGmt * scale;
+                    const netGmt = grossGmt - feesGmt;
+                    state._lastReward = Object.assign(state._lastReward || {}, {
+                        grossGmt, feesGmt, netGmt,
+                        grossBtc: grossGmt * gp / bp,
+                        feesBtc: feesGmt * gp / bp,
+                        netBtc: netGmt * gp / bp,
+                        grossUsd: grossGmt * gp,
+                        feesUsd: feesGmt * gp,
+                        netUsd: netGmt * gp,
+                    });
+                    updateGainDisplay();
+                }
+                // Fallback: use poolReward (BTC) if GMT fields missing
+                else if (last.poolReward) {
+                    const grossBtc = last.poolReward * scale;
+                    const grossGmt = grossBtc * bp / gp;
+                    // Use simulator fees since we can't get actual
+                    if (state._lastReward) {
+                        state._lastReward.grossBtc = grossBtc;
+                        state._lastReward.grossGmt = grossGmt;
+                        state._lastReward.grossUsd = grossBtc * bp;
+                        updateGainDisplay();
+                    }
+                }
+            }
         }
 
         // ===== VALIDATION =====
