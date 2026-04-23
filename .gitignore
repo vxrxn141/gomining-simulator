@@ -2,3 +2,12 @@
 .claude/
 node_modules/
 *.log
+
+# Legal and personal — never commit these
+PARTNERSHIP_*
+Passeport*
+*.pdf
+*.docx
+/private/
+/legal/
+
