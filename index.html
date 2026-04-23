@@ -1669,7 +1669,8 @@
             networkHashrate: 0, // in GH/s
             customBtcPrices: [],
             lastCalc: null,
-            currency: 'usd' // 'usd', 'btc', 'gmt'
+            currency: 'usd', // 'usd', 'btc', 'gmt'
+            rewardHistory: [] // loaded from localStorage on init
         };
 
         function setCurrency(cur) {
@@ -2928,13 +2929,15 @@
                 document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4);
             }
 
-            // Store reward history
+            // Store reward history — merge with existing to avoid losing days
+            // (dashboard sync returns ~6 days, rewards page ~20 days)
             if (data.rewardHistory?.length > 0) {
-                state.rewardHistory = data.rewardHistory;
-                showValidation(data.rewardHistory);
-                showRewardChart(data.rewardHistory);
+                state.rewardHistory = mergeRewardHistory(state.rewardHistory, data.rewardHistory);
+                saveRewardHistory(state.rewardHistory);
+                showValidation(state.rewardHistory);
+                showRewardChart(state.rewardHistory);
                 // Record performance tracking
-                recordPerformance(data.rewardHistory);
+                recordPerformance(state.rewardHistory);
             }
 
             // Income / sat per TH — prefer last complete day from reward history
@@ -3557,6 +3560,36 @@
             });
         });
 
+        // ===== REWARD HISTORY PERSISTENCE =====
+        const RH_KEY = 'gomining_reward_history';
+
+        function mergeRewardHistory(existing, incoming) {
+            const byDate = new Map();
+            for (const r of (existing || [])) {
+                if (r.date) byDate.set(r.date, r);
+            }
+            for (const r of (incoming || [])) {
+                if (r.date) byDate.set(r.date, r); // newer data wins
+            }
+            // Keep last 30 days only
+            const cutoff = new Date(Date.now() - 30 * 24 * 3600 * 1000).toISOString().substring(0, 10);
+            return Array.from(byDate.values())
+                .filter(r => r.date >= cutoff)
+                .sort((a, b) => a.date.localeCompare(b.date));
+        }
+
+        function saveRewardHistory(history) {
+            try {
+                localStorage.setItem(RH_KEY, JSON.stringify(history));
+            } catch(e) { /* quota exceeded — ignore */ }
+        }
+
+        function loadRewardHistory() {
+            try {
+                return JSON.parse(localStorage.getItem(RH_KEY)) || [];
+            } catch(e) { return []; }
+        }
+
         // ===== PERFORMANCE TRACKING =====
         const PERF_KEY = 'gomining_performance';
         const PERF_VERSION = 'v2'; // Bump to invalidate old data
@@ -3718,6 +3751,14 @@
                 if (!raw) return;
                 const data = JSON.parse(raw);
                 if (!data || !data.timestamp) return;
+                // DEBUG title — shows what's in the sync payload even if auto-sync already applied.
+                // Useful for diagnosing PR issues without opening the console.
+                const pr = data.income?.prPerThGmt;
+                const src = data.income?.prPerThSource || '?';
+                const hist = data.rewardHistory?.length || 0;
+                const gp = data.prices?.gmtPrice;
+                const bp = data.prices?.btcPrice;
+                document.title = `PR:${pr?.toFixed?.(2) || '?'} [${src}] hist:${hist}d gmt:${gp?.toFixed?.(4) || '?'} btc:${bp?.toFixed?.(0) || '?'}`;
                 // Only apply if newer than last sync
                 if (state.lastAutoSyncTimestamp === data.timestamp) return;
                 state.lastAutoSyncTimestamp = data.timestamp;
@@ -4709,6 +4750,13 @@
 
         // Init transaction date to today
         document.getElementById('tx-date').value = new Date().toISOString().substring(0, 10);
+
+        // Load persisted reward history before first sync
+        state.rewardHistory = loadRewardHistory();
+        if (state.rewardHistory.length > 0) {
+            document.getElementById('dash-history-section').style.display = 'block';
+            showDashboardCalendar(state.rewardHistory);
+        }
 
         // Check for auto-sync data
         checkAutoSync();

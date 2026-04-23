@@ -122,6 +122,29 @@
         if (str.includes('reward') || str.includes('income') || str.includes('computing_power') ||
             str.includes('hashrate') || str.includes('electricity') || str.includes('service')) {
             const key = extractEndpointKey(url);
+
+            // Pour find-aggregated-by-date, merger les jours au lieu d'écraser
+            // (le dashboard GoMining retourne ~6 jours, la page rewards ~20 jours)
+            if (url.includes('/nft-income/find-aggregated-by-date') &&
+                data?.data?.array &&
+                DATA.rewards[key]?.data?.data?.array) {
+                const existing = DATA.rewards[key].data.data.array;
+                const newDays = data.data.array;
+                const byDate = new Map();
+                for (const d of existing) {
+                    const dt = d.createdAt?.substring(0, 10);
+                    if (dt) byDate.set(dt, d);
+                }
+                for (const d of newDays) {
+                    const dt = d.createdAt?.substring(0, 10);
+                    if (dt) byDate.set(dt, d); // nouvelles données ont priorité
+                }
+                data = JSON.parse(JSON.stringify(data));
+                data.data.array = Array.from(byDate.values())
+                    .sort((a, b) => (a.createdAt || '').localeCompare(b.createdAt || ''));
+                log('Merge reward history: ' + existing.length + ' + ' + newDays.length + ' → ' + data.data.array.length + ' jours');
+            }
+
             DATA.rewards[key] = {
                 url: url,
                 time: new Date().toISOString(),
@@ -411,7 +434,10 @@
                 result.prices.btcPrice = r.data.data.currentBtcPrice;
             }
             if (r.url?.includes('/nft-income-aggregation/get-last') && r.data?.data) {
-                result.income.prPerThGmt = r.data.data.totalIncomePerThToday;
+                // totalIncomePerThToday is partial-day (resets at UTC midnight),
+                // so it keeps "dropping" as UTC days roll over. Stash it as a last-resort
+                // fallback only — the primary PR source is rewardHistory (last complete day).
+                result.income._partialDayPr = r.data.data.totalIncomePerThToday;
                 result.income.c1PerThPerWt = r.data.data.c1ValuePerThPerWtToday;
                 result.income.c2PerTh = r.data.data.c2ValuePerThToday;
                 // Capturer le prix GMT depuis les stats si disponible
@@ -534,7 +560,21 @@
 
         // Fallback prix et PR depuis le reward history (le jour le plus récent)
         if (result.rewardHistory.length > 0) {
-            const latest = result.rewardHistory[result.rewardHistory.length - 1];
+            const todayUTC = new Date().toISOString().substring(0, 10);
+
+            // Find the most recent COMPLETE day (strictly before today UTC, AND with valid poolReward/power).
+            // This avoids using today's partial data which makes PR drift / drop randomly.
+            let completeDay = null;
+            for (let i = result.rewardHistory.length - 1; i >= 0; i--) {
+                const d = result.rewardHistory[i];
+                if (d.date >= todayUTC) continue;           // skip today (partial)
+                if (!d.poolReward || !d.power) continue;    // skip days with missing data
+                completeDay = d;
+                break;
+            }
+            // Fall back to most recent day (even if today) for prices if no complete day found
+            const latest = completeDay || result.rewardHistory[result.rewardHistory.length - 1];
+
             if (!result.prices.gmtPrice && latest.gmtPrice) {
                 result.prices.gmtPrice = latest.gmtPrice;
                 result.prices.gmtPriceSource = 'reward-history';
@@ -543,18 +583,25 @@
                 result.prices.btcPrice = latest.btcPrice;
                 result.prices.btcPriceSource = 'reward-history';
             }
-            // Calculer PR per TH depuis poolReward du dernier jour
-            if (!result.income.prPerThGmt && latest.poolReward && latest.power) {
-                // poolReward est en BTC (satoshis ou décimal), power en TH
-                const prBtcPerTH = latest.poolReward / latest.power;
+
+            // PRIMARY PR source: the last COMPLETE day's poolReward / power, converted BTC→GMT
+            if (completeDay && completeDay.poolReward && completeDay.power) {
+                const prBtcPerTH = completeDay.poolReward / completeDay.power;
                 const gp = result.prices.gmtPrice;
                 const bp = result.prices.btcPrice;
                 if (gp && bp) {
                     result.income.prPerThGmt = prBtcPerTH * bp / gp;
-                    result.income.prPerThSource = 'reward-history';
+                    result.income.prPerThSource = 'reward-history:' + completeDay.date;
                 }
             }
         }
+
+        // Last-resort fallback: use partial-day value only if nothing else worked
+        if (!result.income.prPerThGmt && result.income._partialDayPr) {
+            result.income.prPerThGmt = result.income._partialDayPr;
+            result.income.prPerThSource = 'partial-day-fallback';
+        }
+        delete result.income._partialDayPr;
 
         return result;
     }
