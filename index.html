@@ -3592,7 +3592,7 @@
 
         // ===== PERFORMANCE TRACKING =====
         const PERF_KEY = 'gomining_performance';
-        const PERF_VERSION = 'v2'; // Bump to invalidate old data
+        const PERF_VERSION = 'v3'; // Bump to invalidate old data
 
         function loadPerformance() {
             try {
@@ -3621,25 +3621,25 @@
             if (!rewardHistory || !state.lastCalc || !state.btcPrice) return;
             const c = state.lastCalc;
             for (const day of rewardHistory) {
-                if (!day.date || !day.valueBtc) continue;
+                // Use poolReward (raw gross mining yield) as the source of truth, NOT valueBtc.
+                // valueBtc includes reinvestment bonuses and ambassador rewards, so it always
+                // overstates the simulator's "accuracy" — the simulator doesn't know about bonuses.
+                // Accuracy = how well we predict GROSS mining yield. Compare gross-to-gross.
+                if (!day.date || !day.poolReward) continue;
                 const bp = day.btcPrice || state.btcPrice;
-                const gp = day.gmtPrice || state.gmtPrice;
                 const power = day.power || c.hashrate;
 
                 // Calculer sat/TH depuis poolReward (BTC) du jour
                 let satTH = c.satPerTH;
                 if (day.poolReward && power && bp) {
-                    // poolReward est en BTC pour le miner complet
                     satTH = Math.round(day.poolReward / power * 1e8);
                 }
 
                 const projected = calcDailyReward(power, c.efficiency, c.elecCost, c.discount, bp, satTH);
 
-                // valueBtc de GoMining = revenu brut BTC (fees payés en GMT séparément)
-                // On compare au grossBtc du simulateur pour cohérence
                 savePerformanceEntry(day.date, {
-                    valueBtc: day.valueBtc,
-                    valueUsd: day.valueBtc * bp
+                    valueBtc: day.poolReward,
+                    valueUsd: day.poolReward * bp
                 }, {
                     valueBtc: projected ? projected.grossBtc : 0,
                     valueUsd: projected ? projected.grossUsd : 0
