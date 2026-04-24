@@ -1024,8 +1024,15 @@
                     <div style="display:none;" id="dash-month-sub"></div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent);">
-                    <div class="label">BTC Wallet</div>
-                    <div class="value btc" id="dash-btc-wallet" style="font-size:1.3em;">--</div>
+                    <div style="display:flex;justify-content:center;gap:4px;margin-bottom:4px;">
+                        <button onclick="setWalletMode('btc')" id="wallet-btn-btc" style="background:var(--accent);color:#000;border:none;padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">BTC</button>
+                        <button onclick="setWalletMode('gmt')" id="wallet-btn-gmt" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">GMT</button>
+                        <button onclick="setWalletMode('cash')" id="wallet-btn-cash" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:2px 8px;border-radius:4px;font-size:0.6em;font-weight:700;cursor:pointer;">$</button>
+                    </div>
+                    <div class="label" data-i18n="kpi_wallet">Wallet</div>
+                    <div class="value btc" id="dash-wallet" style="font-size:1.3em;">--</div>
+                    <!-- Kept hidden for backward-compat with code that sets dash-btc-wallet -->
+                    <div style="display:none;" id="dash-btc-wallet">--</div>
                 </div>
                 <div class="live-card" style="border-bottom:3px solid var(--accent2);">
                     <div class="label" data-i18n="kpi_miner">Miner</div>
@@ -1050,8 +1057,10 @@
                     <div class="value net" id="net-hashrate">--</div>
                 </div>
                 <div class="live-card">
-                    <div class="label"><span class="has-tooltip" data-tooltip="GMT balance in your wallet" data-i18n="kpi_gmt_wallet">GMT Wallet</span></div>
-                    <div class="value gmt" id="dash-gmt-wallet">--</div>
+                    <div class="label"><span class="has-tooltip" data-tooltip="Total discount applied to your maintenance fees (sum of token, streak, VIP, and mining mode)" data-i18n="kpi_discount">Discount</span></div>
+                    <div class="value" id="dash-discount-total" style="color:var(--green);">--</div>
+                    <!-- Kept hidden for backward-compat with code that sets dash-gmt-wallet -->
+                    <div style="display:none;" id="dash-gmt-wallet">--</div>
                 </div>
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="How many days your locked + wallet GMT cover your fees" data-i18n="kpi_prepaid_days">Prepaid Days</span></div>
@@ -1716,6 +1725,7 @@
             customBtcPrices: [],
             lastCalc: null,
             currency: 'usd', // 'usd', 'btc', 'gmt'
+            walletMode: 'btc', // 'btc', 'gmt', 'cash' — toggle on the unified Wallet KPI card
             rewardHistory: [] // loaded from localStorage on init
         };
 
@@ -2544,11 +2554,15 @@
             state._lastReward = r;
             updateGainDisplay();
 
-            // === BTC Wallet ===
-            const btcWalletEl = document.getElementById('dash-btc-wallet');
-            if (btcWalletEl) {
-                const btcBalance = state.btcWalletBalance || 0;
-                btcWalletEl.textContent = btcBalance > 0 ? btcBalance.toFixed(10) + ' BTC' : '0.00000000 BTC';
+            // === Wallet KPI (toggleable: BTC / GMT / Cash) ===
+            updateWalletDisplay();
+
+            // === Discount KPI ===
+            const discTotalEl = document.getElementById('dash-discount-total');
+            if (discTotalEl) {
+                const totalDisc = parseFloat(document.getElementById('discount')?.value) || 0;
+                discTotalEl.textContent = totalDisc.toFixed(2) + '%';
+                discTotalEl.style.color = totalDisc >= 15 ? 'var(--green)' : totalDisc >= 5 ? 'var(--accent)' : 'var(--text-dim)';
             }
 
             // === New dashboard cards ===
@@ -2556,7 +2570,7 @@
             const profitEl = document.getElementById('dash-profit-day');
             if (profitEl) profitEl.textContent = formatProfit(r.netBtc, bp, r.netGmt, r.grossBtc);
 
-            // GMT wallet
+            // Keep dash-gmt-wallet (hidden) up to date for any legacy reader
             const gmtWalletEl = document.getElementById('dash-gmt-wallet');
             const gmtPrepaid = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
             if (gmtWalletEl) gmtWalletEl.textContent = gmtPrepaid.toFixed(1) + ' GMT';
@@ -3360,6 +3374,48 @@
             }
         }
 
+        // ===== WALLET MODE TOGGLE (BTC / GMT / Cash) =====
+        function setWalletMode(mode) {
+            state.walletMode = mode;
+            const colorByMode = { btc: 'var(--accent)', gmt: 'var(--purple)', cash: 'var(--green)' };
+            ['btc', 'gmt', 'cash'].forEach(m => {
+                const btn = document.getElementById('wallet-btn-' + m);
+                if (btn) {
+                    btn.style.background = m === mode ? colorByMode[m] : 'transparent';
+                    btn.style.color = m === mode ? '#000' : 'var(--text-dim)';
+                    btn.style.border = m === mode ? 'none' : '1px solid var(--border)';
+                }
+            });
+            updateWalletDisplay();
+        }
+        function updateWalletDisplay() {
+            const el = document.getElementById('dash-wallet');
+            if (!el) return;
+            const mode = state.walletMode || 'btc';
+            const btcBalance = state.btcWalletBalance || 0;
+            const gmtPrepaid = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
+            const gmtLocked = parseFloat(document.getElementById('gmt-locked')?.value) || 0;
+            const totalGmt = gmtPrepaid + gmtLocked;
+            const bp = state.btcPrice || 0;
+            const gp = state.gmtPrice || 0;
+
+            if (mode === 'btc') {
+                el.textContent = btcBalance.toFixed(8) + ' BTC';
+                el.className = 'value btc';
+                el.style.fontSize = '1.3em';
+            } else if (mode === 'gmt') {
+                el.textContent = totalGmt.toFixed(2) + ' GMT';
+                el.className = 'value gmt';
+                el.style.fontSize = '1.3em';
+            } else { // cash
+                const totalUsd = btcBalance * bp + totalGmt * gp;
+                el.textContent = '$' + totalUsd.toFixed(2);
+                el.className = 'value';
+                el.style.color = 'var(--green)';
+                el.style.fontSize = '1.3em';
+            }
+        }
+
         // ===== GAIN PERIOD TOGGLE =====
         let gainPeriod = 'day';
 
@@ -4019,6 +4075,7 @@
                 // KPIs
                 kpi_today: 'Est. Gain Today', kpi_month: 'Gain This Month', kpi_miner: 'Miner', kpi_strategy: 'Optimal Strategy',
                 kpi_pool_reward: 'Pool Reward', kpi_gmt_wallet: 'GMT Wallet', kpi_prepaid_days: 'Prepaid Days', kpi_next_halving: 'Next Halving',
+                kpi_wallet: 'Wallet', kpi_discount: 'Discount',
                 // Section titles
                 sec_th_progress: 'TH Progress', sec_monthly_goal: 'Monthly Goal', sec_whatif: 'What If I Upgrade?',
                 sec_reward_history: 'Reward History', sec_price_alerts: 'Price Alerts', sec_portfolio: 'My Portfolio',
@@ -4187,6 +4244,7 @@
                 // KPIs
                 kpi_today: "Gain estimé aujourd'hui", kpi_month: 'Gain ce mois', kpi_miner: 'Mineur', kpi_strategy: 'Stratégie optimale',
                 kpi_pool_reward: 'Pool Reward', kpi_gmt_wallet: 'GMT Wallet', kpi_prepaid_days: 'Jours prépayés', kpi_next_halving: 'Prochain Halving',
+                kpi_wallet: 'Portefeuille', kpi_discount: 'Discount',
                 // Section titles
                 sec_th_progress: 'Progression TH', sec_monthly_goal: 'Objectif Mensuel', sec_whatif: "Et si j'upgrade ?",
                 sec_reward_history: 'Historique des Rewards', sec_price_alerts: 'Alertes de Prix', sec_portfolio: 'Mon Portfolio',
