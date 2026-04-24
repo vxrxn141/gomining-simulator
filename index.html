@@ -1065,6 +1065,49 @@
             <div style="display:none;" id="net-difficulty">--</div>
             <div id="dash-ticker" style="display:none;"></div>
 
+            <!-- Manual entry button (for users without the Chrome extension) -->
+            <div style="display:flex;justify-content:center;margin:16px 0 8px 0;">
+                <button onclick="openManualEntry()" style="background:transparent;color:var(--text-dim);border:1px dashed var(--border);padding:8px 16px;border-radius:8px;cursor:pointer;font-size:0.9em;display:inline-flex;align-items:center;gap:6px;transition:all 0.2s;" onmouseover="this.style.color='var(--accent)';this.style.borderColor='var(--accent)';" onmouseout="this.style.color='var(--text-dim)';this.style.borderColor='var(--border)';">
+                    <span>✏️</span>
+                    <span data-i18n="manual_entry_btn">Enter manually</span>
+                </button>
+            </div>
+
+            <!-- Manual Entry Modal -->
+            <div id="manual-entry-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:9999;align-items:center;justify-content:center;padding:20px;">
+                <div style="background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:24px;max-width:420px;width:100%;box-shadow:0 8px 32px rgba(0,0,0,0.4);">
+                    <h2 style="margin:0 0 6px 0;border:none;padding:0;color:var(--accent);" data-i18n="manual_entry_title">Manual Data Entry</h2>
+                    <p style="margin:0 0 18px 0;color:var(--text-dim);font-size:0.85em;" data-i18n="manual_entry_desc">Enter your miner data manually if you don't use the Chrome extension.</p>
+
+                    <div style="display:flex;flex-direction:column;gap:14px;">
+                        <div>
+                            <label style="display:block;margin-bottom:4px;font-size:0.85em;color:var(--text-dim);">
+                                <span data-i18n="manual_entry_th">Power (TH/s)</span>
+                            </label>
+                            <input type="number" id="manual-th" min="1" step="1" placeholder="e.g. 83" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:1em;">
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:4px;font-size:0.85em;color:var(--text-dim);">
+                                <span data-i18n="manual_entry_pr">Pool Reward (sat/TH per day)</span>
+                            </label>
+                            <input type="number" id="manual-pr" min="1" max="500" step="1" placeholder="e.g. 47" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:1em;">
+                        </div>
+                        <div>
+                            <label style="display:block;margin-bottom:4px;font-size:0.85em;color:var(--text-dim);">
+                                <span data-i18n="manual_entry_discount">Total discount (%)</span>
+                            </label>
+                            <input type="number" id="manual-discount" min="0" max="50" step="0.01" placeholder="e.g. 11.12" style="width:100%;padding:10px;background:var(--bg);border:1px solid var(--border);border-radius:6px;color:var(--text);font-size:1em;">
+                            <div style="font-size:0.75em;color:var(--text-dim);margin-top:4px;" data-i18n="manual_entry_discount_hint">Sum of all your GoMining discounts (token + streak + VIP + mining mode)</div>
+                        </div>
+                    </div>
+
+                    <div style="display:flex;gap:10px;margin-top:22px;justify-content:flex-end;">
+                        <button onclick="closeManualEntry()" style="background:transparent;color:var(--text-dim);border:1px solid var(--border);padding:10px 18px;border-radius:6px;cursor:pointer;font-size:0.9em;" data-i18n="manual_entry_cancel">Cancel</button>
+                        <button onclick="saveManualEntry()" style="background:var(--accent);color:#000;border:none;padding:10px 22px;border-radius:6px;cursor:pointer;font-size:0.9em;font-weight:700;" data-i18n="manual_entry_save">Save</button>
+                    </div>
+                </div>
+            </div>
+
             <!-- TH Progress -->
             <div class="section" id="dash-th-progress" style="display:none;">
                 <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
@@ -2868,6 +2911,51 @@
             } catch (e) {}
         }
 
+        // ===== MANUAL DATA ENTRY (Dashboard) =====
+        // Lets users without the Chrome extension input their miner data directly.
+        function openManualEntry() {
+            // Pre-fill with current values from the simulator form
+            const thEl = document.getElementById('hashrate');
+            const prEl = document.getElementById('sat-per-th');
+            const discEl = document.getElementById('discount');
+            if (thEl) document.getElementById('manual-th').value = thEl.value || '';
+            if (prEl) document.getElementById('manual-pr').value = prEl.value || '';
+            if (discEl) document.getElementById('manual-discount').value = discEl.value || '';
+            const modal = document.getElementById('manual-entry-modal');
+            modal.style.display = 'flex';
+        }
+        function closeManualEntry() {
+            document.getElementById('manual-entry-modal').style.display = 'none';
+        }
+        function saveManualEntry() {
+            const th = parseFloat(document.getElementById('manual-th').value);
+            const pr = parseFloat(document.getElementById('manual-pr').value);
+            const disc = parseFloat(document.getElementById('manual-discount').value);
+            if (isNaN(th) || th <= 0) { alert('Please enter a valid TH value.'); return; }
+            if (isNaN(pr) || pr <= 0) { alert('Please enter a valid Pool Reward (sat/TH) value.'); return; }
+            if (isNaN(disc) || disc < 0) { alert('Please enter a valid discount (0 or positive).'); return; }
+
+            // Write into the simulator form so calculate() picks them up.
+            // Discount: stuff the total into discount-maintenance and zero the others
+            // so the sub-discount summation logic keeps working coherently.
+            document.getElementById('hashrate').value = th;
+            document.getElementById('sat-per-th').value = pr;
+            const subDiscIds = ['discount-maintenance', 'discount-vip', 'discount-streak', 'discount-solo'];
+            subDiscIds.forEach((id, i) => {
+                const el = document.getElementById(id);
+                if (el) el.value = (i === 0 ? disc : 0);
+            });
+            // The hidden #discount field gets summed by the existing logic on the next change/calculate
+            const hiddenDisc = document.getElementById('discount');
+            if (hiddenDisc) hiddenDisc.value = disc.toFixed(2);
+
+            saveSettings();
+            if (state.btcPrice && state.gmtPrice) {
+                calculate();
+            }
+            closeManualEntry();
+        }
+
         // Auto-save on any input change
         // Auto-save et auto-calcul sur chaque changement
         function autoRecalc() {
@@ -4030,6 +4118,12 @@
                 disclaimer: 'This tool provides estimates only and is not financial advice. Calculations are based on current conditions and may not reflect actual returns. DYOR.',
                 empty_title: 'Welcome to GoMining Simulator', empty_desc: 'Install the Chrome extension and visit app.gomining.com to auto-sync your miner data. Or enter your details manually in the Simulator tab.',
                 empty_guide: 'Install Extension', empty_manual: 'Enter Manually',
+                manual_entry_btn: 'Enter manually', manual_entry_title: 'Manual Data Entry',
+                manual_entry_desc: "Enter your miner data manually if you don't use the Chrome extension.",
+                manual_entry_th: 'Power (TH/s)', manual_entry_pr: 'Pool Reward (sat/TH per day)',
+                manual_entry_discount: 'Total discount (%)',
+                manual_entry_discount_hint: 'Sum of all your GoMining discounts (token + streak + VIP + mining mode)',
+                manual_entry_cancel: 'Cancel', manual_entry_save: 'Save',
                 footer_text: 'GoMining Simulator', footer_disclaimer: 'Not financial advice. Use at your own risk.',
                 // JS dynamic strings
                 loading: 'Loading...', refresh_data: 'Refresh Data', last_update: 'Last update',
@@ -4193,6 +4287,12 @@
                 disclaimer: "Cet outil fournit des estimations uniquement et ne constitue pas un conseil financier. Les calculs sont basés sur les conditions actuelles. Faites vos propres recherches.",
                 empty_title: 'Bienvenue sur GoMining Simulator', empty_desc: "Installez l'extension Chrome et visitez app.gomining.com pour synchroniser vos données. Ou entrez vos détails manuellement dans l'onglet Simulateur.",
                 empty_guide: "Installer l'extension", empty_manual: 'Entrer manuellement',
+                manual_entry_btn: 'Entrer manuellement', manual_entry_title: 'Saisie manuelle des données',
+                manual_entry_desc: "Saisis tes données de mineur manuellement si tu n'utilises pas l'extension Chrome.",
+                manual_entry_th: 'Puissance (TH/s)', manual_entry_pr: 'Pool Reward (sat/TH par jour)',
+                manual_entry_discount: 'Discount total (%)',
+                manual_entry_discount_hint: 'Somme de tous tes discounts GoMining (token + streak + VIP + mining mode)',
+                manual_entry_cancel: 'Annuler', manual_entry_save: 'Sauvegarder',
                 footer_text: 'GoMining Simulator', footer_disclaimer: "Pas un conseil financier. Utilisez à vos risques.",
                 // JS dynamic strings
                 loading: 'Chargement...', refresh_data: 'Rafraîchir les données', last_update: 'Dernière mise à jour',
