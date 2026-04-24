@@ -3392,10 +3392,10 @@
             const el = document.getElementById('dash-wallet');
             if (!el) return;
             const mode = state.walletMode || 'btc';
+            // "Wallet" = liquid holdings only. Locked GMT is staked / not accessible,
+            // so it is intentionally excluded from all three modes (BTC / GMT / Cash).
             const btcBalance = state.btcWalletBalance || 0;
-            const gmtPrepaid = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
-            const gmtLocked = parseFloat(document.getElementById('gmt-locked')?.value) || 0;
-            const totalGmt = gmtPrepaid + gmtLocked;
+            const gmtWallet = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
             const bp = state.btcPrice || 0;
             const gp = state.gmtPrice || 0;
 
@@ -3404,11 +3404,11 @@
                 el.className = 'value btc';
                 el.style.fontSize = '1.3em';
             } else if (mode === 'gmt') {
-                el.textContent = totalGmt.toFixed(2) + ' GMT';
+                el.textContent = gmtWallet.toFixed(2) + ' GMT';
                 el.className = 'value gmt';
                 el.style.fontSize = '1.3em';
             } else { // cash
-                const totalUsd = btcBalance * bp + totalGmt * gp;
+                const totalUsd = btcBalance * bp + gmtWallet * gp;
                 el.textContent = '$' + totalUsd.toFixed(2);
                 el.className = 'value';
                 el.style.color = 'var(--green)';
