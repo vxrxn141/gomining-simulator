@@ -3898,14 +3898,6 @@
                 if (!raw) return;
                 const data = JSON.parse(raw);
                 if (!data || !data.timestamp) return;
-                // DEBUG title — shows what's in the sync payload even if auto-sync already applied.
-                // Useful for diagnosing PR issues without opening the console.
-                const pr = data.income?.prPerThGmt;
-                const src = data.income?.prPerThSource || '?';
-                const hist = data.rewardHistory?.length || 0;
-                const gp = data.prices?.gmtPrice;
-                const bp = data.prices?.btcPrice;
-                document.title = `PR:${pr?.toFixed?.(2) || '?'} [${src}] hist:${hist}d gmt:${gp?.toFixed?.(4) || '?'} btc:${bp?.toFixed?.(0) || '?'}`;
                 // Only apply if newer than last sync
                 if (state.lastAutoSyncTimestamp === data.timestamp) return;
                 state.lastAutoSyncTimestamp = data.timestamp;
