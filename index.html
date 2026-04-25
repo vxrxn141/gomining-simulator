@@ -18,6 +18,18 @@
     <link rel="manifest" href="pwa-manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>GoMining Simulator</title>
+
+    <!-- =========================================================
+         Google AdSense
+         Replace ca-pub-XXXXXXXXXXXXXXXX with your real publisher
+         ID from https://adsense.google.com once your site is
+         approved. Until then this loads but renders nothing —
+         which is fine, AdSense uses these tags to verify the site.
+         ========================================================= -->
+    <meta name="google-adsense-account" content="ca-pub-XXXXXXXXXXXXXXXX">
+    <script async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+            crossorigin="anonymous"></script>
     <style>
         :root {
             --bg: #0a0e14;
@@ -854,6 +866,86 @@
     </style>
 </head>
 <body>
+    <!-- =========================================================
+         AUTH GATE — full-screen lock shown to anonymous visitors.
+         auth.js hides this once the user signs in (Google or magic
+         link) and shows #app-root. It's visible by default so there
+         is no flash of unauthenticated app content on page load.
+         ========================================================= -->
+    <div id="auth-gate" style="
+        position:fixed;inset:0;z-index:9999;
+        display:flex;align-items:center;justify-content:center;
+        background:radial-gradient(circle at 30% 20%,#1a1f2e 0%,#0a0e14 70%);
+        padding:20px;overflow-y:auto;">
+      <div style="
+          width:100%;max-width:400px;background:rgba(22,27,34,.85);
+          border:1px solid rgba(255,255,255,.08);border-radius:16px;
+          padding:32px 28px;backdrop-filter:blur(20px);
+          box-shadow:0 20px 60px rgba(0,0,0,.5);">
+        <div style="text-align:center;margin-bottom:24px;">
+          <img src="icon.png" alt="" style="width:64px;height:64px;border-radius:14px;margin-bottom:14px;">
+          <h1 style="font-size:1.35rem;color:#e6edf3;margin-bottom:6px;letter-spacing:-.02em;">
+            GoMining <span style="color:#f7931a;">Simulator</span>
+          </h1>
+          <p style="font-size:.85em;color:#8b949e;line-height:1.5;">
+            Sign in to access the calculator and your saved scenarios.
+          </p>
+        </div>
+
+        <button id="gate-google" style="
+            width:100%;background:#fff;color:#1a1a1a;border:none;
+            padding:12px 16px;border-radius:10px;font-size:.92em;
+            font-weight:600;cursor:pointer;display:flex;
+            align-items:center;justify-content:center;gap:10px;
+            margin-bottom:16px;transition:transform .1s;"
+            onmouseover="this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.transform=''">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:#6e7681;font-size:.78em;">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
+          OR
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
+        </div>
+
+        <form id="gate-email-form" autocomplete="on">
+          <label for="gate-email-input" style="display:block;font-size:.78em;color:#8b949e;margin-bottom:6px;">
+            Email address
+          </label>
+          <input id="gate-email-input" type="email" required
+                 placeholder="you@example.com" autocomplete="email"
+                 style="width:100%;background:#0d1117;border:1px solid rgba(255,255,255,.1);
+                        color:#e6edf3;padding:11px 13px;border-radius:9px;
+                        font-size:.92em;margin-bottom:10px;outline:none;"
+                 onfocus="this.style.borderColor='#f7931a'"
+                 onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+          <button id="gate-email-send" type="submit" style="
+              width:100%;background:#f7931a;color:#000;border:none;
+              padding:11px 16px;border-radius:9px;font-size:.9em;
+              font-weight:700;cursor:pointer;">
+            Send magic link
+          </button>
+          <div id="gate-sent" style="display:none;margin-top:14px;padding:11px;
+               background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
+               border-radius:8px;color:#3fb950;font-size:.82em;line-height:1.5;"></div>
+          <div id="gate-err" style="display:none;margin-top:14px;padding:11px;
+               background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
+               border-radius:8px;color:#f85149;font-size:.82em;"></div>
+          <p style="font-size:.72em;color:#6e7681;margin-top:14px;line-height:1.5;text-align:center;">
+            We'll email you a one-click sign-in link.<br>No password needed.
+          </p>
+        </form>
+      </div>
+    </div>
+
+    <div id="app-root" style="display:none;">
     <div class="app-layout">
 
     <!-- Sidebar -->
@@ -900,6 +992,9 @@
             </div>
         </nav>
         <div class="sidebar-footer">
+            <!-- Google sign-in widget (rendered by auth.js) -->
+            <div id="auth-widget" style="margin-bottom:10px;"></div>
+
             <div class="lang-toggle">
                 <button class="lang-btn active" data-lang="en" onclick="setLang('en')">EN</button>
                 <button class="lang-btn" data-lang="fr" onclick="setLang('fr')">FR</button>
@@ -4923,5 +5018,14 @@
 
         // Investment tracker auto-update
     </script>
+
+    <!-- =========================================================
+         Auth + analytics modules (Firebase)
+         These run AFTER the inline app script so window.switchTab
+         is already defined when tracking.js patches it.
+         ========================================================= -->
+    </div><!-- /#app-root -->
+    <script type="module" src="auth.js"></script>
+    <script type="module" src="tracking.js"></script>
 </body>
 </html>
