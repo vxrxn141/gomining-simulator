@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Support Us · GoMining Simulator</title>
+  <meta name="description" content="GoMining Simulator is free and ad-free. If it saved you time, consider supporting development with a small Bitcoin tip.">
+  <link rel="icon" type="image/png" href="icon.png">
+  <style>
+    :root {
+      --bg:#0a0e14; --card:#161b22; --border:rgba(255,255,255,.08);
+      --text:#e6edf3; --text-dim:#8b949e; --accent:#f7931a; --link:#58a6ff;
+      --green:#3fb950; --pink:#ff6b9d;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+         background:var(--bg);color:var(--text);line-height:1.7;font-size:15px;
+         min-height:100vh;display:flex;flex-direction:column}
+    .wrap{max-width:560px;margin:0 auto;padding:48px 24px 60px;width:100%;flex:1}
+    .back{color:var(--text-dim);text-decoration:none;font-size:.85em;display:inline-block;margin-bottom:20px}
+    .back:hover{color:var(--accent)}
+    header{text-align:center;margin-bottom:36px}
+    .logo{width:72px;height:72px;border-radius:16px;margin-bottom:16px}
+    h1{font-size:2rem;font-weight:800;letter-spacing:-.02em;margin-bottom:10px}
+    h1 .heart{color:var(--pink);display:inline-block;animation:beat 1.4s ease-in-out infinite}
+    @keyframes beat{0%,100%{transform:scale(1)}50%{transform:scale(1.18)}}
+    .tagline{color:var(--text-dim);font-size:1rem;line-height:1.6;max-width:420px;margin:0 auto}
+
+    .card{background:var(--card);border:1px solid var(--border);border-radius:16px;
+          padding:28px;text-align:center;margin-bottom:18px}
+    .qr-frame{display:inline-block;background:#fff;padding:14px;border-radius:12px;
+              margin:8px 0 20px}
+    .qr-frame canvas, .qr-frame img{display:block;width:240px;height:240px}
+    .placeholder-qr{width:240px;height:240px;background:repeating-linear-gradient(
+        45deg, #1a1f2e, #1a1f2e 10px, #131721 10px, #131721 20px);
+        border-radius:8px;display:flex;align-items:center;justify-content:center;
+        color:var(--text-dim);font-size:.78em;text-align:center;padding:20px}
+
+    .label{color:var(--text-dim);font-size:.78em;text-transform:uppercase;
+           letter-spacing:.08em;margin-bottom:8px}
+    .addr{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+          font-size:.82em;background:#0d1117;border:1px solid var(--border);
+          padding:11px 14px;border-radius:9px;word-break:break-all;color:var(--accent);
+          line-height:1.5;margin-bottom:10px}
+    .copy-btn{background:var(--accent);color:#000;border:none;padding:9px 18px;
+              border-radius:8px;font-weight:700;cursor:pointer;font-size:.88em}
+    .copy-btn:hover{filter:brightness(1.1)}
+    .copy-btn.ok{background:var(--green)}
+
+    .why{background:rgba(247,147,26,.06);border:1px solid rgba(247,147,26,.2);
+         border-radius:12px;padding:18px 20px;margin:16px 0;font-size:.92em;line-height:1.7}
+    .why h3{font-size:.92rem;font-weight:700;color:var(--accent);margin-bottom:8px}
+    .why p{color:var(--text);margin:0}
+
+    .thanks{text-align:center;color:var(--text-dim);font-size:.92em;margin-top:18px;line-height:1.7}
+    .thanks strong{color:var(--text)}
+
+    footer{padding:24px;border-top:1px solid var(--border);
+           color:var(--text-dim);font-size:.85em;text-align:center}
+    footer a{margin:0 10px;color:var(--text-dim);text-decoration:none}
+    footer a:hover{color:var(--accent)}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <a href="index.html" class="back">← Back to app</a>
+    <header>
+      <img src="icon.png" alt="" class="logo">
+      <h1>Support us <span class="heart">❤</span></h1>
+      <p class="tagline">GoMining Simulator is <strong style="color:var(--text)">free and ad-free</strong>. If the tool saved you time or made you money, a small tip helps us keep building.</p>
+    </header>
+
+    <div class="card">
+      <div class="label">Bitcoin (BTC)</div>
+      <div class="qr-frame">
+        <div id="qr"></div>
+      </div>
+      <div id="addr" class="addr">PASTE_BTC_ADDRESS_HERE</div>
+      <button id="copy" class="copy-btn">Copy address</button>
+    </div>
+
+    <div class="why">
+      <h3>Why donate?</h3>
+      <p>We don't run ads, sell data, or bug you with paywalls. Tips fund hosting, domain, and the time we spend adding features (Reinvestment, Compare, Multi-sim, Performance and more — coming soon). Every sat counts.</p>
+    </div>
+
+    <div class="thanks">
+      <strong>Thank you</strong> for using GoMining Simulator.<br>
+      May your hashrate stay green.
+    </div>
+  </div>
+
+  <footer>
+    <a href="index.html">Home</a> ·
+    <a href="about.html">About</a> ·
+    <a href="privacy.html">Privacy</a> ·
+    <a href="terms.html">Terms</a> ·
+    <a href="support.html">Support</a>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
+  <script>
+    // ---- CONFIG ----
+    // Replace this string with your real BTC address once partner sends it.
+    // The page auto-renders the QR on load.
+    const BTC_ADDRESS = "PASTE_BTC_ADDRESS_HERE";
+    // ----------------
+
+    const qrEl   = document.getElementById("qr");
+    const addrEl = document.getElementById("addr");
+    const copyBtn = document.getElementById("copy");
+
+    addrEl.textContent = BTC_ADDRESS;
+
+    if (BTC_ADDRESS && BTC_ADDRESS !== "PASTE_BTC_ADDRESS_HERE") {
+      // Generate real QR
+      QRCode.toCanvas(BTC_ADDRESS, {
+        width: 240, margin: 1,
+        color: { dark: "#000000", light: "#ffffff" }
+      }, (err, canvas) => {
+        if (err) { qrEl.innerHTML = "<div class='placeholder-qr'>QR error</div>"; return; }
+        qrEl.appendChild(canvas);
+      });
+    } else {
+      qrEl.innerHTML = "<div class='placeholder-qr'>QR will appear here once<br>BTC address is added</div>";
+      copyBtn.disabled = true;
+      copyBtn.style.opacity = .5;
+    }
+
+    copyBtn.addEventListener("click", async () => {
+      try {
+        await navigator.clipboard.writeText(BTC_ADDRESS);
+        const orig = copyBtn.textContent;
+        copyBtn.textContent = "✓ Copied!";
+        copyBtn.classList.add("ok");
+        setTimeout(() => {
+          copyBtn.textContent = orig;
+          copyBtn.classList.remove("ok");
+        }, 1800);
+      } catch {
+        // fallback
+        const r = document.createRange();
+        r.selectNode(addrEl);
+        window.getSelection().removeAllRanges();
+        window.getSelection().addRange(r);
+        document.execCommand("copy");
+        window.getSelection().removeAllRanges();
+      }
+    });
+  </script>
+</body>
+</html>
