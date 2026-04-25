@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow">
+  <title>Admin · GoMining Simulator</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <style>
+    :root {
+      --bg:#0a0e14; --bg2:#0d1117; --card:#161b22;
+      --border:rgba(255,255,255,.08); --text:#e6edf3; --text-dim:#8b949e;
+      --accent:#f7931a; --green:#3fb950; --red:#f85149; --blue:#58a6ff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+         background:var(--bg);color:var(--text);min-height:100vh;font-size:14px;line-height:1.5}
+    .wrap{max-width:1200px;margin:0 auto;padding:32px 24px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:32px;
+           padding-bottom:20px;border-bottom:1px solid var(--border)}
+    header h1{font-size:1.4rem;font-weight:800}
+    header h1 .accent{color:var(--accent)}
+    header .who{font-size:.85em;color:var(--text-dim)}
+    .gate{max-width:420px;margin:80px auto;padding:32px;background:var(--card);
+          border:1px solid var(--border);border-radius:14px;text-align:center}
+    .gate h2{margin-bottom:8px;font-size:1.15rem}
+    .gate p{color:var(--text-dim);margin-bottom:24px;font-size:.92em}
+    button.primary{background:#fff;color:#1a1a1a;border:none;padding:11px 18px;
+                   border-radius:8px;font-weight:600;cursor:pointer;display:inline-flex;
+                   align-items:center;gap:10px;font-size:.9em}
+    button.ghost{background:transparent;color:var(--text-dim);border:1px solid var(--border);
+                 padding:6px 12px;border-radius:8px;font-size:.8em;cursor:pointer}
+    button.ghost:hover{color:var(--text);border-color:var(--text-dim)}
+    .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:14px;margin-bottom:28px}
+    .stat{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px}
+    .stat .label{color:var(--text-dim);font-size:.74em;text-transform:uppercase;
+                 letter-spacing:.06em;margin-bottom:6px}
+    .stat .value{font-size:1.7rem;font-weight:800;letter-spacing:-.02em}
+    .stat .sub{color:var(--text-dim);font-size:.74em;margin-top:4px}
+    .panel{background:var(--card);border:1px solid var(--border);border-radius:12px;
+           padding:20px;margin-bottom:24px}
+    .panel h2{font-size:.95rem;font-weight:700;margin-bottom:14px;display:flex;
+              align-items:center;justify-content:space-between}
+    .panel h2 .right{font-weight:400;font-size:.78em;color:var(--text-dim)}
+    table{width:100%;border-collapse:collapse;font-size:.86em}
+    th,td{padding:10px 12px;text-align:left;border-bottom:1px solid var(--border)}
+    th{color:var(--text-dim);font-weight:600;font-size:.72em;text-transform:uppercase;
+       letter-spacing:.05em;background:rgba(255,255,255,.02)}
+    tr:hover td{background:rgba(255,255,255,.02)}
+    td .avatar{width:24px;height:24px;border-radius:50%;background:#333;vertical-align:middle;
+               margin-right:8px}
+    .pill{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.78em;
+          background:rgba(63,185,80,.12);color:var(--green)}
+    .features{display:flex;flex-wrap:wrap;gap:4px}
+    .features .f{padding:2px 7px;border-radius:6px;background:rgba(88,166,255,.1);
+                 color:var(--blue);font-size:.74em}
+    .err{color:var(--red);background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);
+         padding:14px;border-radius:10px;margin-bottom:20px}
+    .empty{padding:40px;text-align:center;color:var(--text-dim)}
+    .toolbar{display:flex;gap:8px;align-items:center}
+    input.search{background:#0d1117;border:1px solid var(--border);color:var(--text);
+                 padding:7px 11px;border-radius:8px;font-size:.85em;width:220px}
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <h1>GoMining <span class="accent">Admin</span></h1>
+      <div id="who" class="who"></div>
+    </header>
+
+    <div id="gate" class="gate" style="display:none">
+      <h2>Admin sign-in required</h2>
+      <p>This page is restricted. Sign in with the Google account that's listed in <code>firebase-config.js</code> as an admin.</p>
+      <button id="signin" class="primary">
+        <svg width="16" height="16" viewBox="0 0 24 24">
+          <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+          <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+          <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+          <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+        </svg>
+        Sign in with Google
+      </button>
+      <div id="gate-err" class="err" style="display:none;margin-top:20px;text-align:left"></div>
+    </div>
+
+    <div id="dash" style="display:none">
+      <div class="stats" id="stats"></div>
+
+      <div class="panel">
+        <h2>
+          <span>Users</span>
+          <span class="toolbar">
+            <input id="search" class="search" placeholder="Search email or name…">
+            <button id="refresh" class="ghost">Refresh</button>
+            <button id="export" class="ghost">Export CSV</button>
+          </span>
+        </h2>
+        <div style="overflow-x:auto">
+          <table id="users-table">
+            <thead>
+              <tr>
+                <th>User</th>
+                <th>Joined</th>
+                <th>Last login</th>
+                <th>Logins</th>
+                <th>Sessions</th>
+                <th>Page views</th>
+                <th>Avg session</th>
+                <th>Top features</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+        <div id="empty" class="empty" style="display:none">No users yet — once people sign in to the main app they'll show up here.</div>
+      </div>
+    </div>
+  </div>
+
+<script type="module">
+  import { auth, db, signInWithGoogle, signOutUser, isAdmin, onUserReady }
+    from "./auth.js";
+  import { collection, getDocs, query, orderBy, limit }
+    from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+  const $ = sel => document.querySelector(sel);
+
+  function fmtDate(ts) {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    return d.toLocaleString(undefined, { dateStyle:"medium", timeStyle:"short" });
+  }
+  function fmtAgo(ts) {
+    if (!ts) return "—";
+    const d = ts.toDate ? ts.toDate() : new Date(ts);
+    const s = Math.floor((Date.now() - d.getTime())/1000);
+    if (s < 60)      return s + "s ago";
+    if (s < 3600)    return Math.floor(s/60) + "m ago";
+    if (s < 86400)   return Math.floor(s/3600) + "h ago";
+    if (s < 86400*7) return Math.floor(s/86400) + "d ago";
+    return d.toLocaleDateString();
+  }
+  function fmtMs(ms) {
+    if (!ms) return "—";
+    const s = Math.floor(ms/1000);
+    if (s < 60) return s + "s";
+    if (s < 3600) return Math.floor(s/60) + "m " + (s%60) + "s";
+    return Math.floor(s/3600) + "h " + Math.floor((s%3600)/60) + "m";
+  }
+
+  let allUsers = [];
+
+  async function loadUsers() {
+    const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(500));
+    const snap = await getDocs(q);
+    allUsers = snap.docs.map(d => d.data());
+    renderStats();
+    renderTable($("#search").value);
+  }
+
+  function renderStats() {
+    const now = Date.now();
+    const dayAgo  = now - 86400_000;
+    const weekAgo = now - 7*86400_000;
+    let total=0, today=0, week=0, totalSessionMs=0, totalSessionCount=0;
+    for (const u of allUsers) {
+      total++;
+      const created = u.createdAt?.toDate?.()?.getTime() ?? 0;
+      if (created > dayAgo)  today++;
+      if (created > weekAgo) week++;
+      totalSessionMs    += u.totalSessionMs    || 0;
+      totalSessionCount += u.sessionCount      || 0;
+    }
+    const avgSession = totalSessionCount ? totalSessionMs / totalSessionCount : 0;
+    $("#stats").innerHTML = `
+      <div class="stat"><div class="label">Total users</div>
+        <div class="value">${total.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">New today</div>
+        <div class="value" style="color:var(--green)">+${today}</div>
+        <div class="sub">+${week} this week</div></div>
+      <div class="stat"><div class="label">Total sessions</div>
+        <div class="value">${totalSessionCount.toLocaleString()}</div></div>
+      <div class="stat"><div class="label">Avg session</div>
+        <div class="value">${fmtMs(avgSession)}</div></div>
+    `;
+  }
+
+  function renderTable(filter = "") {
+    const tbody = $("#users-table tbody");
+    const f = filter.toLowerCase().trim();
+    const rows = allUsers.filter(u => !f
+      || (u.email||"").toLowerCase().includes(f)
+      || (u.displayName||"").toLowerCase().includes(f));
+    if (!rows.length) {
+      tbody.innerHTML = "";
+      $("#empty").style.display = "block";
+      return;
+    }
+    $("#empty").style.display = "none";
+    tbody.innerHTML = rows.map(u => {
+      const featTop = Object.entries(u.featureUsage || {})
+        .sort((a,b)=>b[1]-a[1]).slice(0,3)
+        .map(([k,v]) => `<span class="f">${k} · ${v}</span>`).join("");
+      const avg = u.sessionCount ? (u.totalSessionMs||0)/u.sessionCount : 0;
+      return `<tr>
+        <td><img src="${u.photoURL||""}" class="avatar" referrerpolicy="no-referrer">
+            <strong>${u.displayName||"—"}</strong>
+            <div style="font-size:.78em;color:var(--text-dim);margin-left:32px">${u.email||""}</div></td>
+        <td>${fmtDate(u.createdAt)}</td>
+        <td>${fmtAgo(u.lastLoginAt)}</td>
+        <td>${u.loginCount||0}</td>
+        <td>${u.sessionCount||0}</td>
+        <td>${(u.totalPageViews||0).toLocaleString()}</td>
+        <td>${fmtMs(avg)}</td>
+        <td><div class="features">${featTop || '<span style="color:var(--text-dim)">—</span>'}</div></td>
+      </tr>`;
+    }).join("");
+  }
+
+  function exportCSV() {
+    const headers = ["email","displayName","createdAt","lastLoginAt","loginCount",
+                     "sessionCount","totalPageViews","totalSessionMs","featureUsage"];
+    const lines = [headers.join(",")];
+    for (const u of allUsers) {
+      const row = [
+        u.email||"", (u.displayName||"").replace(/,/g," "),
+        u.createdAt?.toDate?.()?.toISOString() || "",
+        u.lastLoginAt?.toDate?.()?.toISOString() || "",
+        u.loginCount||0, u.sessionCount||0, u.totalPageViews||0, u.totalSessionMs||0,
+        JSON.stringify(u.featureUsage||{}).replace(/,/g,";"),
+      ];
+      lines.push(row.map(v => `"${String(v).replace(/"/g,'""')}"`).join(","));
+    }
+    const blob = new Blob([lines.join("\n")], { type:"text/csv" });
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement("a");
+    a.href = url; a.download = `gomining-users-${new Date().toISOString().slice(0,10)}.csv`;
+    a.click(); URL.revokeObjectURL(url);
+  }
+
+  // ---------- gate ----------
+  function showGate(message) {
+    $("#gate").style.display = "block";
+    $("#dash").style.display = "none";
+    if (message) {
+      $("#gate-err").textContent = message;
+      $("#gate-err").style.display = "block";
+    } else {
+      $("#gate-err").style.display = "none";
+    }
+  }
+  function showDash(user) {
+    $("#gate").style.display = "none";
+    $("#dash").style.display = "block";
+    $("#who").innerHTML = `Signed in as <strong>${user.email}</strong>
+      <button class="ghost" id="signout" style="margin-left:10px">Sign out</button>`;
+    $("#signout").addEventListener("click", () => signOutUser());
+  }
+
+  $("#signin").addEventListener("click", () => signInWithGoogle());
+
+  onUserReady(async (user) => {
+    if (!user) { showGate(); return; }
+    if (!isAdmin(user)) {
+      showGate(`Access denied — ${user.email} is not in the admin list. ` +
+               `Add it to ADMIN_EMAILS in firebase-config.js.`);
+      try { await signOutUser(); } catch {}
+      return;
+    }
+    showDash(user);
+    try { await loadUsers(); }
+    catch (e) {
+      console.error(e);
+      $("#stats").innerHTML = `<div class="err">Failed to load users: ${e.message}.
+        Check your Firestore security rules (see SETUP.md).</div>`;
+    }
+  });
+
+  $("#refresh").addEventListener("click", () => loadUsers());
+  $("#export").addEventListener("click", exportCSV);
+  $("#search").addEventListener("input", e => renderTable(e.target.value));
+</script>
+</body>
+</html>
