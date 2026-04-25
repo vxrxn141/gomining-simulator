@@ -98,29 +98,30 @@
     <a href="support.html">Support</a>
   </footer>
 
-  <script src="https://cdn.jsdelivr.net/npm/qrcode@1.5.3/build/qrcode.min.js"></script>
   <script>
     // ---- CONFIG ----
-    // Replace this string with your real BTC address once partner sends it.
-    // The page auto-renders the QR on load.
     const BTC_ADDRESS = "1HscQjL7qrCqzXsEXpiekgjwEYaodN1NeH";
     // ----------------
 
-    const qrEl   = document.getElementById("qr");
-    const addrEl = document.getElementById("addr");
+    const qrEl    = document.getElementById("qr");
+    const addrEl  = document.getElementById("addr");
     const copyBtn = document.getElementById("copy");
 
     addrEl.textContent = BTC_ADDRESS;
 
     if (BTC_ADDRESS && BTC_ADDRESS !== "PASTE_BTC_ADDRESS_HERE") {
-      // Generate real QR
-      QRCode.toCanvas(BTC_ADDRESS, {
-        width: 240, margin: 1,
-        color: { dark: "#000000", light: "#ffffff" }
-      }, (err, canvas) => {
-        if (err) { qrEl.innerHTML = "<div class='placeholder-qr'>QR error</div>"; return; }
-        qrEl.appendChild(canvas);
-      });
+      // Use a public QR-image service — zero JS dependencies, always works.
+      // bitcoin: URI scheme makes wallets recognize it as a payment request.
+      const payload = encodeURIComponent("bitcoin:" + BTC_ADDRESS);
+      const img = new Image();
+      img.width  = 240;
+      img.height = 240;
+      img.alt    = "Bitcoin donation QR code";
+      img.src    = "https://api.qrserver.com/v1/create-qr-code/?size=240x240&margin=4&data=" + payload;
+      img.onerror = () => {
+        qrEl.innerHTML = "<div class='placeholder-qr'>QR service unavailable.<br>Use the address below.</div>";
+      };
+      qrEl.appendChild(img);
     } else {
       qrEl.innerHTML = "<div class='placeholder-qr'>QR will appear here once<br>BTC address is added</div>";
       copyBtn.disabled = true;
