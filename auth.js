@@ -14,7 +14,7 @@ import {
   sendSignInLinkToEmail, isSignInWithEmailLink, signInWithEmailLink,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
 import {
-  getFirestore, doc, getDoc, setDoc, updateDoc,
+  getFirestore, doc, getDoc, setDoc, updateDoc, onSnapshot,
   serverTimestamp, increment,
 } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 import { firebaseConfig, ADMIN_EMAILS } from "./firebase-config.js";
@@ -27,8 +27,10 @@ const provider    = new GoogleAuthProvider();
 setPersistence(auth, browserLocalPersistence).catch(()=>{});
 
 export let currentUser = null;
+export let currentTier = "free";   // "free" | "premium" — kept in sync with Firestore
 const readyCallbacks = [];
 export function onUserReady(cb) { readyCallbacks.push(cb); }
+let unsubTierWatch = null;
 
 // ----- public actions -----
 export function signInWithGoogle() {
@@ -95,6 +97,7 @@ async function recordLogin(user) {
       sessionCount:     0,
       totalPageViews:   0,
       totalSessionMs:   0,
+      tier:             "free",   // admin can flip to "premium" from /admin.html
     });
   }
 }
@@ -112,6 +115,18 @@ function renderAuthUI(user) {
                    font-size:0.72em;font-weight:600;text-decoration:none;">
             Admin Dashboard
          </a>` : "";
+    const isPremium = currentTier === "premium";
+    const tierStyle = isPremium
+      ? "background:linear-gradient(90deg,#f7931a,#ffb84d);color:#000;"
+      : "background:rgba(139,148,158,.15);color:#8b949e;";
+    const tierLabel = isPremium ? "★ PREMIUM" : "FREE";
+    const tierBadge = `
+      <button id="tier-badge"
+              style="margin-top:8px;width:100%;padding:6px 10px;border:none;border-radius:8px;
+                     font-size:.7em;font-weight:700;letter-spacing:.04em;cursor:pointer;
+                     ${tierStyle}">
+        ${tierLabel}${isPremium ? "" : " — Upgrade soon"}
+      </button>`;
     el.innerHTML = `
       <div style="display:flex;align-items:center;gap:8px;padding:8px;
                   background:rgba(255,255,255,0.04);border-radius:8px;
@@ -133,8 +148,17 @@ function renderAuthUI(user) {
                 style="background:none;border:1px solid var(--border);
                        color:var(--text-dim);padding:5px 8px;border-radius:6px;
                        font-size:0.68em;cursor:pointer;">Sign out</button>
-      </div>${adminBtn}`;
+      </div>${tierBadge}${adminBtn}`;
     document.getElementById("signout-btn")?.addEventListener("click", signOutUser);
+    document.getElementById("tier-badge")?.addEventListener("click", () => {
+      if (isPremium) {
+        alert("You're a Premium user. Thank you for supporting us! ❤");
+      } else {
+        alert("Premium plans are coming soon. Stay tuned!\\n\\n" +
+              "In the meantime, if you'd like to support development, " +
+              "you can leave a small Bitcoin tip on the Support page.");
+      }
+    });
   } else {
     el.innerHTML = `
       <button id="signin-btn"
@@ -214,6 +238,20 @@ function bindGateHandlers() {
   });
 }
 
+// ----- live tier watcher: keeps currentTier + sidebar badge in sync -----
+function watchTier(uid) {
+  if (unsubTierWatch) { unsubTierWatch(); unsubTierWatch = null; }
+  if (!uid) { currentTier = "free"; return; }
+  unsubTierWatch = onSnapshot(doc(db, "users", uid), (snap) => {
+    const tier = snap.data()?.tier || "free";
+    if (tier !== currentTier) {
+      currentTier = tier;
+      renderAuthUI(currentUser);
+      window.dispatchEvent(new CustomEvent("tier-changed", { detail: { tier } }));
+    }
+  }, () => { /* ignore permission errors */ });
+}
+
 // ----- main listener -----
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
@@ -222,7 +260,9 @@ onAuthStateChanged(auth, async (user) => {
     hideGate();
     try { await recordLogin(user); }
     catch (e) { console.error("recordLogin failed:", e); }
+    watchTier(user.uid);
   } else {
+    watchTier(null);
     showGate();
   }
   renderAuthUI(user);

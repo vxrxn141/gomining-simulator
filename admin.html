@@ -54,6 +54,17 @@
     .features{display:flex;flex-wrap:wrap;gap:4px}
     .features .f{padding:2px 7px;border-radius:6px;background:rgba(88,166,255,.1);
                  color:var(--blue);font-size:.74em}
+    .tier{display:inline-block;padding:2px 8px;border-radius:10px;font-size:.72em;
+          font-weight:700;letter-spacing:.03em;cursor:pointer;border:none;font-family:inherit}
+    .tier.free{background:rgba(139,148,158,.15);color:var(--text-dim)}
+    .tier.premium{background:linear-gradient(90deg,#f7931a,#ffb84d);color:#000}
+    .tier:hover{filter:brightness(1.15);transform:translateY(-1px)}
+    .ret-chip{display:inline-block;padding:2px 7px;border-radius:6px;font-size:.72em;
+              font-weight:600}
+    .ret-chip.active{background:rgba(63,185,80,.15);color:var(--green)}
+    .ret-chip.idle{background:rgba(255,184,77,.13);color:#ffb84d}
+    .ret-chip.lost{background:rgba(248,81,73,.12);color:var(--red)}
+    .ret-chip.new{background:rgba(88,166,255,.12);color:var(--blue)}
     .err{color:var(--red);background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.3);
          padding:14px;border-radius:10px;margin-bottom:20px}
     .empty{padding:40px;text-align:center;color:var(--text-dim)}
@@ -101,11 +112,12 @@
             <thead>
               <tr>
                 <th>User</th>
+                <th>Tier</th>
+                <th>Status</th>
                 <th>Joined</th>
                 <th>Last login</th>
                 <th>Logins</th>
                 <th>Sessions</th>
-                <th>Page views</th>
                 <th>Avg session</th>
                 <th>Top features</th>
               </tr>
@@ -121,7 +133,7 @@
 <script type="module">
   import { auth, db, signInWithGoogle, signOutUser, isAdmin, onUserReady }
     from "./auth.js";
-  import { collection, getDocs, query, orderBy, limit }
+  import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const $ = sel => document.querySelector(sel);
@@ -159,11 +171,27 @@
     renderTable($("#search").value);
   }
 
+  function retentionBucket(u) {
+    // "new"      = signed up but only signed in once (no return yet)
+    // "active"   = logged in within last 7 days AND returned at least once
+    // "idle"     = logged in 7-30 days ago
+    // "lost"     = no login in 30+ days
+    const last = u.lastLoginAt?.toDate?.()?.getTime() ?? 0;
+    const created = u.createdAt?.toDate?.()?.getTime() ?? 0;
+    const daysSinceLast = last ? (Date.now() - last) / 86400_000 : 999;
+    const returned = (u.loginCount || 0) > 1;
+    if (!returned && (Date.now() - created) < 3 * 86400_000) return "new";
+    if (daysSinceLast <= 7  && returned) return "active";
+    if (daysSinceLast <= 30) return "idle";
+    return "lost";
+  }
+
   function renderStats() {
     const now = Date.now();
     const dayAgo  = now - 86400_000;
     const weekAgo = now - 7*86400_000;
-    let total=0, today=0, week=0, totalSessionMs=0, totalSessionCount=0;
+    let total=0, today=0, week=0, totalSessionMs=0, totalSessionCount=0,
+        premiumCount=0, returners=0, active7d=0;
     for (const u of allUsers) {
       total++;
       const created = u.createdAt?.toDate?.()?.getTime() ?? 0;
@@ -171,18 +199,26 @@
       if (created > weekAgo) week++;
       totalSessionMs    += u.totalSessionMs    || 0;
       totalSessionCount += u.sessionCount      || 0;
+      if ((u.tier || "free") === "premium") premiumCount++;
+      if ((u.loginCount || 0) > 1) returners++;
+      const last = u.lastLoginAt?.toDate?.()?.getTime() ?? 0;
+      if (last && last > weekAgo) active7d++;
     }
     const avgSession = totalSessionCount ? totalSessionMs / totalSessionCount : 0;
+    const retentionPct = total ? Math.round((returners / total) * 100) : 0;
     $("#stats").innerHTML = `
       <div class="stat"><div class="label">Total users</div>
-        <div class="value">${total.toLocaleString()}</div></div>
-      <div class="stat"><div class="label">New today</div>
-        <div class="value" style="color:var(--green)">+${today}</div>
-        <div class="sub">+${week} this week</div></div>
-      <div class="stat"><div class="label">Total sessions</div>
-        <div class="value">${totalSessionCount.toLocaleString()}</div></div>
-      <div class="stat"><div class="label">Avg session</div>
-        <div class="value">${fmtMs(avgSession)}</div></div>
+        <div class="value">${total.toLocaleString()}</div>
+        <div class="sub">+${today} today, +${week} this week</div></div>
+      <div class="stat"><div class="label">Premium</div>
+        <div class="value" style="color:var(--accent)">${premiumCount}</div>
+        <div class="sub">${total ? Math.round(premiumCount/total*100) : 0}% of base</div></div>
+      <div class="stat"><div class="label">Retention</div>
+        <div class="value" style="color:var(--green)">${retentionPct}%</div>
+        <div class="sub">${returners} returned at least once</div></div>
+      <div class="stat"><div class="label">Active (7d)</div>
+        <div class="value">${active7d}</div>
+        <div class="sub">avg session ${fmtMs(avgSession)}</div></div>
     `;
   }
 
@@ -203,28 +239,64 @@
         .sort((a,b)=>b[1]-a[1]).slice(0,3)
         .map(([k,v]) => `<span class="f">${k} · ${v}</span>`).join("");
       const avg = u.sessionCount ? (u.totalSessionMs||0)/u.sessionCount : 0;
+      const tier = u.tier || "free";
+      const next = tier === "premium" ? "free" : "premium";
+      const tierBtn = `<button class="tier ${tier}" data-uid="${u.uid}" data-next="${next}"
+                         title="Click to switch to ${next}">${tier.toUpperCase()}</button>`;
+      const bucket = retentionBucket(u);
+      const bucketLabel = {
+        new:"NEW", active:"ACTIVE", idle:"IDLE", lost:"LOST"
+      }[bucket];
       return `<tr>
         <td><img src="${u.photoURL||""}" class="avatar" referrerpolicy="no-referrer">
             <strong>${u.displayName||"—"}</strong>
             <div style="font-size:.78em;color:var(--text-dim);margin-left:32px">${u.email||""}</div></td>
+        <td>${tierBtn}</td>
+        <td><span class="ret-chip ${bucket}">${bucketLabel}</span></td>
         <td>${fmtDate(u.createdAt)}</td>
         <td>${fmtAgo(u.lastLoginAt)}</td>
         <td>${u.loginCount||0}</td>
         <td>${u.sessionCount||0}</td>
-        <td>${(u.totalPageViews||0).toLocaleString()}</td>
         <td>${fmtMs(avg)}</td>
         <td><div class="features">${featTop || '<span style="color:var(--text-dim)">—</span>'}</div></td>
       </tr>`;
     }).join("");
+
+    // wire tier-toggle buttons
+    tbody.querySelectorAll("button.tier").forEach(btn => {
+      btn.addEventListener("click", async () => {
+        const uid  = btn.dataset.uid;
+        const next = btn.dataset.next;
+        if (!confirm(`Switch this user to ${next.toUpperCase()}?`)) return;
+        btn.disabled = true;
+        try {
+          await updateDoc(doc(db, "users", uid), {
+            tier: next,
+            tierUpdatedAt: serverTimestamp(),
+          });
+          // update local cache + re-render
+          const u = allUsers.find(x => x.uid === uid);
+          if (u) u.tier = next;
+          renderStats();
+          renderTable($("#search").value);
+        } catch (e) {
+          alert("Couldn't update tier: " + e.message +
+                "\\n\\nMake sure your Firestore rules allow admins to write tier (see SETUP.md).");
+          btn.disabled = false;
+        }
+      });
+    });
   }
 
   function exportCSV() {
-    const headers = ["email","displayName","createdAt","lastLoginAt","loginCount",
-                     "sessionCount","totalPageViews","totalSessionMs","featureUsage"];
+    const headers = ["email","displayName","tier","retentionBucket","createdAt","lastLoginAt",
+                     "loginCount","sessionCount","totalPageViews","totalSessionMs","featureUsage"];
     const lines = [headers.join(",")];
     for (const u of allUsers) {
       const row = [
         u.email||"", (u.displayName||"").replace(/,/g," "),
+        u.tier || "free",
+        retentionBucket(u),
         u.createdAt?.toDate?.()?.toISOString() || "",
         u.lastLoginAt?.toDate?.()?.toISOString() || "",
         u.loginCount||0, u.sessionCount||0, u.totalPageViews||0, u.totalSessionMs||0,

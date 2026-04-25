@@ -1019,8 +1019,20 @@
             </div>
             <div class="last-update" id="last-update" style="margin-top:6px;text-align:left;"></div>
 
-            <!-- Legal links (required for AdSense + general transparency) -->
-            <div style="margin-top:14px;padding-top:10px;border-top:1px solid var(--border);
+            <!-- Support / donate button -->
+            <a href="support.html"
+               style="display:flex;align-items:center;justify-content:center;gap:6px;
+                      margin-top:14px;padding:9px;background:rgba(255,107,157,0.08);
+                      border:1px solid rgba(255,107,157,0.3);border-radius:8px;
+                      color:#ff6b9d;text-decoration:none;font-size:0.78em;font-weight:600;
+                      transition:all .15s;"
+               onmouseover="this.style.background='rgba(255,107,157,0.15)'"
+               onmouseout="this.style.background='rgba(255,107,157,0.08)'">
+                <span>❤</span> Support us
+            </a>
+
+            <!-- Legal links -->
+            <div style="margin-top:10px;padding-top:10px;border-top:1px solid var(--border);
                         text-align:center;font-size:0.66em;color:var(--text-dim);line-height:1.6;">
                 <a href="about.html" style="color:var(--text-dim);text-decoration:none;margin:0 4px;">About</a> ·
                 <a href="privacy.html" style="color:var(--text-dim);text-decoration:none;margin:0 4px;">Privacy</a> ·
@@ -1811,7 +1823,6 @@
     </div>
     <footer class="site-footer">
         <span data-i18n="footer_text">GoMining Simulator</span> v1.0 &mdash;
-        <a href="https://github.com/Jaygauvin2002/gomining-simulator" target="_blank">GitHub</a> &mdash;
         <span data-i18n="footer_disclaimer">Not financial advice. Use at your own risk.</span>
     </footer>
     </main>
