@@ -10,6 +10,7 @@ export const firebaseConfig = {
 
 export const ADMIN_EMAILS = [
   "varunvatnani@gmail.com",
+  "jeremie.gauvin22@gmail.com",
 ];
 
 export const ADSENSE_PUBLISHER_ID = "ca-pub-XXXXXXXXXXXXXXXX";
