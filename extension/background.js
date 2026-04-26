@@ -8,7 +8,7 @@ chrome.storage.onChanged.addListener((changes, area) => {
     if (!data) return;
 
     // Find all simulator tabs and push data
-    const patterns = ['http://localhost:*/*', 'file:///*', 'https://jaygauvin2002.github.io/*', 'https://gmsim.ca/*', 'https://www.gmsim.ca/*'];
+    const patterns = ['http://localhost:*/*', 'file:///*', 'https://jaygauvin2002.github.io/*', 'https://gmsim.ca/*', 'https://www.gmsim.ca/*', 'http://gmsim.ca/*', 'http://www.gmsim.ca/*'];
     for (const pattern of patterns) {
         chrome.tabs.query({ url: pattern }, (tabs) => {
             if (chrome.runtime.lastError) return;

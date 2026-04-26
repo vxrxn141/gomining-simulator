@@ -18,7 +18,7 @@
       "run_at": "document_idle"
     },
     {
-      "matches": ["http://localhost:*/*", "file:///*", "https://jaygauvin2002.github.io/*", "https://gmsim.ca/*", "https://www.gmsim.ca/*"],
+      "matches": ["http://localhost:*/*", "file:///*", "https://jaygauvin2002.github.io/*", "https://gmsim.ca/*", "https://www.gmsim.ca/*", "http://gmsim.ca/*", "http://www.gmsim.ca/*"],
       "js": ["sync-bridge.js"],
       "run_at": "document_idle"
     }
