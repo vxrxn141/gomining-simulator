@@ -4825,8 +4825,16 @@
                 invested += t.amount;
             });
 
-            // Days since first transaction
-            const firstDate = txs.length > 0 ? new Date(txs[0].date) : new Date();
+            // Days since first activity — earliest of (first transaction) and (first synced reward day).
+            // For users without manual transactions, falls back to reward history so the metric
+            // still reflects their real mining tenure (up to MAX_HISTORY_DAYS the extension captured).
+            const txDates = txs.map(t => new Date(t.date).getTime()).filter(n => !isNaN(n));
+            const txFirstMs = txDates.length > 0 ? Math.min(...txDates) : null;
+            const rhFirstMs = (state.rewardHistory && state.rewardHistory.length > 0)
+                ? new Date(state.rewardHistory[0].date + 'T00:00:00').getTime()
+                : null;
+            const candidates = [txFirstMs, rhFirstMs].filter(n => n !== null && !isNaN(n));
+            const firstDate = candidates.length > 0 ? new Date(Math.min(...candidates)) : new Date();
             const days = Math.max(1, Math.round((new Date() - firstDate) / 86400000));
 
             // Cumulative gains from performance data
