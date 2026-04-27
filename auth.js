@@ -76,6 +76,21 @@ async function tryCompleteEmailLinkSignIn() {
 }
 tryCompleteEmailLinkSignIn();
 
+// ---- Live user count for the landing page (publicly readable) ----
+(async function loadPublicUserCount() {
+  const el = document.getElementById("gate-user-count");
+  if (!el) return;
+  try {
+    const snap = await getDoc(doc(db, "meta", "userCount"));
+    const n = snap.exists() ? (snap.data().count || 0) : 0;
+    el.textContent = n > 0 ? n.toLocaleString() : "0";
+  } catch (e) {
+    // happens if Firestore rules don't allow public read on /meta — see SETUP.md
+    console.warn("user count fetch failed (check Firestore rules):", e);
+    el.textContent = "—";
+  }
+})();
+
 // ----- record sign-up / login on every auth change -----
 async function recordLogin(user) {
   const ref  = doc(db, "users", user.uid);
@@ -99,6 +114,12 @@ async function recordLogin(user) {
       totalSessionMs:   0,
       tier:             "free",   // admin can flip to "premium" from /admin.html
     });
+    // Bump the public landing-page counter (displayed on the auth gate).
+    try {
+      await setDoc(doc(db, "meta", "userCount"),
+                   { count: increment(1) },
+                   { merge: true });
+    } catch (e) { console.warn("counter bump failed:", e); }
   }
 }
 

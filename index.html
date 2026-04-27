@@ -1115,11 +1115,11 @@
           <div class="gate-feature" style="margin-bottom:0;"><div class="gate-feature-icon">🔄</div><span style="font-size:.86em;color:#8b949e;">Auto-sync via Chrome extension — no copy-paste</span></div>
         </div>
 
-        <!-- Static counter -->
+        <!-- Live user counter (filled by auth.js from Firestore) -->
         <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.15);border-radius:10px;margin-bottom:10px;position:relative;z-index:1;">
           <div style="width:7px;height:7px;border-radius:50%;background:#3fb950;box-shadow:0 0 7px rgba(63,185,80,0.9);flex-shrink:0;animation:gate-blink 2s infinite;"></div>
           <span style="font-size:.86em;color:#8b949e;">
-            <span style="font-weight:800;color:#3fb950;">2,800+</span> miners already using the simulator
+            <span style="font-weight:800;color:#3fb950;" id="gate-user-count">—</span> miners using the simulator
           </span>
         </div>
 
