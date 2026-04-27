@@ -19,6 +19,18 @@
     <link rel="manifest" href="pwa-manifest.json">
     <link rel="apple-touch-icon" href="icon.png">
     <title>GoMining Simulator</title>
+
+    <!-- =========================================================
+         Google AdSense
+         Replace ca-pub-XXXXXXXXXXXXXXXX with your real publisher
+         ID from https://adsense.google.com once your site is
+         approved. Until then this loads but renders nothing —
+         which is fine, AdSense uses these tags to verify the site.
+         ========================================================= -->
+    <meta name="google-adsense-account" content="ca-pub-XXXXXXXXXXXXXXXX">
+    <script async
+            src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-XXXXXXXXXXXXXXXX"
+            crossorigin="anonymous"></script>
     <style>
         :root {
             --bg: #0a0e14;
@@ -67,72 +79,42 @@
         .sidebar {
             position: fixed; left: 0; top: 0; bottom: 0;
             width: var(--sidebar-w);
-            background: linear-gradient(180deg, #0d1117 0%, #0b0f15 100%);
-            border-right: 1px solid rgba(255,255,255,0.06);
+            background: #0d1117;
+            border-right: 1px solid var(--border);
             display: flex; flex-direction: column;
-            padding: 16px 0;
+            padding: 20px 0;
             z-index: 200;
             overflow-y: auto;
         }
 
         .sidebar-logo {
-            padding: 0 14px 14px;
-            border-bottom: 1px solid rgba(255,255,255,0.05);
-            margin-bottom: 4px;
+            padding: 0 20px 20px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 8px;
         }
-        .sidebar-logo h1 { font-size: 1rem; font-weight: 800; color: var(--accent); letter-spacing: -0.03em; line-height: 1.1; }
-        .sidebar-logo p { font-size: 0.62rem; color: #4a5568; margin-top: 1px; }
-        .sidebar-logo-inner { display: flex; align-items: center; gap: 10px; }
-        .sidebar-logo-badge {
-            width: 36px; height: 36px; border-radius: 9px; flex-shrink: 0;
-            background: linear-gradient(135deg, rgba(247,147,26,0.15), rgba(91,33,182,0.15));
-            border: 1px solid rgba(247,147,26,0.2);
-            display: flex; align-items: center; justify-content: center;
-            overflow: hidden;
-        }
-        .sidebar-logo-badge img { width: 100%; height: 100%; object-fit: cover; }
+        .sidebar-logo h1 { font-size: 1.2rem; font-weight: 800; color: var(--accent); letter-spacing: -0.02em; }
+        .sidebar-logo p { font-size: 0.7rem; color: var(--text-dim); }
 
-        .sidebar-nav { flex: 1; padding: 4px 0; }
+        .sidebar-nav { flex: 1; padding: 8px 0; }
 
-        .nav-section-label {
-            font-size: 0.58rem; font-weight: 700; color: #4a5568;
-            text-transform: uppercase; letter-spacing: 1.5px;
-            padding: 10px 14px 3px;
-        }
         .nav-item {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 10px; margin: 1px 6px;
-            border-radius: 9px;
+            display: flex; align-items: center; gap: 12px;
+            padding: 11px 20px;
             color: var(--text-dim);
             cursor: pointer;
-            font-size: 0.86em; font-weight: 500;
-            transition: all 0.18s ease;
+            font-size: 0.88em; font-weight: 500;
+            transition: all 0.2s;
             position: relative;
+            border-left: 3px solid transparent;
         }
-        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+        .nav-item:hover { color: var(--text); background: rgba(255,255,255,0.03); }
         .nav-item.active {
             color: var(--text);
-            background: rgba(247,147,26,0.1);
+            background: rgba(255,255,255,0.05);
+            border-left-color: var(--current-accent);
             font-weight: 600;
         }
-        .nav-item.active[data-tab="scenarios"] { background: rgba(88,166,255,0.08); color: var(--accent2); }
-        .nav-item.active[data-tab="portfolio"] { background: rgba(63,185,80,0.08); color: var(--green); }
-        .nav-item .nav-icon {
-            width: 28px; height: 28px; border-radius: 7px;
-            background: rgba(255,255,255,0.04);
-            display: flex; align-items: center; justify-content: center;
-            font-size: 0.9em; flex-shrink: 0;
-            transition: background 0.18s;
-        }
-        .nav-item.active .nav-icon { background: rgba(247,147,26,0.15); }
-        .nav-item.active[data-tab="scenarios"] .nav-icon { background: rgba(88,166,255,0.12); }
-        .nav-item.active[data-tab="portfolio"]  .nav-icon { background: rgba(63,185,80,0.12); }
-        .nav-item .nav-dot {
-            display: none; width: 5px; height: 5px; border-radius: 50%;
-            background: var(--current-accent); margin-left: auto; flex-shrink: 0;
-            box-shadow: 0 0 6px var(--current-accent);
-        }
-        .nav-item.active .nav-dot { display: block; }
+        .nav-item .nav-icon { font-size: 1.15em; width: 22px; text-align: center; }
 
         .sidebar-footer {
             padding: 15px 20px;
@@ -891,318 +873,76 @@
          link) and shows #app-root. It's visible by default so there
          is no flash of unauthenticated app content on page load.
          ========================================================= -->
-    <style>
-        /* ── Split landing page ── */
-        #auth-gate { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .gate-left {
-            flex: 1; min-width: 0;
-            display: flex; flex-direction: column; justify-content: center;
-            padding: clamp(32px,6vw,72px) clamp(28px,5vw,64px);
-            background: radial-gradient(ellipse at 15% 55%, #1a1f2e 0%, #0a0e14 60%);
-            border-right: 1px solid rgba(255,255,255,0.06);
-            position: relative; overflow: hidden;
-        }
-        .gate-left-glow1 { position:absolute;top:-100px;left:-100px;width:340px;height:340px;border-radius:50%;background:radial-gradient(circle,rgba(247,147,26,0.06) 0%,transparent 70%);pointer-events:none; }
-        .gate-left-glow2 { position:absolute;bottom:-80px;right:-60px;width:280px;height:280px;border-radius:50%;background:radial-gradient(circle,rgba(91,33,182,0.09) 0%,transparent 70%);pointer-events:none; }
-        .gate-right {
-            width: 420px; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-            padding: 40px 44px;
-            background: #0d1117;
-        }
-        .gate-feature { display:flex;align-items:center;gap:10px;margin-bottom:10px; }
-        .gate-feature-icon { width:29px;height:29px;border-radius:7px;background:rgba(247,147,26,0.07);border:1px solid rgba(247,147,26,0.13);display:flex;align-items:center;justify-content:center;font-size:.82em;flex-shrink:0; }
-        .gate-community-link {
-            flex:1;display:flex;align-items:center;gap:9px;
-            padding:10px 13px;border-radius:10px;text-decoration:none;
-            transition:all .2s;
-        }
-        @keyframes gate-blink { 0%,100%{opacity:1} 50%{opacity:.25} }
-        @keyframes gate-shimmer { 0%{background-position:-200% 0} 100%{background-position:200% 0} }
-        @media (max-width: 700px) {
-            #auth-gate { flex-direction: column !important; }
-            .gate-left { padding: 32px 24px; }
-            .gate-right { width: 100% !important; padding: 28px 24px; }
-        }
-    </style>
-
-    <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;display:flex;background:#0a0e14;overflow:hidden;">
-
-      <!-- LEFT: hero + features + community -->
-      <div class="gate-left">
-        <div class="gate-left-glow1"></div>
-        <div class="gate-left-glow2"></div>
-
-        <!-- Mining canvas animation -->
-        <canvas id="gate-canvas" style="position:absolute;inset:0;width:100%;height:100%;opacity:0.35;pointer-events:none;"></canvas>
-
-        <!-- Mining rig SVG illustration -->
-        <div style="position:absolute;top:50%;right:-10px;transform:translateY(-50%);width:460px;height:300px;pointer-events:none;z-index:0;opacity:0.2;overflow:hidden;">
-        <svg viewBox="0 0 460 300" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
-          <defs>
-            <radialGradient id="cgA" cx="35%" cy="35%"><stop offset="0%" stop-color="#ffd27a"/><stop offset="55%" stop-color="#f7931a"/><stop offset="100%" stop-color="#b85e00"/></radialGradient>
-            <radialGradient id="fanGlow" cx="50%" cy="50%"><stop offset="0%" stop-color="#58a6ff" stop-opacity="0.9"/><stop offset="100%" stop-color="#58a6ff" stop-opacity="0"/></radialGradient>
-            <clipPath id="beltClip"><rect x="55" y="210" width="340" height="38"/></clipPath>
-            <style>
-              .f1{animation:spinF 1.05s linear infinite;transform-origin:126px 130px;}
-              .f2{animation:spinF 0.88s linear infinite reverse;transform-origin:210px 130px;}
-              .f3{animation:spinF 1.2s linear infinite;transform-origin:294px 130px;}
-              .beltMove{animation:beltSlide 2.8s linear infinite;}
-              .blockPulse{animation:bPulse 2.4s ease-in-out infinite;}
-              @keyframes spinF{to{transform:rotate(360deg);}}
-              @keyframes beltSlide{from{transform:translateX(0);}to{transform:translateX(-80px);}}
-              @keyframes bPulse{0%,100%{opacity:0.85;}50%{opacity:1;filter:drop-shadow(0 0 6px #f7931a);}}
-            </style>
-          </defs>
-
-          <!-- ── TOP FACE (isometric) ── -->
-          <polygon points="70,48 350,48 374,24 96,24" fill="#0c1a28" stroke="#1e3a5a" stroke-width="1.2"/>
-
-          <!-- ── RIGHT SIDE FACE ── -->
-          <polygon points="350,48 374,24 374,195 350,218" fill="#07111c" stroke="#1a3050" stroke-width="1"/>
-
-          <!-- ── FRONT FACE ── -->
-          <rect x="70" y="48" width="280" height="170" rx="3" fill="#0d1e30" stroke="#1e3a5a" stroke-width="1.5"/>
-
-          <!-- Front face inner inset -->
-          <rect x="78" y="56" width="264" height="154" rx="2" fill="#091525"/>
-
-          <!-- Vent slots – left strip -->
-          <rect x="82" y="70"  width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="82"  width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="94"  width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="106" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="118" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="130" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="142" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="154" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="166" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="178" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-          <rect x="82" y="190" width="22" height="5" rx="2" fill="#1a3a5a" opacity=".7"/>
-
-          <!-- ── FAN 1 ── -->
-          <circle cx="126" cy="130" r="40" fill="#06101c" stroke="#1e3a5a" stroke-width="1.5"/>
-          <circle cx="126" cy="130" r="36" fill="#050e18" stroke="#162840" stroke-width="1"/>
-          <g class="f1">
-            <path d="M126,94 C118,107 118,119 126,130 C134,119 134,107 126,94Z" fill="#1a3a5a"/>
-            <path d="M162,130 C149,122 137,122 126,130 C137,138 149,138 162,130Z" fill="#1a3a5a"/>
-            <path d="M126,166 C134,153 134,141 126,130 C118,141 118,153 126,166Z" fill="#1a3a5a"/>
-            <path d="M90,130 C103,138 115,138 126,130 C115,122 103,122 90,130Z" fill="#1a3a5a"/>
-          </g>
-          <circle cx="126" cy="130" r="10" fill="url(#fanGlow)"/>
-          <circle cx="126" cy="130" r="6" fill="#1a3a5a" stroke="#58a6ff" stroke-width="1"/>
-          <circle cx="126" cy="130" r="3" fill="#58a6ff"/>
-
-          <!-- ── FAN 2 ── -->
-          <circle cx="210" cy="130" r="40" fill="#06101c" stroke="#1e3a5a" stroke-width="1.5"/>
-          <circle cx="210" cy="130" r="36" fill="#050e18" stroke="#162840" stroke-width="1"/>
-          <g class="f2">
-            <path d="M210,94 C202,107 202,119 210,130 C218,119 218,107 210,94Z" fill="#1a3a5a"/>
-            <path d="M246,130 C233,122 221,122 210,130 C221,138 233,138 246,130Z" fill="#1a3a5a"/>
-            <path d="M210,166 C218,153 218,141 210,130 C202,141 202,153 210,166Z" fill="#1a3a5a"/>
-            <path d="M174,130 C187,138 199,138 210,130 C199,122 187,122 174,130Z" fill="#1a3a5a"/>
-          </g>
-          <circle cx="210" cy="130" r="10" fill="url(#fanGlow)"/>
-          <circle cx="210" cy="130" r="6" fill="#1a3a5a" stroke="#58a6ff" stroke-width="1"/>
-          <circle cx="210" cy="130" r="3" fill="#58a6ff"/>
-
-          <!-- ── FAN 3 ── -->
-          <circle cx="294" cy="130" r="40" fill="#06101c" stroke="#1e3a5a" stroke-width="1.5"/>
-          <circle cx="294" cy="130" r="36" fill="#050e18" stroke="#162840" stroke-width="1"/>
-          <g class="f3">
-            <path d="M294,94 C286,107 286,119 294,130 C302,119 302,107 294,94Z" fill="#1a3a5a"/>
-            <path d="M330,130 C317,122 305,122 294,130 C305,138 317,138 330,130Z" fill="#1a3a5a"/>
-            <path d="M294,166 C302,153 302,141 294,130 C286,141 286,153 294,166Z" fill="#1a3a5a"/>
-            <path d="M258,130 C271,138 283,138 294,130 C283,122 271,122 258,130Z" fill="#1a3a5a"/>
-          </g>
-          <circle cx="294" cy="130" r="10" fill="url(#fanGlow)"/>
-          <circle cx="294" cy="130" r="6" fill="#1a3a5a" stroke="#58a6ff" stroke-width="1"/>
-          <circle cx="294" cy="130" r="3" fill="#58a6ff"/>
-
-          <!-- LED strip -->
-          <rect x="78" y="198" width="264" height="6" rx="3" fill="#050e18"/>
-          <rect x="84"  y="199" width="20" height="4" rx="2" fill="#3fb950" opacity=".9"/>
-          <rect x="110" y="199" width="10" height="4" rx="2" fill="#f7931a" opacity=".9"/>
-          <rect x="126" y="199" width="10" height="4" rx="2" fill="#58a6ff" opacity=".8"/>
-          <rect x="142" y="199" width="6"  height="4" rx="2" fill="#3fb950" opacity=".6"/>
-
-          <!-- Power cables -->
-          <path d="M310,218 Q320,230 320,248" stroke="#0d1a28" stroke-width="5" fill="none" stroke-linecap="round"/>
-          <path d="M324,218 Q336,232 338,248" stroke="#091525" stroke-width="4" fill="none" stroke-linecap="round"/>
-          <path d="M340,218 Q348,232 350,248" stroke="#0d1a28" stroke-width="3" fill="none" stroke-linecap="round"/>
-
-          <!-- ── CONVEYOR BELT ── -->
-          <rect x="55" y="210" width="340" height="42" rx="5" fill="#07111c" stroke="#1a3050" stroke-width="1.2"/>
-          <!-- Rollers -->
-          <ellipse cx="72"  cy="231" rx="13" ry="13" fill="#0d1e30" stroke="#1a3050" stroke-width="1.2"/>
-          <ellipse cx="383" cy="231" rx="13" ry="13" fill="#0d1e30" stroke="#1a3050" stroke-width="1.2"/>
-          <!-- Belt surface -->
-          <rect x="72" y="220" width="311" height="22" rx="2" fill="#0a1828"/>
-          <!-- Moving belt stripes + coins (clipped) -->
-          <g clip-path="url(#beltClip)">
-            <g class="beltMove">
-              <line x1="95"  y1="220" x2="95"  y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="135" y1="220" x2="135" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="175" y1="220" x2="175" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="215" y1="220" x2="215" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="255" y1="220" x2="255" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="295" y1="220" x2="295" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="335" y1="220" x2="335" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <line x1="375" y1="220" x2="375" y2="242" stroke="#162840" stroke-width="1.5"/>
-              <!-- Coin 1 -->
-              <g transform="translate(115,231)">
-                <circle r="11" fill="url(#cgA)" stroke="#ffd27a" stroke-width="0.8" stroke-opacity="0.5"/>
-                <text y="4" text-anchor="middle" font-size="11" font-weight="900" fill="rgba(0,0,0,0.65)">₿</text>
-              </g>
-              <!-- Coin 2 -->
-              <g transform="translate(235,231)">
-                <circle r="11" fill="url(#cgA)" stroke="#ffd27a" stroke-width="0.8" stroke-opacity="0.5"/>
-                <text y="4" text-anchor="middle" font-size="11" font-weight="900" fill="rgba(0,0,0,0.65)">₿</text>
-              </g>
-              <!-- Coin 3 -->
-              <g transform="translate(355,231)">
-                <circle r="11" fill="url(#cgA)" stroke="#ffd27a" stroke-width="0.8" stroke-opacity="0.5"/>
-                <text y="4" text-anchor="middle" font-size="11" font-weight="900" fill="rgba(0,0,0,0.65)">₿</text>
-              </g>
-            </g>
-          </g>
-
-          <!-- ── BLOCKCHAIN BLOCK (right side) ── -->
-          <g class="blockPulse" transform="translate(390,60)">
-            <!-- Isometric cube top -->
-            <polygon points="30,0 55,14 30,28 5,14" fill="#0f2035" stroke="#f7931a" stroke-width="1.2"/>
-            <!-- Left face -->
-            <polygon points="5,14 30,28 30,62 5,48" fill="#091525" stroke="#f7931a" stroke-width="1"/>
-            <!-- Right face -->
-            <polygon points="55,14 30,28 30,62 55,48" fill="#0c1e30" stroke="#f7931a" stroke-width="1"/>
-            <!-- ₿ on right face -->
-            <text x="42" y="50" text-anchor="middle" font-size="14" font-weight="900" fill="#f7931a" opacity="0.9">₿</text>
-            <!-- hash label -->
-            <text x="30" y="15" text-anchor="middle" font-size="5" fill="#4a6a8a" letter-spacing="0.3">#BLOCK</text>
-          </g>
-
-          <!-- Small hash text under block -->
-          <text x="418" y="140" text-anchor="middle" font-size="6" fill="#1e3a5a" font-family="monospace">0x4f7a...</text>
-          <text x="418" y="150" text-anchor="middle" font-size="6" fill="#1e3a5a" font-family="monospace">nonce:8821</text>
-
-        </svg>
-        </div>
-
-        <!-- Logo -->
-        <div style="display:flex;align-items:center;gap:13px;margin-bottom:40px;position:relative;z-index:1;">
-          <img src="icon.png" alt="" style="width:50px;height:50px;border-radius:12px;flex-shrink:0;">
-          <div>
-            <div style="font-size:1.3rem;font-weight:800;color:#e6edf3;letter-spacing:-.03em;line-height:1.1;">
-              GoMining <span style="color:#f7931a;">Simulator</span>
-            </div>
-            <div style="font-size:.68em;color:#4a5568;margin-top:2px;">Strategy &amp; ROI calculator</div>
-          </div>
-        </div>
-
-        <!-- Headline -->
-        <h1 style="font-size:clamp(1.55rem,3.2vw,2.3rem);font-weight:800;color:#e6edf3;letter-spacing:-.03em;line-height:1.2;margin-bottom:12px;max-width:400px;position:relative;z-index:1;">
-          Know exactly what your<br><span style="color:#f7931a;">miners are earning.</span>
-        </h1>
-        <p style="font-size:.92em;color:#8b949e;line-height:1.7;margin-bottom:32px;max-width:370px;position:relative;z-index:1;">
-          The most complete investment tool for GoMining NFT miners. Calculate rewards, compare strategies, and track your ROI in real time.
-        </p>
-
-        <!-- Features -->
-        <div style="margin-bottom:36px;position:relative;z-index:1;">
-          <div class="gate-feature"><div class="gate-feature-icon">📊</div><span style="font-size:.86em;color:#8b949e;">Real-time dashboard — live BTC &amp; GMT prices</span></div>
-          <div class="gate-feature"><div class="gate-feature-icon">⛏</div><span style="font-size:.86em;color:#8b949e;">Exact GoMining reward formula calculations</span></div>
-          <div class="gate-feature"><div class="gate-feature-icon">📈</div><span style="font-size:.86em;color:#8b949e;">BTC scenario projections &amp; strategy comparison</span></div>
-          <div class="gate-feature" style="margin-bottom:0;"><div class="gate-feature-icon">🔄</div><span style="font-size:.86em;color:#8b949e;">Auto-sync via Chrome extension — no copy-paste</span></div>
-        </div>
-
-        <!-- Static counter -->
-        <div style="display:flex;align-items:center;gap:10px;padding:10px 14px;background:rgba(63,185,80,0.05);border:1px solid rgba(63,185,80,0.15);border-radius:10px;margin-bottom:10px;position:relative;z-index:1;">
-          <div style="width:7px;height:7px;border-radius:50%;background:#3fb950;box-shadow:0 0 7px rgba(63,185,80,0.9);flex-shrink:0;animation:gate-blink 2s infinite;"></div>
-          <span style="font-size:.86em;color:#8b949e;">
-            <span style="font-weight:800;color:#3fb950;">2,800+</span> miners already using the simulator
-          </span>
-        </div>
-
-        <!-- Community links -->
-        <div style="display:flex;gap:9px;position:relative;z-index:1;">
-          <a href="https://discord.gg/3RPMEA5Sh" target="_blank" rel="noopener noreferrer"
-             class="gate-community-link"
-             style="background:rgba(88,101,242,0.07);border:1px solid rgba(88,101,242,0.18);"
-             onmouseover="this.style.borderColor='rgba(88,101,242,0.38)';this.style.background='rgba(88,101,242,0.12)'"
-             onmouseout="this.style.borderColor='rgba(88,101,242,0.18)';this.style.background='rgba(88,101,242,0.07)'">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#5865f2" style="flex-shrink:0;"><path d="M20.317 4.37a19.791 19.791 0 0 0-4.885-1.515.074.074 0 0 0-.079.037c-.21.375-.444.864-.608 1.25a18.27 18.27 0 0 0-5.487 0 12.64 12.64 0 0 0-.617-1.25.077.077 0 0 0-.079-.037A19.736 19.736 0 0 0 3.677 4.37a.07.07 0 0 0-.032.027C.533 9.046-.32 13.58.099 18.057c.002.022.015.043.03.056a19.9 19.9 0 0 0 5.993 3.03.078.078 0 0 0 .084-.028c.462-.63.874-1.295 1.226-1.994a.076.076 0 0 0-.041-.106 13.107 13.107 0 0 1-1.872-.892.077.077 0 0 1-.008-.128 10.2 10.2 0 0 0 .372-.292.074.074 0 0 1 .077-.01c3.928 1.793 8.18 1.793 12.062 0a.074.074 0 0 1 .078.01c.12.098.246.198.373.292a.077.077 0 0 1-.006.127 12.299 12.299 0 0 1-1.873.892.077.077 0 0 0-.041.107c.36.698.772 1.362 1.225 1.993a.076.076 0 0 0 .084.028 19.839 19.839 0 0 0 6.002-3.03.077.077 0 0 0 .032-.054c.5-5.177-.838-9.674-3.549-13.66a.061.061 0 0 0-.031-.03z"/></svg>
-            <div>
-              <div style="font-size:.82em;font-weight:700;color:#5865f2;line-height:1.2;">Discord</div>
-              <div style="font-size:.68em;color:#4a5568;">Join the community</div>
-            </div>
-            <span style="margin-left:auto;font-size:.7em;color:#5865f2;opacity:.7;">↗</span>
-          </a>
-          <a href="https://www.reddit.com/r/GominingSimulator/" target="_blank" rel="noopener noreferrer"
-             class="gate-community-link"
-             style="background:rgba(255,69,0,0.06);border:1px solid rgba(255,69,0,0.16);"
-             onmouseover="this.style.borderColor='rgba(255,69,0,0.34)';this.style.background='rgba(255,69,0,0.11)'"
-             onmouseout="this.style.borderColor='rgba(255,69,0,0.16)';this.style.background='rgba(255,69,0,0.06)'">
-            <svg width="17" height="17" viewBox="0 0 24 24" fill="#ff4500" style="flex-shrink:0;"><path d="M12 0A12 12 0 0 0 0 12a12 12 0 0 0 12 12 12 12 0 0 0 12-12A12 12 0 0 0 12 0zm5.01 4.744c.688 0 1.25.561 1.25 1.249a1.25 1.25 0 0 1-2.498.056l-2.597-.547-.8 3.747c1.824.07 3.48.632 4.674 1.488.308-.309.73-.491 1.207-.491.968 0 1.754.786 1.754 1.754 0 .716-.435 1.333-1.01 1.614a3.111 3.111 0 0 1 .042.52c0 2.694-3.13 4.87-7.004 4.87-3.874 0-7.004-2.176-7.004-4.87 0-.183.015-.366.043-.534A1.748 1.748 0 0 1 4.028 12c0-.968.786-1.754 1.754-1.754.463 0 .898.196 1.207.49 1.207-.883 2.878-1.43 4.744-1.487l.885-4.182a.342.342 0 0 1 .14-.197.35.35 0 0 1 .238-.042l2.906.617a1.214 1.214 0 0 1 1.108-.701zM9.25 12C8.561 12 8 12.562 8 13.25c0 .687.561 1.248 1.25 1.248.687 0 1.248-.561 1.248-1.249 0-.688-.561-1.249-1.249-1.249zm5.5 0c-.687 0-1.248.561-1.248 1.25 0 .687.561 1.248 1.249 1.248.688 0 1.249-.561 1.249-1.249 0-.687-.562-1.249-1.25-1.249zm-5.466 3.99a.327.327 0 0 0-.231.094.33.33 0 0 0 0 .463c.842.842 2.484.913 2.961.913.477 0 2.105-.056 2.961-.913a.361.361 0 0 0 .029-.463.33.33 0 0 0-.464 0c-.547.533-1.684.73-2.512.73-.828 0-1.979-.196-2.512-.73a.326.326 0 0 0-.232-.095z"/></svg>
-            <div>
-              <div style="font-size:.82em;font-weight:700;color:#ff4500;line-height:1.2;">r/GominingSimulator</div>
-              <div style="font-size:.68em;color:#4a5568;">Share strategies</div>
-            </div>
-            <span style="margin-left:auto;font-size:.7em;color:#ff4500;opacity:.7;">↗</span>
-          </a>
-        </div>
-      </div>
-
-      <!-- RIGHT: sign-in form -->
-      <div class="gate-right">
-        <div style="width:100%;max-width:340px;">
-          <h2 style="font-size:1.2rem;font-weight:800;color:#e6edf3;letter-spacing:-.02em;margin-bottom:6px;">Sign in</h2>
-          <p style="font-size:.83em;color:#8b949e;margin-bottom:28px;line-height:1.55;">
-            Access your calculator and saved scenarios.
+    <div id="auth-gate" style="
+        position:fixed;inset:0;z-index:9999;
+        display:flex;align-items:center;justify-content:center;
+        background:radial-gradient(circle at 30% 20%,#1a1f2e 0%,#0a0e14 70%);
+        padding:20px;overflow-y:auto;">
+      <div style="
+          width:100%;max-width:400px;background:rgba(22,27,34,.85);
+          border:1px solid rgba(255,255,255,.08);border-radius:16px;
+          padding:32px 28px;backdrop-filter:blur(20px);
+          box-shadow:0 20px 60px rgba(0,0,0,.5);">
+        <div style="text-align:center;margin-bottom:24px;">
+          <img src="icon.png" alt="" style="width:64px;height:64px;border-radius:14px;margin-bottom:14px;">
+          <h1 style="font-size:1.35rem;color:#e6edf3;margin-bottom:6px;letter-spacing:-.02em;">
+            GoMining <span style="color:#f7931a;">Simulator</span>
+          </h1>
+          <p style="font-size:.85em;color:#8b949e;line-height:1.5;">
+            Sign in to access the calculator and your saved scenarios.
           </p>
-
-          <button id="gate-google" style="width:100%;background:#fff;color:#1a1a1a;border:none;padding:12px 16px;border-radius:10px;font-size:.9em;font-weight:600;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;margin-bottom:20px;transition:transform .12s,box-shadow .12s;"
-              onmouseover="this.style.transform='translateY(-1px)';this.style.boxShadow='0 4px 18px rgba(0,0,0,0.35)'"
-              onmouseout="this.style.transform='';this.style.boxShadow=''">
-            <svg width="17" height="17" viewBox="0 0 24 24">
-              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-            </svg>
-            Continue with Google
-          </button>
-
-          <div style="display:flex;align-items:center;gap:10px;margin-bottom:20px;color:#4a5568;font-size:.75em;">
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
-            OR
-            <div style="flex:1;height:1px;background:rgba(255,255,255,0.07);"></div>
-          </div>
-
-          <form id="gate-email-form" autocomplete="on">
-            <label for="gate-email-input" style="display:block;font-size:.78em;color:#8b949e;margin-bottom:6px;">Email address</label>
-            <input id="gate-email-input" type="email" required
-                   placeholder="you@example.com" autocomplete="email"
-                   style="width:100%;background:rgba(10,14,20,0.8);border:1px solid rgba(255,255,255,.09);color:#e6edf3;padding:11px 13px;border-radius:9px;font-size:.9em;margin-bottom:10px;outline:none;box-sizing:border-box;transition:border-color .2s;"
-                   onfocus="this.style.borderColor='#f7931a'"
-                   onblur="this.style.borderColor='rgba(255,255,255,.09)'">
-            <button id="gate-email-send" type="submit" style="width:100%;background:#f7931a;color:#000;border:none;padding:11px 16px;border-radius:9px;font-size:.9em;font-weight:700;cursor:pointer;">
-              Send magic link →
-            </button>
-            <div id="gate-sent" style="display:none;margin-top:14px;padding:12px 14px;background:rgba(63,185,80,.08);border:1px solid rgba(63,185,80,.25);border-radius:9px;color:#3fb950;font-size:.83em;line-height:1.6;"></div>
-            <div id="gate-err" style="display:none;margin-top:14px;padding:12px 14px;background:rgba(248,81,73,.08);border:1px solid rgba(248,81,73,.25);border-radius:9px;color:#f85149;font-size:.83em;"></div>
-            <p style="font-size:.7em;color:#4a5568;margin-top:11px;line-height:1.6;text-align:center;">
-              One-click link sent to your inbox. No password needed.
-            </p>
-          </form>
-
-          <div style="margin-top:26px;padding-top:18px;border-top:1px solid rgba(255,255,255,0.05);text-align:center;font-size:.64em;color:#4a5568;line-height:1.9;">
-            <a href="privacy.html" style="color:#4a5568;text-decoration:none;">Privacy</a>
-            &nbsp;·&nbsp;
-            <a href="terms.html" style="color:#4a5568;text-decoration:none;">Terms</a>
-            &nbsp;·&nbsp;
-            <a href="support.html" style="color:#f7931a;text-decoration:none;">Support us ❤</a>
-          </div>
         </div>
+
+        <button id="gate-google" style="
+            width:100%;background:#fff;color:#1a1a1a;border:none;
+            padding:12px 16px;border-radius:10px;font-size:.92em;
+            font-weight:600;cursor:pointer;display:flex;
+            align-items:center;justify-content:center;gap:10px;
+            margin-bottom:16px;transition:transform .1s;"
+            onmouseover="this.style.transform='translateY(-1px)'"
+            onmouseout="this.style.transform=''">
+          <svg width="18" height="18" viewBox="0 0 24 24">
+            <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+            <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+            <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+            <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+          </svg>
+          Continue with Google
+        </button>
+
+        <div style="display:flex;align-items:center;gap:10px;margin:18px 0;color:#6e7681;font-size:.78em;">
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
+          OR
+          <div style="flex:1;height:1px;background:rgba(255,255,255,.08);"></div>
+        </div>
+
+        <form id="gate-email-form" autocomplete="on">
+          <label for="gate-email-input" style="display:block;font-size:.78em;color:#8b949e;margin-bottom:6px;">
+            Email address
+          </label>
+          <input id="gate-email-input" type="email" required
+                 placeholder="you@example.com" autocomplete="email"
+                 style="width:100%;background:#0d1117;border:1px solid rgba(255,255,255,.1);
+                        color:#e6edf3;padding:11px 13px;border-radius:9px;
+                        font-size:.92em;margin-bottom:10px;outline:none;"
+                 onfocus="this.style.borderColor='#f7931a'"
+                 onblur="this.style.borderColor='rgba(255,255,255,.1)'">
+          <button id="gate-email-send" type="submit" style="
+              width:100%;background:#f7931a;color:#000;border:none;
+              padding:11px 16px;border-radius:9px;font-size:.9em;
+              font-weight:700;cursor:pointer;">
+            Send magic link
+          </button>
+          <div id="gate-sent" style="display:none;margin-top:14px;padding:11px;
+               background:rgba(63,185,80,.1);border:1px solid rgba(63,185,80,.3);
+               border-radius:8px;color:#3fb950;font-size:.82em;line-height:1.5;"></div>
+          <div id="gate-err" style="display:none;margin-top:14px;padding:11px;
+               background:rgba(248,81,73,.1);border:1px solid rgba(248,81,73,.3);
+               border-radius:8px;color:#f85149;font-size:.82em;"></div>
+          <p style="font-size:.72em;color:#6e7681;margin-top:14px;line-height:1.5;text-align:center;">
+            We'll email you a one-click sign-in link.<br>No password needed.
+          </p>
+        </form>
       </div>
     </div>
 
@@ -1212,57 +952,44 @@
     <!-- Sidebar -->
     <aside class="sidebar" id="sidebar">
         <div class="sidebar-logo">
-            <div class="sidebar-logo-inner">
-                <div class="sidebar-logo-badge">
-                    <img src="icon.png" alt="Logo">
-                </div>
+            <div style="display:flex;align-items:center;gap:10px;">
+                <img src="icon.png" alt="Logo" style="width:70px;height:70px;border-radius:12px;">
                 <div>
-                    <h1>GoMining</h1>
+                    <h1 style="font-size:1.1rem;">GoMining</h1>
                     <p data-i18n="nav_subtitle">Simulator & Strategies</p>
                 </div>
             </div>
         </div>
         <nav class="sidebar-nav">
-            <div class="nav-section-label">Main</div>
             <div class="nav-item active" data-tab="dashboard" onclick="switchTab('dashboard')">
                 <span class="nav-icon">📊</span> <span data-i18n="nav_dashboard">Dashboard</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="mining" onclick="switchTab('mining')">
                 <span class="nav-icon">⛏</span> <span data-i18n="nav_simulator">Simulator</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="scenarios" onclick="switchTab('scenarios')">
                 <span class="nav-icon">📈</span> <span data-i18n="nav_scenarios">BTC Scenarios</span>
-                <span class="nav-dot"></span>
             </div>
             <!-- WIP: hidden from users until released — code remains intact in this file and in tab-content divs below -->
             <div class="nav-item" data-tab="reinvest" onclick="switchTab('reinvest')" style="display:none;">
                 <span class="nav-icon">🔄</span> <span data-i18n="nav_reinvest">Reinvestment</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="compare" onclick="switchTab('compare')" style="display:none;">
                 <span class="nav-icon">⚖</span> <span data-i18n="nav_compare">Compare</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="multisim" onclick="switchTab('multisim')" style="display:none;">
                 <span class="nav-icon">🎛</span> <span data-i18n="nav_simulation">Simulation</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="performance" onclick="switchTab('performance')" style="display:none;">
                 <span class="nav-icon">📉</span> <span data-i18n="nav_performance">Performance</span>
-                <span class="nav-dot"></span>
             </div>
             <div class="nav-item" data-tab="alerts" onclick="switchTab('alerts')" style="display:none;">
                 <span class="nav-icon">🔔</span> <span data-i18n="nav_alerts">Alerts</span>
-                <span class="nav-dot"></span>
             </div>
             <!-- END WIP -->
-            <div class="nav-section-label">Account</div>
 
             <div class="nav-item" data-tab="portfolio" onclick="switchTab('portfolio')">
                 <span class="nav-icon">💰</span> <span data-i18n="nav_portfolio">Portfolio</span>
-                <span class="nav-dot"></span>
             </div>
         </nav>
         <div class="sidebar-footer">
@@ -5328,197 +5055,5 @@
     </div><!-- /#app-root -->
     <script type="module" src="auth.js"></script>
     <script type="module" src="tracking.js"></script>
-
-    <!-- Landing page canvas animation -->
-    <script>
-    (function() {
-      const canvas = document.getElementById('gate-canvas');
-      if (!canvas) return;
-      const ctx = canvas.getContext('2d');
-      let W, H, raf;
-
-      function resize() {
-        W = canvas.offsetWidth; H = canvas.offsetHeight;
-        canvas.width = W * devicePixelRatio;
-        canvas.height = H * devicePixelRatio;
-        ctx.scale(devicePixelRatio, devicePixelRatio);
-      }
-      window.addEventListener('resize', resize);
-      resize();
-
-      // ── Nodes (mining network) ──────────────────────────────
-      const NODE_COUNT = 28;
-      const nodes = Array.from({ length: NODE_COUNT }, () => ({
-        x: Math.random() * 1, y: Math.random() * 1,
-        vx: (Math.random() - 0.5) * 0.00012,
-        vy: (Math.random() - 0.5) * 0.00012,
-        r: Math.random() * 2 + 1.5,
-        pulse: Math.random() * Math.PI * 2,
-        pulseSpeed: 0.018 + Math.random() * 0.02,
-      }));
-
-      // ── Floating BTC coins (fall from top) ────────────────
-      const coins = [];
-      function spawnCoin() {
-        coins.push({
-          x: 0.3 + Math.random() * 0.65,
-          y: -0.06,
-          vy: 0.0006 + Math.random() * 0.0008,
-          vx: (Math.random() - 0.5) * 0.00018,
-          alpha: 0,
-          size: 11 + Math.random() * 10,
-          life: 0,
-          maxLife: 300 + Math.random() * 160,
-          rotation: Math.random() * Math.PI * 2,
-          rotSpeed: (Math.random() - 0.5) * 0.03,
-        });
-      }
-      for (let i = 0; i < 5; i++) setTimeout(spawnCoin, i * 600);
-      setInterval(spawnCoin, 1800);
-
-      // ── Hash stream columns ────────────────────────────────
-      const CHARS = '0123456789abcdef';
-      const COL_COUNT = 6;
-      const cols = Array.from({ length: COL_COUNT }, (_, i) => ({
-        x: 0.58 + i * 0.075,
-        chars: Array.from({ length: 14 }, () => ({
-          ch: CHARS[Math.floor(Math.random() * CHARS.length)],
-          y: Math.random(),
-          alpha: Math.random() * 0.35,
-          speed: 0.0008 + Math.random() * 0.0012,
-          changeTimer: Math.floor(Math.random() * 30),
-        })),
-      }));
-
-
-
-      // ── Draw ───────────────────────────────────────────────
-      function draw() {
-        ctx.clearRect(0, 0, W, H);
-
-        // Node connections
-        for (let i = 0; i < nodes.length; i++) {
-          for (let j = i + 1; j < nodes.length; j++) {
-            const a = nodes[i], b = nodes[j];
-            const dx = (a.x - b.x) * W, dy = (a.y - b.y) * H;
-            const dist = Math.sqrt(dx*dx + dy*dy);
-            if (dist < 120) {
-              ctx.beginPath();
-              ctx.moveTo(a.x * W, a.y * H);
-              ctx.lineTo(b.x * W, b.y * H);
-              ctx.strokeStyle = `rgba(247,147,26,${(1 - dist/120) * 0.12})`;
-              ctx.lineWidth = 0.8;
-              ctx.stroke();
-            }
-          }
-        }
-
-        // Nodes
-        nodes.forEach(n => {
-          n.pulse += n.pulseSpeed;
-          const glow = 0.55 + Math.sin(n.pulse) * 0.3;
-          const g = ctx.createRadialGradient(n.x*W, n.y*H, 0, n.x*W, n.y*H, n.r * 3.5);
-          g.addColorStop(0, `rgba(247,147,26,${glow * 0.9})`);
-          g.addColorStop(1, 'rgba(247,147,26,0)');
-          ctx.beginPath();
-          ctx.arc(n.x*W, n.y*H, n.r * 3.5, 0, Math.PI*2);
-          ctx.fillStyle = g;
-          ctx.fill();
-          ctx.beginPath();
-          ctx.arc(n.x*W, n.y*H, n.r, 0, Math.PI*2);
-          ctx.fillStyle = `rgba(247,147,26,${glow})`;
-          ctx.fill();
-
-          // drift
-          n.x += n.vx; n.y += n.vy;
-          if (n.x < 0 || n.x > 1) n.vx *= -1;
-          if (n.y < 0 || n.y > 1) n.vy *= -1;
-        });
-
-        // Hash stream columns
-        cols.forEach(col => {
-          col.chars.forEach(c => {
-            c.changeTimer--;
-            if (c.changeTimer <= 0) {
-              c.ch = CHARS[Math.floor(Math.random() * CHARS.length)];
-              c.changeTimer = 15 + Math.floor(Math.random() * 40);
-            }
-            c.y += c.speed;
-            if (c.y > 1.05) { c.y = -0.04; c.alpha = Math.random() * 0.3; }
-            const brightness = c.y < 0.1 || c.y > 0.9 ? c.alpha * 0.3 : c.alpha;
-            ctx.font = `bold 9px "SF Mono", "Fira Code", monospace`;
-            ctx.fillStyle = `rgba(247,147,26,${brightness * 0.7})`;
-            ctx.fillText(c.ch, col.x * W, c.y * H);
-          });
-        });
-
-        // Floating BTC coins
-        for (let i = coins.length - 1; i >= 0; i--) {
-          const c = coins[i];
-          c.life++;
-          c.x += c.vx; c.y += c.vy;
-          c.rotation += c.rotSpeed;
-          if (c.life < 30) c.alpha = c.life / 30;
-          else if (c.life > c.maxLife - 40) c.alpha = (c.maxLife - c.life) / 40;
-          else c.alpha = 1;
-          if (c.life >= c.maxLife) { coins.splice(i, 1); continue; }
-
-          ctx.save();
-          ctx.translate(c.x * W, c.y * H);
-          ctx.rotate(c.rotation);
-          ctx.globalAlpha = c.alpha * 0.85;
-
-          // Coin glow
-          const cg = ctx.createRadialGradient(0, 0, 0, 0, 0, c.size * 1.8);
-          cg.addColorStop(0, 'rgba(247,147,26,0.25)');
-          cg.addColorStop(1, 'rgba(247,147,26,0)');
-          ctx.beginPath();
-          ctx.arc(0, 0, c.size * 1.8, 0, Math.PI * 2);
-          ctx.fillStyle = cg;
-          ctx.fill();
-
-          // Coin body
-          const coinGrad = ctx.createRadialGradient(-c.size*0.25, -c.size*0.25, 0, 0, 0, c.size);
-          coinGrad.addColorStop(0, '#ffd27a');
-          coinGrad.addColorStop(0.5, '#f7931a');
-          coinGrad.addColorStop(1, '#c86a00');
-          ctx.beginPath();
-          ctx.arc(0, 0, c.size, 0, Math.PI * 2);
-          ctx.fillStyle = coinGrad;
-          ctx.fill();
-          ctx.strokeStyle = 'rgba(255,210,122,0.5)';
-          ctx.lineWidth = 0.8;
-          ctx.stroke();
-
-          // ₿ symbol
-          ctx.globalAlpha = c.alpha * 0.95;
-          ctx.fillStyle = 'rgba(0,0,0,0.75)';
-          ctx.font = `bold ${c.size * 1.05}px sans-serif`;
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          ctx.fillText('₿', 0, 1);
-
-          ctx.restore();
-          ctx.globalAlpha = 1;
-        }
-
-        raf = requestAnimationFrame(draw);
-      }
-
-      // Start once gate is visible
-      draw();
-
-      // Pause animation when gate is hidden (user signed in)
-      const observer = new MutationObserver(() => {
-        const gate = document.getElementById('gate-canvas');
-        if (!gate || gate.closest('#auth-gate').style.display === 'none') {
-          cancelAnimationFrame(raf);
-          observer.disconnect();
-        }
-      });
-      const authGate = document.getElementById('auth-gate');
-      if (authGate) observer.observe(authGate, { attributes: true, attributeFilter: ['style'] });
-    })();
-    </script>
 </body>
 </html>
