@@ -48,6 +48,7 @@
             --a-compare: #bc8cff;
             --a-multisim: #e06c75;
             --a-performance: #56d4dd;
+            --a-strategy: #f1c40f;
         }
 
         * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -116,6 +117,7 @@
             font-weight: 600;
         }
         .nav-item.active[data-tab="scenarios"] { background: rgba(88,166,255,0.08); color: var(--accent2); }
+        .nav-item.active[data-tab="strategy"] { background: rgba(241,196,15,0.10); color: var(--a-strategy); }
         .nav-item.active[data-tab="portfolio"] { background: rgba(63,185,80,0.08); color: var(--green); }
         .nav-item .nav-icon {
             width: 28px; height: 28px; border-radius: 7px;
@@ -126,6 +128,7 @@
         }
         .nav-item.active .nav-icon { background: rgba(247,147,26,0.15); }
         .nav-item.active[data-tab="scenarios"] .nav-icon { background: rgba(88,166,255,0.12); }
+        .nav-item.active[data-tab="strategy"]  .nav-icon { background: rgba(241,196,15,0.15); }
         .nav-item.active[data-tab="portfolio"]  .nav-icon { background: rgba(63,185,80,0.12); }
         .nav-item .nav-dot {
             display: none; width: 5px; height: 5px; border-radius: 50%;
@@ -882,6 +885,34 @@
         }
         .lang-btn.active { background: var(--accent); color: #000; border-color: var(--accent); }
 
+        /* ===== Strategy Lab styles ===== */
+        .period-selector { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-width: 360px; }
+        .period-btn { flex: 1; background: var(--bg); border: none; border-right: 1px solid var(--border); color: var(--text-dim); padding: 10px 14px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.15s; }
+        .period-btn:last-child { border-right: none; }
+        .period-btn:hover { color: var(--text); }
+        .period-btn.active { background: var(--a-strategy); color: #000; }
+
+        .quick-fill-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); padding: 5px 10px; cursor: pointer; font-size: 0.8em; transition: all 0.15s; }
+        .quick-fill-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+        .day-cell { background: var(--bg2); border: 2px solid transparent; border-radius: 8px; padding: 8px 4px; cursor: pointer; user-select: none; text-align: center; transition: all 0.15s; }
+        .day-cell:hover { transform: translateY(-1px); }
+        .day-cell .day-num { font-size: 0.7em; color: var(--text-dim); font-weight: 600; margin-bottom: 4px; }
+        .day-cell .day-strat { font-size: 0.95em; font-weight: 700; }
+        .day-cell[data-strat="btc"] { border-color: var(--accent); background: rgba(247,147,26,0.08); }
+        .day-cell[data-strat="btc"] .day-strat { color: var(--accent); }
+        .day-cell[data-strat="gmt"] { border-color: var(--purple); background: rgba(188,140,255,0.08); }
+        .day-cell[data-strat="gmt"] .day-strat { color: var(--purple); }
+        .day-cell[data-strat="th"] { border-color: var(--green); background: rgba(46,204,113,0.08); }
+        .day-cell[data-strat="th"] .day-strat { color: var(--green); }
+
+        .btn-primary { border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; }
+        .btn-primary:hover { opacity: 0.88; }
+
+        .strategy-result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+        .strategy-result-card .res-label { color: var(--text-dim); font-size: 0.8em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+        .strategy-result-card .res-value { font-size: 1.4em; font-weight: 700; }
+
     </style>
 </head>
 <body>
@@ -1234,6 +1265,10 @@
             </div>
             <div class="nav-item" data-tab="scenarios" onclick="switchTab('scenarios')">
                 <span class="nav-icon">📈</span> <span data-i18n="nav_scenarios">BTC Scenarios</span>
+                <span class="nav-dot"></span>
+            </div>
+            <div class="nav-item" data-tab="strategy" onclick="switchTab('strategy')">
+                <span class="nav-icon">🧪</span> <span data-i18n="nav_strategy">Strategy Lab</span>
                 <span class="nav-dot"></span>
             </div>
             <!-- WIP: hidden from users until released — code remains intact in this file and in tab-content divs below -->
@@ -1973,6 +2008,66 @@
             </div>
         </div>
 
+        <!-- TAB: Strategy Lab -->
+        <div class="tab-content" id="tab-strategy">
+            <div class="section">
+                <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;margin-bottom:14px;">
+                    <h2 style="margin:0;border:none;padding:0;color:var(--a-strategy);" data-i18n="sec_strategy_lab">🧪 Strategy Lab</h2>
+                </div>
+                <p style="color:var(--text-dim);font-size:0.95em;margin-bottom:18px;" data-i18n="strategy_intro">Build a day-by-day reinvestment plan and see what you'd earn over the period. Choose for each day: collect BTC, reinvest in GMT, or buy more TH.</p>
+
+                <!-- Period selector -->
+                <div style="margin-bottom:18px;">
+                    <label style="display:block;color:var(--text-dim);font-size:0.85em;margin-bottom:6px;" data-i18n="strategy_period">Period</label>
+                    <div class="period-selector" id="strategy-period-selector">
+                        <button class="period-btn active" data-period="7"><span data-i18n="strategy_period_7">7 days</span></button>
+                        <button class="period-btn" data-period="14"><span data-i18n="strategy_period_14">14 days</span></button>
+                        <button class="period-btn" data-period="30"><span data-i18n="strategy_period_30">30 days</span></button>
+                    </div>
+                </div>
+
+                <!-- Quick fill buttons -->
+                <div style="margin-bottom:14px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;">
+                    <span style="color:var(--text-dim);font-size:0.85em;" data-i18n="strategy_quick_fill">Quick fill:</span>
+                    <button class="quick-fill-btn" data-fill="btc"><span style="color:var(--accent);">●</span> <span data-i18n="strategy_all_btc">All BTC</span></button>
+                    <button class="quick-fill-btn" data-fill="gmt"><span style="color:var(--purple);">●</span> <span data-i18n="strategy_all_gmt">All GMT</span></button>
+                    <button class="quick-fill-btn" data-fill="th"><span style="color:var(--green);">●</span> <span data-i18n="strategy_all_th">All TH</span></button>
+                </div>
+
+                <!-- Day grid -->
+                <div id="strategy-day-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-bottom:18px;"></div>
+
+                <!-- Price overrides -->
+                <div class="section" style="background:var(--bg2);padding:14px;margin-bottom:14px;">
+                    <h3 style="margin:0 0 10px 0;font-size:1em;color:var(--text);" data-i18n="strategy_prices">Price Overrides (optional)</h3>
+                    <p style="font-size:0.8em;color:var(--text-dim);margin-bottom:10px;" data-i18n="strategy_prices_hint">Test scenarios — what if BTC pumps or GMT moves? Leave blank to use current snapshot.</p>
+                    <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+                        <div class="form-group">
+                            <label data-i18n="strategy_btc_price">BTC Price ($)</label>
+                            <input type="number" id="strategy-btc-override" min="0" step="100" placeholder="">
+                            <span class="hint" id="strategy-btc-current"></span>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="strategy_gmt_price">GMT Price ($)</label>
+                            <input type="number" id="strategy-gmt-override" min="0" step="0.001" placeholder="">
+                            <span class="hint" id="strategy-gmt-current"></span>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="strategy_cost_per_th">Cost per TH ($)</label>
+                            <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12">
+                            <span class="hint" data-i18n="strategy_cost_per_th_hint">Current upgrade cost (~$12)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Run button -->
+                <button class="btn btn-primary" id="strategy-run-btn" style="background:var(--a-strategy);color:#000;width:100%;font-weight:700;padding:12px;font-size:1em;" data-i18n="strategy_run">Run Simulation</button>
+
+                <!-- Results -->
+                <div id="strategy-results" style="display:none;margin-top:20px;"></div>
+            </div>
+        </div>
+
         <div class="tab-content" id="tab-portfolio">
             <div class="section" style="margin-bottom:12px;">
                 <h2 style="border:none;margin-bottom:10px;padding:0;" data-i18n="sec_staking">veGMT Lock Rewards</h2>
@@ -2312,6 +2407,7 @@
                 if (state.gmtPrice) {
                     document.getElementById('gmt-price').textContent = '$' + state.gmtPrice.toFixed(4);
                 }
+                if (typeof updateStrategyPriceHints === 'function') updateStrategyPriceHints();
                 if (state.networkHashrate) {
                     const ehps = state.networkHashrate / 1e18;
                     document.getElementById('net-difficulty').textContent = ehps.toFixed(1) + ' EH/s';
@@ -2865,6 +2961,204 @@
             document.getElementById('strat-map').style.display = 'block';
         }
 
+        // ===== STRATEGY LAB =====
+        // Day-by-day reinvestment plan over 7/14/30 days.
+        // Each day the user picks: 'btc' (collect), 'gmt' (reinvest GMT), 'th' (buy more TH).
+        // TH compounds the next day. Fees scale with power.
+        let strategyDays = [];      // array of 'btc' | 'gmt' | 'th'
+        let strategyPeriod = 7;
+        const STRATEGY_TH_BONUS = 0.05; // 5% bonus when reinvesting in TH
+
+        function initStrategyLab() {
+            // Period selector buttons
+            document.querySelectorAll('#strategy-period-selector .period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const p = parseInt(btn.dataset.period);
+                    strategyPeriod = p;
+                    document.querySelectorAll('#strategy-period-selector .period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    rebuildStrategyGrid();
+                });
+            });
+            // Quick fill
+            document.querySelectorAll('.quick-fill-btn').forEach(btn => {
+                btn.addEventListener('click', () => fillStrategyAll(btn.dataset.fill));
+            });
+            // Run button
+            document.getElementById('strategy-run-btn').addEventListener('click', runStrategySimulation);
+            rebuildStrategyGrid();
+            updateStrategyPriceHints();
+        }
+
+        function rebuildStrategyGrid() {
+            const grid = document.getElementById('strategy-day-grid');
+            // Preserve existing choices, default new days to 'btc'
+            while (strategyDays.length < strategyPeriod) strategyDays.push('btc');
+            strategyDays = strategyDays.slice(0, strategyPeriod);
+
+            const labelMap = { btc: 'BTC', gmt: 'GMT', th: 'TH' };
+            let html = '';
+            for (let i = 0; i < strategyPeriod; i++) {
+                const strat = strategyDays[i];
+                html += `<div class="day-cell" data-strat="${strat}" data-day="${i}" onclick="cycleStrategyDay(${i})">
+                    <div class="day-num">D${i + 1}</div>
+                    <div class="day-strat">${labelMap[strat]}</div>
+                </div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        function cycleStrategyDay(i) {
+            const order = ['btc', 'gmt', 'th'];
+            const idx = order.indexOf(strategyDays[i]);
+            strategyDays[i] = order[(idx + 1) % 3];
+            rebuildStrategyGrid();
+        }
+
+        function fillStrategyAll(strat) {
+            for (let i = 0; i < strategyPeriod; i++) strategyDays[i] = strat;
+            rebuildStrategyGrid();
+        }
+
+        function updateStrategyPriceHints() {
+            const btcEl = document.getElementById('strategy-btc-current');
+            const gmtEl = document.getElementById('strategy-gmt-current');
+            if (btcEl && state.btcPrice) btcEl.textContent = `${t('strategy_current')}: $${Math.round(state.btcPrice).toLocaleString()}`;
+            if (gmtEl && state.gmtPrice) gmtEl.textContent = `${t('strategy_current')}: $${state.gmtPrice.toFixed(4)}`;
+        }
+
+        function runStrategySimulation() {
+            const c = state.lastCalc;
+            if (!c) {
+                // Try to read from form directly if no lastCalc
+                const hashrate = parseFloat(document.getElementById('hashrate').value);
+                const efficiency = parseFloat(document.getElementById('efficiency').value);
+                const elecCost = parseFloat(document.getElementById('elec-cost').value);
+                const discount = parseFloat(document.getElementById('discount').value) || 0;
+                const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
+                if (!hashrate || !satPerTH) {
+                    alert(t('alert_calc_first') || 'Please calculate first in the Simulator tab');
+                    return;
+                }
+                state.lastCalc = { hashrate, efficiency, elecCost, discount, satPerTH };
+            }
+
+            const cfg = state.lastCalc;
+            const btcOverride = parseFloat(document.getElementById('strategy-btc-override').value);
+            const gmtOverride = parseFloat(document.getElementById('strategy-gmt-override').value);
+            const costPerTH = parseFloat(document.getElementById('strategy-cost-per-th').value) || 12;
+            const btcPrice = !isNaN(btcOverride) && btcOverride > 0 ? btcOverride : state.btcPrice;
+            const gmtPrice = !isNaN(gmtOverride) && gmtOverride > 0 ? gmtOverride : state.gmtPrice;
+
+            if (!btcPrice || !gmtPrice) {
+                alert('Missing prices — sync data first or set overrides.');
+                return;
+            }
+
+            // Save and temporarily override gmtPrice for calcDailyReward (which reads state.gmtPrice)
+            const savedGmtPrice = state.gmtPrice;
+            state.gmtPrice = gmtPrice;
+
+            // Simulation loop — per-day with compounding
+            let power = cfg.hashrate;
+            let totalBtc = 0, totalGmt = 0, totalThGained = 0, totalFeesGmt = 0, totalFeesUsd = 0;
+            const dayLog = [];
+
+            for (let i = 0; i < strategyPeriod; i++) {
+                const strat = strategyDays[i];
+                const dayR = calcDailyReward(power, cfg.efficiency, cfg.elecCost, cfg.discount, btcPrice, cfg.satPerTH);
+                if (!dayR) break;
+
+                let dayBtc = 0, dayGmt = 0, dayTh = 0;
+                const dayFeesGmt = dayR.feesGmt;
+                const dayFeesUsd = dayFeesGmt * gmtPrice;
+
+                if (strat === 'btc') {
+                    dayBtc = dayR.netBtc; // net after fees converted from GMT
+                } else if (strat === 'gmt') {
+                    dayGmt = dayR.netGmt;
+                } else if (strat === 'th') {
+                    // gross USD value of the day's reward, +5% bonus, divided by cost per TH
+                    dayTh = (dayR.grossUsd * (1 + STRATEGY_TH_BONUS)) / costPerTH;
+                    power += dayTh; // compound for next day
+                }
+
+                totalBtc += dayBtc;
+                totalGmt += dayGmt;
+                totalThGained += dayTh;
+                totalFeesGmt += dayFeesGmt;
+                totalFeesUsd += dayFeesUsd;
+
+                dayLog.push({ day: i + 1, strat, power: power.toFixed(2), btc: dayBtc, gmt: dayGmt, th: dayTh, feesGmt: dayFeesGmt });
+            }
+
+            // Restore state.gmtPrice
+            state.gmtPrice = savedGmtPrice;
+
+            // Compute final USD value
+            const totalBtcUsd = totalBtc * btcPrice;
+            const totalGmtUsd = totalGmt * gmtPrice;
+            const totalThUsd = totalThGained * costPerTH;
+            const totalUsd = totalBtcUsd + totalGmtUsd + totalThUsd;
+            const netUsd = totalUsd - totalFeesUsd;
+
+            renderStrategyResults({
+                period: strategyPeriod,
+                totalBtc, totalGmt, totalThGained, totalFeesGmt,
+                totalBtcUsd, totalGmtUsd, totalThUsd, totalUsd, totalFeesUsd, netUsd,
+                finalPower: power, startPower: cfg.hashrate,
+                btcPrice, gmtPrice, costPerTH,
+                dayLog
+            });
+        }
+
+        function renderStrategyResults(r) {
+            const el = document.getElementById('strategy-results');
+            const t_ = (k, fb) => t(k) || fb;
+
+            let html = `<div class="section" style="background:var(--bg2);">
+                <h3 style="margin:0 0 14px 0;color:var(--a-strategy);" data-i18n="strategy_results">📊 Results — ${r.period} ${t_('days', 'days')}</h3>
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
+                    <div class="strategy-result-card">
+                        <div class="res-label" data-i18n="strategy_total_btc">Total BTC</div>
+                        <div class="res-value" style="color:var(--accent);">${r.totalBtc.toFixed(8)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalBtcUsd)}</div>
+                    </div>
+                    <div class="strategy-result-card">
+                        <div class="res-label" data-i18n="strategy_total_gmt">Total GMT</div>
+                        <div class="res-value" style="color:var(--purple);">${r.totalGmt.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalGmtUsd)}</div>
+                    </div>
+                    <div class="strategy-result-card">
+                        <div class="res-label" data-i18n="strategy_total_th">TH Gained</div>
+                        <div class="res-value" style="color:var(--green);">+${r.totalThGained.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">${r.startPower.toFixed(2)} → ${r.finalPower.toFixed(2)} TH</div>
+                    </div>
+                    <div class="strategy-result-card">
+                        <div class="res-label" data-i18n="strategy_total_fees">Fees Paid</div>
+                        <div class="res-value" style="color:var(--red);">${r.totalFeesGmt.toFixed(2)} GMT</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalFeesUsd)}</div>
+                    </div>
+                </div>
+                <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
+                    <div>
+                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_total_value">Total value generated</div>
+                        <div style="font-size:1.6em;font-weight:700;color:var(--green);">${formatUSD(r.totalUsd)}</div>
+                    </div>
+                    <div style="text-align:right;">
+                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_net_value">Net (after fees)</div>
+                        <div style="font-size:1.6em;font-weight:700;color:${r.netUsd >= 0 ? 'var(--green)' : 'var(--red)'};">${formatUSD(r.netUsd)}</div>
+                    </div>
+                </div>
+                <div style="margin-top:14px;font-size:0.8em;color:var(--text-dim);">
+                    <span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}
+                </div>
+            </div>`;
+            el.innerHTML = html;
+            el.style.display = 'block';
+            el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        }
+
         // ===== LIVE DASHBOARD =====
         let lastStrategy = null;
 
@@ -3259,6 +3553,7 @@
             // Set section accent color
             const accentMap = {
                 dashboard: '--a-dashboard', mining: '--a-mining', scenarios: '--a-scenarios',
+                strategy: '--a-strategy',
                 reinvest: '--a-reinvest', compare: '--a-compare', multisim: '--a-multisim', performance: '--a-performance',
                 alerts: '--red', portfolio: '--accent'
             };
@@ -4453,8 +4748,25 @@
                 // Sidebar
                 nav_subtitle: 'Simulator & Strategies',
                 nav_dashboard: 'Dashboard', nav_simulator: 'Simulator', nav_scenarios: 'BTC Scenarios',
+                nav_strategy: 'Strategy Lab',
                 nav_reinvest: 'Reinvestment', nav_compare: 'Compare', nav_simulation: 'Simulation',
                 nav_performance: 'Performance', nav_alerts: 'Alerts', nav_portfolio: 'Portfolio',
+                sec_strategy_lab: '🧪 Strategy Lab',
+                strategy_intro: "Build a day-by-day reinvestment plan and see what you'd earn over the period. Choose for each day: collect BTC, reinvest in GMT, or buy more TH.",
+                strategy_period: 'Period',
+                strategy_period_7: '7 days', strategy_period_14: '14 days', strategy_period_30: '30 days',
+                strategy_quick_fill: 'Quick fill:',
+                strategy_all_btc: 'All BTC', strategy_all_gmt: 'All GMT', strategy_all_th: 'All TH',
+                strategy_prices: 'Price Overrides (optional)',
+                strategy_prices_hint: 'Test scenarios — what if BTC pumps or GMT moves? Leave blank to use current snapshot.',
+                strategy_btc_price: 'BTC Price ($)', strategy_gmt_price: 'GMT Price ($)', strategy_cost_per_th: 'Cost per TH ($)',
+                strategy_cost_per_th_hint: 'Current upgrade cost (~$12)',
+                strategy_current: 'current',
+                strategy_run: 'Run Simulation',
+                strategy_results: 'Results',
+                strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
+                strategy_total_value: 'Total value generated', strategy_net_value: 'Net (after fees)',
+                strategy_used_prices: 'Prices used',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
                 btn_export: 'Export', btn_import: 'Import',
                 // KPIs
@@ -4624,8 +4936,25 @@
                 // Sidebar
                 nav_subtitle: 'Simulateur & Stratégies',
                 nav_dashboard: 'Dashboard', nav_simulator: 'Simulateur', nav_scenarios: 'Scénarios BTC',
+                nav_strategy: 'Labo Stratégie',
                 nav_reinvest: 'Réinvestissement', nav_compare: 'Comparer', nav_simulation: 'Simulation',
                 nav_performance: 'Performance', nav_alerts: 'Alertes', nav_portfolio: 'Portfolio',
+                sec_strategy_lab: '🧪 Labo Stratégie',
+                strategy_intro: "Construis un plan de réinvestissement jour par jour et vois combien tu gagnerais sur la période. Choisis pour chaque jour : collecter BTC, réinvestir en GMT, ou acheter du TH.",
+                strategy_period: 'Période',
+                strategy_period_7: '7 jours', strategy_period_14: '14 jours', strategy_period_30: '30 jours',
+                strategy_quick_fill: 'Remplir vite :',
+                strategy_all_btc: 'Tout BTC', strategy_all_gmt: 'Tout GMT', strategy_all_th: 'Tout TH',
+                strategy_prices: 'Prix personnalisés (optionnel)',
+                strategy_prices_hint: 'Teste des scénarios — que se passe-t-il si BTC monte ou si GMT bouge ? Laisse vide pour utiliser les prix actuels.',
+                strategy_btc_price: 'Prix BTC ($)', strategy_gmt_price: 'Prix GMT ($)', strategy_cost_per_th: 'Coût par TH ($)',
+                strategy_cost_per_th_hint: 'Coût d\'upgrade actuel (~12$)',
+                strategy_current: 'actuel',
+                strategy_run: 'Lancer la Simulation',
+                strategy_results: 'Résultats',
+                strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
+                strategy_total_value: 'Valeur totale générée', strategy_net_value: 'Net (après frais)',
+                strategy_used_prices: 'Prix utilisés',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
                 btn_export: 'Export', btn_import: 'Import',
                 // KPIs
@@ -5297,6 +5626,7 @@
         setLang(currentLang);
         showOnboarding();
         fetchLiveData();
+        initStrategyLab();
 
         // Register PWA service worker
         // Unregister any old service workers (causes caching issues)
