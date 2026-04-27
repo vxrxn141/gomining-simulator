@@ -3049,14 +3049,10 @@
         // Computes minimum X such that GMT earned in X days ≥ fees for all N days.
         // Math: X * grossGmt ≥ N * feesGmt  →  X = ceil(N * feesGmt / grossGmt)
         function smartFillStrategy(target) {
-            const hashrate = parseFloat(document.getElementById('hashrate').value);
-            const efficiency = parseFloat(document.getElementById('efficiency').value);
-            const elecCost = parseFloat(document.getElementById('elec-cost').value);
-            const discount = parseFloat(document.getElementById('discount').value) || 0;
-            const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
+            const cfg = getStrategyBaseConfig();
             const outEl = document.getElementById('strategy-smart-output');
 
-            if (!hashrate || !satPerTH || !state.btcPrice || !state.gmtPrice) {
+            if (!cfg.hashrate || !cfg.satPerTH || !state.btcPrice || !state.gmtPrice) {
                 outEl.textContent = t('alert_calc_first') || 'Please calculate first in the Simulator tab.';
                 outEl.style.color = 'var(--red)';
                 return;
@@ -3070,7 +3066,7 @@
 
             const savedGmt = state.gmtPrice;
             state.gmtPrice = gmtPrice;
-            const r = calcDailyReward(hashrate, efficiency, elecCost, discount, btcPrice, satPerTH);
+            const r = calcDailyReward(cfg.hashrate, cfg.efficiency, cfg.elecCost, cfg.discount, btcPrice, cfg.satPerTH);
             state.gmtPrice = savedGmt;
 
             if (!r || r.grossGmt <= 0 || r.feesGmt <= 0) {
@@ -3143,18 +3139,41 @@
             }
         }
 
-        function runStrategySimulation() {
-            // Always pull fresh values from the form to avoid stale state.lastCalc
+        function getStrategyBaseConfig() {
+            // Prefer the LAST DAY from rewardHistory (matches Validation table source-of-truth).
+            // This ensures Strategy Lab numbers align with what GoMining actually paid.
+            // Fall back to form values if no history is available.
+            const latest = state.rewardHistory?.length > 0
+                ? state.rewardHistory[state.rewardHistory.length - 1]
+                : null;
+
+            if (latest && latest.power && latest.poolReward && latest.totalDiscount !== undefined) {
+                return {
+                    hashrate: latest.power,
+                    efficiency: 15, // GoMining standard for level-up miners
+                    elecCost: 0.05,  // GoMining standard rate
+                    discount: latest.totalDiscount * 100,
+                    satPerTH: Math.round(latest.poolReward / latest.power * 1e8),
+                    source: 'rewardHistory',
+                    sourceDate: latest.date
+                };
+            }
+
+            // Fallback: form values
             const hashrate = parseFloat(document.getElementById('hashrate').value);
             const efficiency = parseFloat(document.getElementById('efficiency').value);
             const elecCost = parseFloat(document.getElementById('elec-cost').value);
             const discount = parseFloat(document.getElementById('discount').value) || 0;
             const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
-            if (!hashrate || !satPerTH) {
+            return { hashrate, efficiency, elecCost, discount, satPerTH, source: 'form' };
+        }
+
+        function runStrategySimulation() {
+            const cfg = getStrategyBaseConfig();
+            if (!cfg.hashrate || !cfg.satPerTH) {
                 alert(t('alert_calc_first') || 'Please calculate first in the Simulator tab');
                 return;
             }
-            const cfg = { hashrate, efficiency, elecCost, discount, satPerTH };
             const btcOverride = parseFloat(document.getElementById('strategy-btc-override').value);
             const gmtOverride = parseFloat(document.getElementById('strategy-gmt-override').value);
             const costPerTH = parseFloat(document.getElementById('strategy-cost-per-th').value) || 12;
@@ -3222,6 +3241,7 @@
                 btcPrice, gmtPrice, costPerTH,
                 hashrate: cfg.hashrate, efficiency: cfg.efficiency, elecCost: cfg.elecCost,
                 discount: cfg.discount, satPerTH: cfg.satPerTH,
+                source: cfg.source, sourceDate: cfg.sourceDate,
                 dayLog
             });
         }
@@ -3267,7 +3287,11 @@
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.8em;color:var(--text-dim);line-height:1.7;">
                     <div><strong>${t('strategy_inputs_used') || 'Inputs used'}:</strong> ${r.hashrate} TH | ${r.satPerTH} sat/TH | ${(r.discount).toFixed(2)}% discount | ${r.efficiency} W/TH | $${r.elecCost}/kWh</div>
                     <div><span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}</div>
-                    <div style="margin-top:6px;color:var(--text-dim);font-style:italic;">${t('strategy_verify_inputs') || "⚠ Inputs come from the Simulator tab. Update them there if numbers don't match your reality."}</div>
+                    <div style="margin-top:6px;color:${r.source === 'rewardHistory' ? 'var(--green)' : 'var(--accent)'};font-style:italic;">
+                        ${r.source === 'rewardHistory'
+                            ? `✓ ${t('strategy_source_real') || 'Using real GoMining data from'} ${r.sourceDate} ${t('strategy_source_match') || '— matches the Validation table.'}`
+                            : (t('strategy_verify_inputs') || "⚠ Using form values. Update them in the Simulator tab if numbers don't match.")}
+                    </div>
                 </div>
             </div>`;
             el.innerHTML = html;
@@ -4892,7 +4916,8 @@
                 strategy_smart_btc: '⚖ GMT → BTC',
                 strategy_smart_hint: 'Auto-fill: GMT-mining first to cover all fees, then switch to your target.',
                 strategy_smart_result: 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.',
-                strategy_smart_impossible: 'Cannot cover fees: GMT mining doesn\'t earn enough to cover daily fees with current params.',
+                strategy_smart_impossible: "Cannot cover fees: GMT mining doesn't earn enough to cover daily fees with current params.",
+                strategy_source_real: 'Using real GoMining data from', strategy_source_match: '— matches the Validation table.',
                 strategy_run: 'Run Simulation',
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
@@ -5090,6 +5115,7 @@
                 strategy_smart_hint: 'Auto-remplir : miner en GMT d\'abord pour couvrir tous les frais, puis basculer vers ta cible.',
                 strategy_smart_result: 'Mine en GMT pendant {x} jours pour couvrir les frais, puis bascule en {target} pour les {y} jours restants.',
                 strategy_smart_impossible: 'Impossible de couvrir les frais : le minage GMT ne génère pas assez avec les paramètres actuels.',
+                strategy_source_real: 'Utilise les vraies données GoMining du', strategy_source_match: '— correspond au tableau de Validation.',
                 strategy_run: 'Lancer la Simulation',
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
