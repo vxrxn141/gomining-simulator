@@ -3111,10 +3111,11 @@
                 const dayFeesGmt = dayR.feesGmt;
                 const dayFeesUsd = dayFeesGmt * gmtPrice;
 
+                // Display GROSS earnings per mode (fees are tracked separately and subtracted once at the end)
                 if (strat === 'btc') {
-                    dayBtc = dayR.netBtc; // net after fees converted from GMT
+                    dayBtc = dayR.grossBtc;
                 } else if (strat === 'gmt') {
-                    dayGmt = dayR.netGmt;
+                    dayGmt = dayR.grossGmt;
                 } else if (strat === 'th') {
                     // gross USD value of the day's reward, +5% bonus, divided by cost per TH
                     dayTh = (dayR.grossUsd * (1 + STRATEGY_TH_BONUS)) / costPerTH;
