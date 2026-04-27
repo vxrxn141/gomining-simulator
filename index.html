@@ -3184,11 +3184,14 @@
                 : null;
 
             if (latest && latest.power && latest.poolReward && latest.totalDiscount !== undefined) {
+                // Strategy: use form's hashrate (TOTAL power across all NFTs from /nft/get-my)
+                // and latest's per-TH ratio (poolReward / latest.power) — this works correctly
+                // regardless of how many NFTs the user has, because the per-TH rate is the same.
+                const formHashrate = parseFloat(document.getElementById('hashrate').value) || latest.power;
                 // Use form's discount (already adjusted for fee mode via calcTotalDiscount)
-                // instead of latest.totalDiscount (which reflects historical fee mode at time of mining).
                 const formDiscount = parseFloat(document.getElementById('discount').value) || 0;
                 return {
-                    hashrate: latest.power,
+                    hashrate: formHashrate,
                     efficiency: 15, // GoMining standard for level-up miners
                     elecCost: 0.05,  // GoMining standard rate
                     discount: formDiscount,
