@@ -1660,6 +1660,7 @@
                             <span>%</span> Discounts
                             <span class="discount-group-total" id="discount-display">0%</span>
                         </div>
+                        <div id="discount-fee-mode-hint" style="font-size:0.8em;color:var(--text-dim);margin-bottom:8px;padding:6px 10px;background:rgba(247,147,26,0.06);border-radius:6px;border-left:2px solid var(--accent);display:none;"></div>
                         <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
                             <div class="form-group">
                                 <label>Maintenance GMT</label>
@@ -2352,6 +2353,26 @@
             document.getElementById('discount').value = total.toFixed(2);
             const dd = document.getElementById('discount-display');
             if (dd) dd.textContent = total.toFixed(2) + '%';
+
+            // Show the fee mode impact hint
+            const hint = document.getElementById('discount-fee-mode-hint');
+            if (hint) {
+                if (state.feeMode === 'btc') {
+                    if (maint > 0) {
+                        hint.innerHTML = `⚠ <strong>Fee mode: BTC</strong> — Token discount of <strong>${maint.toFixed(2)}%</strong> removed. Remaining: ${total.toFixed(2)}% (VIP ${vip.toFixed(1)}% + Streak ${streak.toFixed(1)}% + Mining mode ${solo.toFixed(2)}%)`;
+                    } else {
+                        hint.innerHTML = `⚠ <strong>Fee mode: BTC</strong> — Pay fees in BTC. Token discount doesn't apply (none configured). VIP/Streak/Mining-mode still apply: ${total.toFixed(2)}%`;
+                    }
+                    hint.style.display = 'block';
+                    hint.style.borderLeftColor = 'var(--accent)';
+                    hint.style.background = 'rgba(247,147,26,0.06)';
+                } else {
+                    hint.innerHTML = `✓ <strong>Fee mode: GMT</strong> — All discounts apply. Token ${maint.toFixed(2)}% + VIP ${vip.toFixed(1)}% + Streak ${streak.toFixed(1)}% + Mining mode ${solo.toFixed(2)}% = ${total.toFixed(2)}%`;
+                    hint.style.display = 'block';
+                    hint.style.borderLeftColor = 'var(--purple)';
+                    hint.style.background = 'rgba(188,140,255,0.06)';
+                }
+            }
             return total;
         }
 
