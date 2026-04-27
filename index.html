@@ -3064,6 +3064,11 @@
             const grid = document.getElementById('strategy-day-grid');
             // Preserve existing choices, default new days to 'btc'
             while (strategyDays.length < strategyPeriod) strategyDays.push('btc');
+            // Sanitize: replace any undefined/invalid values with 'btc' default
+            const valid = ['btc', 'gmt', 'th'];
+            for (let i = 0; i < strategyDays.length; i++) {
+                if (!valid.includes(strategyDays[i])) strategyDays[i] = 'btc';
+            }
             strategyDays = strategyDays.slice(0, strategyPeriod);
 
             const labelMap = { btc: 'BTC', gmt: 'GMT', th: 'TH' };
@@ -3078,10 +3083,11 @@
                     if (i >= strategyPeriod) {
                         html += `<div></div>`;
                     } else {
-                        const strat = strategyDays[i];
+                        const strat = strategyDays[i] || 'btc';
+                        const label = labelMap[strat] || 'BTC';
                         html += `<div class="day-cell" data-strat="${strat}" data-day="${i}" onclick="cycleStrategyDay(${i})">
                             <div class="day-num">D${i + 1}</div>
-                            <div class="day-strat">${labelMap[strat]}</div>
+                            <div class="day-strat">${label}</div>
                         </div>`;
                     }
                 }
