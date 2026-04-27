@@ -3050,8 +3050,8 @@
                     rebuildStrategyGrid();
                 });
             });
-            // Quick fill
-            document.querySelectorAll('.quick-fill-btn').forEach(btn => {
+            // Quick fill — only buttons with data-fill (excludes smart-fill buttons that use onclick="smartFillStrategy(...)")
+            document.querySelectorAll('.quick-fill-btn[data-fill]').forEach(btn => {
                 btn.addEventListener('click', () => fillStrategyAll(btn.dataset.fill));
             });
             // Run button
