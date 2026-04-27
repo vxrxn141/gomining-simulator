@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow"><!-- WIP, not linked from anywhere -->
+  <title>Reinvestment Planner · GoMining Simulator</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <style>
+    :root {
+      --bg:#0a0e14; --bg2:#0d1117;
+      --card:rgba(22,27,34,.65); --card-solid:#161b22;
+      --border:rgba(255,255,255,.06); --border-hover:rgba(255,255,255,.12);
+      --text:#e6edf3; --text-dim:#8b949e;
+      --accent:#f7931a; --accent2:#58a6ff;
+      --green:#3fb950; --red:#f85149; --purple:#bc8cff;
+      --radius:14px; --radius-sm:10px;
+      /* slot colours */
+      --btc:#f7931a;  --gmt:#58a6ff;  --th:#bc8cff;
+    }
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{
+      font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
+      background:radial-gradient(circle at 20% 0%,#1a1f2e 0%,#0a0e14 60%);
+      color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+    }
+    .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
+    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;
+           padding-bottom:18px;border-bottom:1px solid var(--border)}
+    .brand{display:flex;align-items:center;gap:12px}
+    .brand img{width:42px;height:42px;border-radius:10px}
+    .brand h1{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+    .brand h1 .accent{color:var(--accent)}
+    .brand p{font-size:.72em;color:var(--text-dim)}
+    .back{color:var(--text-dim);text-decoration:none;font-size:.85em;
+          padding:8px 14px;border:1px solid var(--border);border-radius:8px;
+          transition:all .15s}
+    .back:hover{color:var(--text);border-color:var(--text-dim)}
+    .wip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;
+         font-size:.7em;font-weight:700;letter-spacing:.04em;
+         background:rgba(247,147,26,.12);color:var(--accent)}
+    .hero{margin-bottom:24px}
+    .hero h2{font-size:clamp(1.4rem,2.4vw,2rem);font-weight:800;
+             letter-spacing:-.02em;margin-bottom:8px}
+    .hero h2 .accent{color:var(--accent)}
+    .hero p{color:var(--text-dim);max-width:760px;font-size:.95em}
+
+    .card{background:var(--card);backdrop-filter:blur(20px);
+          border:1px solid var(--border);border-radius:var(--radius);
+          padding:22px;margin-bottom:18px}
+    .card h3{font-size:.95rem;font-weight:700;margin-bottom:4px;
+             display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+    .card h3 .hint{font-weight:400;font-size:.78em;color:var(--text-dim)}
+    .card .desc{color:var(--text-dim);font-size:.85em;margin-bottom:16px}
+
+    .mode-tabs{display:flex;gap:6px;background:var(--bg2);padding:4px;
+               border-radius:10px;border:1px solid var(--border);
+               width:fit-content;margin-bottom:18px}
+    .mode-tab{padding:8px 18px;border-radius:8px;cursor:pointer;
+              color:var(--text-dim);font-size:.86em;font-weight:600;
+              border:none;background:transparent;transition:all .15s;font-family:inherit}
+    .mode-tab.active{background:var(--accent);color:#000}
+    .mode-tab:hover:not(.active){color:var(--text)}
+
+    .duration-row{display:flex;gap:8px;flex-wrap:wrap}
+    .dur-btn{padding:9px 18px;border:1px solid var(--border);
+             background:var(--bg2);color:var(--text-dim);
+             border-radius:9px;cursor:pointer;font-size:.85em;font-weight:600;
+             transition:all .15s;font-family:inherit;min-width:64px}
+    .dur-btn:hover{border-color:var(--border-hover);color:var(--text)}
+    .dur-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+
+    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.78em;color:var(--text-dim)}
+    .legend .key{display:flex;align-items:center;gap:6px}
+    .legend .dot{width:10px;height:10px;border-radius:3px}
+    .legend .dot.btc{background:var(--btc)} .legend .dot.gmt{background:var(--gmt)} .legend .dot.th{background:var(--th)}
+
+    .month-row{display:grid;grid-template-columns:80px 1fr;align-items:center;
+               gap:14px;padding:10px 0;border-bottom:1px dashed var(--border)}
+    .month-row:last-child{border-bottom:none}
+    .month-label{font-size:.78em;color:var(--text-dim);font-weight:600;letter-spacing:.04em}
+    .month-label.locked{color:#4a5260;font-style:italic}
+    .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+    .slot{position:relative;padding:11px 8px;text-align:center;border-radius:8px;
+          font-size:.8em;font-weight:700;cursor:pointer;border:1px solid transparent;
+          background:rgba(255,255,255,.03);color:var(--text-dim);
+          user-select:none;transition:all .12s;display:flex;align-items:center;
+          justify-content:center;gap:6px}
+    .slot:hover{background:rgba(255,255,255,.06);color:var(--text)}
+    .slot.btc{background:rgba(247,147,26,.15);color:var(--btc);border-color:rgba(247,147,26,.4)}
+    .slot.gmt{background:rgba(88,166,255,.15);color:var(--gmt);border-color:rgba(88,166,255,.4)}
+    .slot.th {background:rgba(188,140,255,.15);color:var(--th); border-color:rgba(188,140,255,.4)}
+    .slot.disabled{opacity:.45;pointer-events:none}
+    .slot .order{position:absolute;top:3px;left:5px;font-size:.62em;color:rgba(255,255,255,.35);font-weight:800}
+
+    .day-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+
+    .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+    .input-field label{display:block;color:var(--text-dim);font-size:.74em;
+                       margin-bottom:5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
+    .input-field input{width:100%;background:#0d1117;border:1px solid var(--border);
+                       color:var(--text);padding:9px 11px;border-radius:8px;
+                       font-size:.92em;font-family:inherit;outline:none;transition:all .15s}
+    .input-field input:focus{border-color:var(--accent)}
+    .input-field .unit{color:var(--text-dim);font-size:.72em;margin-top:3px}
+
+    .run-row{display:flex;gap:10px;margin-bottom:18px}
+    .btn-run{flex:1;background:linear-gradient(90deg,var(--accent),#ffb84d);
+             color:#000;border:none;padding:14px 20px;border-radius:10px;
+             font-size:.95em;font-weight:800;cursor:pointer;
+             transition:filter .15s;font-family:inherit;letter-spacing:.02em}
+    .btn-run:hover{filter:brightness(1.08)}
+    .btn-reset{background:transparent;border:1px solid var(--border);
+               color:var(--text-dim);padding:14px 18px;border-radius:10px;
+               font-size:.85em;cursor:pointer;font-family:inherit}
+    .btn-reset:hover{color:var(--text);border-color:var(--text-dim)}
+
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
+    .stat{background:var(--card-solid);border:1px solid var(--border);border-radius:11px;padding:14px}
+    .stat .lbl{font-size:.7em;color:var(--text-dim);text-transform:uppercase;
+               letter-spacing:.06em;margin-bottom:5px;font-weight:600}
+    .stat .val{font-size:1.45rem;font-weight:800;letter-spacing:-.02em}
+    .stat .sub{font-size:.74em;color:var(--text-dim);margin-top:3px}
+    .stat.accent .val{color:var(--accent)}
+    .stat.green  .val{color:var(--green)}
+    .stat.purple .val{color:var(--purple)}
+    .stat.blue   .val{color:var(--accent2)}
+    .stat.red    .val{color:var(--red)}
+
+    .chart-wrap{position:relative;background:var(--card-solid);
+                border:1px solid var(--border);border-radius:11px;padding:18px;
+                overflow-x:auto}
+    .chart-wrap svg{width:100%;height:300px;display:block;min-width:520px}
+    .chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;
+                  font-size:.78em;color:var(--text-dim)}
+    .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:5px}
+
+    table.timeline{width:100%;border-collapse:collapse;font-size:.85em;margin-top:8px}
+    table.timeline th,table.timeline td{padding:9px 10px;text-align:right;
+                       border-bottom:1px solid var(--border)}
+    table.timeline th:first-child,table.timeline td:first-child{text-align:left}
+    table.timeline th{color:var(--text-dim);font-weight:600;font-size:.72em;
+       text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.02)}
+    table.timeline td.green{color:var(--green)}
+    table.timeline td.purple{color:var(--purple)}
+    table.timeline td.accent{color:var(--accent)}
+    table.timeline td.blue{color:var(--accent2)}
+    table.timeline td.red{color:var(--red)}
+
+    .empty{padding:40px;text-align:center;color:var(--text-dim);font-size:.9em}
+
+    @media (max-width:680px){
+      .month-row{grid-template-columns:1fr}
+      .month-label{margin-bottom:4px}
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <img src="icon.png" alt="">
+        <div>
+          <h1>GoMining <span class="accent">Simulator</span></h1>
+          <p>Reinvestment Planner <span class="wip">WIP</span></p>
+        </div>
+      </div>
+      <a href="index.html" class="back">← Back to app</a>
+    </header>
+
+    <div class="hero">
+      <h2>Reinvestment <span class="accent">Strategy Planner</span></h2>
+      <p>In GoMining solo mode you mine <strong>one</strong> reward type at a time — BTC, GMT, or TH. Plan which mode to run each period and watch how the order changes outcomes (TH today = more rewards next period).</p>
+    </div>
+
+    <!-- Mode tabs -->
+    <div class="mode-tabs" id="mode-tabs">
+      <button class="mode-tab active" data-mode="monthly">Monthly · 6-month projection</button>
+      <button class="mode-tab" data-mode="daily">Daily · weekly pattern</button>
+    </div>
+
+    <!-- DURATION -->
+    <div class="card">
+      <h3 id="dur-title">Editable months</h3>
+      <div class="desc" id="dur-desc"></div>
+      <div class="duration-row" id="duration-row"></div>
+    </div>
+
+    <!-- STRATEGY -->
+    <div class="card">
+      <h3>Strategy <span class="hint">Click a slot to cycle BTC → GMT → TH. Order matters.</span></h3>
+      <div class="legend">
+        <div class="key"><div class="dot btc"></div>BTC mode — solo-mine BTC</div>
+        <div class="key"><div class="dot gmt"></div>GMT mode — solo-mine GMT</div>
+        <div class="key"><div class="dot th"></div>TH mode — auto-convert rewards into added TH/s</div>
+      </div>
+      <div id="strategy-editor"></div>
+    </div>
+
+    <!-- INPUTS — match index.html GoMining formula -->
+    <div class="card">
+      <h3>Mining parameters <span class="hint">Match these to your real setup or pull from app.gomining.com</span></h3>
+      <div class="desc">Formula matches the main simulator. Service cost is fixed at $0.0089/TH/day per GoMining.</div>
+      <div class="inputs">
+        <div class="input-field">
+          <label>Starting hashrate</label>
+          <input type="number" id="in-th" value="100" step="1" min="1">
+          <div class="unit">TH/s today</div>
+        </div>
+        <div class="input-field">
+          <label>Sat / TH / day (PR)</label>
+          <input type="number" id="in-sat" value="47" step="1" min="0">
+          <div class="unit">Pool reward — check your dashboard</div>
+        </div>
+        <div class="input-field">
+          <label>Efficiency (W/TH)</label>
+          <input type="number" id="in-eff" value="15" step="0.5" min="1">
+          <div class="unit">Lower = newer-gen miner</div>
+        </div>
+        <div class="input-field">
+          <label>Electricity ($/kWh)</label>
+          <input type="number" id="in-elec" value="0.05" step="0.01" min="0">
+          <div class="unit">GoMining default</div>
+        </div>
+        <div class="input-field">
+          <label>Total discount (%)</label>
+          <input type="number" id="in-disc" value="10" step="1" min="0" max="50">
+          <div class="unit">Maintenance + VIP + streak + solo</div>
+        </div>
+        <div class="input-field">
+          <label>BTC price (USD)</label>
+          <input type="number" id="in-btc-price" value="95000" step="100" min="0">
+          <div class="unit">Used for portfolio value</div>
+        </div>
+        <div class="input-field">
+          <label>GMT price (USD)</label>
+          <input type="number" id="in-gmt-price" value="0.30" step="0.01" min="0">
+          <div class="unit">Used for portfolio + fees</div>
+        </div>
+        <div class="input-field">
+          <label>Reinvest cost (TH mode)</label>
+          <input type="number" id="in-th-reinv" value="11" step="0.10" min="0.01">
+          <div class="unit">$/TH when mining in TH mode (~5% bonus vs direct)</div>
+        </div>
+        <div class="input-field">
+          <label>Market TH price</label>
+          <input type="number" id="in-th-market" value="22" step="0.10" min="0.01">
+          <div class="unit">Marketplace value used for portfolio totals</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="run-row">
+      <button class="btn-run" id="btn-run">Run simulation</button>
+      <button class="btn-reset" id="btn-reset">Reset strategy</button>
+    </div>
+
+    <!-- RESULTS -->
+    <div class="card" id="results-card">
+      <h3>Projected outcome <span class="hint" id="result-hint">Run a simulation to see the projection</span></h3>
+      <div id="results-empty" class="empty">No simulation yet. Click <strong>Run simulation</strong> above.</div>
+      <div id="results-content" style="display:none">
+        <div class="results-grid" id="stats-grid"></div>
+        <div class="chart-wrap">
+          <svg id="chart" viewBox="0 0 800 300" preserveAspectRatio="none"></svg>
+          <div class="chart-legend">
+            <div class="key"><span class="dot" style="background:var(--purple)"></span>Hashrate (TH/s)</div>
+            <div class="key"><span class="dot" style="background:var(--accent)"></span>BTC balance (USD value)</div>
+            <div class="key"><span class="dot" style="background:var(--accent2)"></span>GMT balance (USD value)</div>
+            <div class="key"><span class="dot" style="background:var(--green)"></span>Total portfolio (USD)</div>
+          </div>
+        </div>
+
+        <h3 style="margin-top:20px">Period-by-period</h3>
+        <div style="overflow-x:auto;margin-top:8px">
+          <table class="timeline" id="timeline-table">
+            <thead><tr id="timeline-head"></tr></thead>
+            <tbody id="timeline-body"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+//-----------------------------------------------------------------
+// Reinvestment Planner — solo-mode aware (mines ONE thing per period)
+//-----------------------------------------------------------------
+// Math model lifted from the main simulator (calcDailyReward):
+//   PR_gmt    = sat/TH × 1e-8 × btcPrice / gmtPrice          [GMT/TH/day]
+//   C1_gmt    = elec × 24 × W/TH / gmtPrice / 1000           [pre-discount]
+//   C2_gmt    = SERVICE_COST_PER_TH / gmtPrice               [pre-discount]
+//   net_gmt/TH/day = PR_gmt - (C1_gmt + C2_gmt) × (1 - discount)
+//
+// Per slot we choose ONE solo mode:
+//   BTC : net rewards land as BTC      (btc_balance grows)
+//   GMT : net rewards land as GMT      (gmt_balance grows)
+//   TH  : net rewards convert to TH    (hashrate grows; reinvest_cost ≈ $11/TH)
+//
+// Hashrate grows ONLY on TH-mode periods; that compounds future yield.
+// BTC and GMT balances are non-productive (they sit there until you act).
+//-----------------------------------------------------------------
+
+const SERVICE_COST_PER_TH = 0.0089; // $/TH/day — same constant as main app
+const SLOT_CYCLE = ["btc", "gmt", "th"];
+const MAX_MONTHS = 6;
+const MAX_DAILY_MONTHS = 3;
+const SLOTS_PER_MONTH = 4;
+const DAYS_PER_WEEK = 7;
+const DAYS_PER_WEEK_PERIOD = 7;     // 1 monthly slot = 1 week
+const DAYS_PER_MONTH = 30;          // for daily horizon
+
+const state = {
+  mode: "monthly",
+  monthlyEditCount: 1,
+  monthly: [],
+  dailyMonths: 1,
+  daily: [],
+};
+
+function defaultMonth() { return ["btc","btc","th","th"]; }
+function defaultWeek()  { return ["btc","btc","gmt","th","th","btc","btc"]; }
+state.monthly = [defaultMonth()];
+state.daily   = defaultWeek();
+
+const $ = sel => document.querySelector(sel);
+
+// ---- duration buttons ----
+function renderDurationButtons() {
+  const row = $("#duration-row");
+  const max = state.mode === "monthly" ? MAX_MONTHS : MAX_DAILY_MONTHS;
+  const cur = state.mode === "monthly" ? state.monthlyEditCount : state.dailyMonths;
+  row.innerHTML = "";
+  for (let i = 1; i <= max; i++) {
+    const b = document.createElement("button");
+    b.className = "dur-btn" + (i === cur ? " active" : "");
+    b.textContent = i + " " + (i === 1 ? "month" : "months");
+    b.addEventListener("click", () => {
+      if (state.mode === "monthly") {
+        const prev = state.monthly;
+        const next = [];
+        for (let m = 0; m < i; m++) next.push(prev[m] ? prev[m].slice() : defaultMonth());
+        state.monthly = next;
+        state.monthlyEditCount = i;
+      } else {
+        state.dailyMonths = i;
+      }
+      renderDurationButtons();
+      renderEditor();
+    });
+    row.appendChild(b);
+  }
+  if (state.mode === "monthly") {
+    $("#dur-title").innerHTML =
+      'Editable months <span class="hint">Fewer than 6 = pattern repeats to fill the projection</span>';
+    $("#dur-desc").innerHTML =
+      'Each month has 4 weekly slots. Click a slot to cycle ' +
+      '<span style="color:var(--btc)">BTC</span> → ' +
+      '<span style="color:var(--gmt)">GMT</span> → ' +
+      '<span style="color:var(--th)">TH</span>.';
+  } else {
+    $("#dur-title").innerHTML =
+      'Projection length <span class="hint">How many months to repeat your daily pattern over</span>';
+    $("#dur-desc").innerHTML =
+      'Set 7 daily slots (Mon → Sun). The pattern repeats every week for the chosen number of months.';
+  }
+}
+
+// ---- strategy editor ----
+function renderEditor() {
+  const ed = $("#strategy-editor");
+  ed.innerHTML = "";
+  if (state.mode === "monthly") {
+    for (let m = 0; m < MAX_MONTHS; m++) {
+      const isEditable = m < state.monthlyEditCount;
+      const sourceIdx  = m % state.monthlyEditCount;
+      const month = state.monthly[sourceIdx];
+      const row = document.createElement("div");
+      row.className = "month-row";
+      const label = document.createElement("div");
+      label.className = "month-label" + (isEditable ? "" : " locked");
+      label.innerHTML = `Month ${m + 1}` +
+        (isEditable ? "" : `<br><span style="font-size:.78em;font-weight:400">cycles M${sourceIdx + 1}</span>`);
+      const slots = document.createElement("div");
+      slots.className = "slots";
+      for (let s = 0; s < SLOTS_PER_MONTH; s++) {
+        const slot = document.createElement("button");
+        slot.className = "slot " + month[s] + (isEditable ? "" : " disabled");
+        slot.innerHTML = `<span class="order">${s + 1}</span>${month[s].toUpperCase()}`;
+        slot.addEventListener("click", () => {
+          if (!isEditable) return;
+          const cur = state.monthly[sourceIdx][s];
+          state.monthly[sourceIdx][s] = SLOT_CYCLE[(SLOT_CYCLE.indexOf(cur) + 1) % SLOT_CYCLE.length];
+          renderEditor();
+        });
+        slots.appendChild(slot);
+      }
+      row.appendChild(label);
+      row.appendChild(slots);
+      ed.appendChild(row);
+    }
+  } else {
+    const row = document.createElement("div");
+    row.className = "month-row";
+    const label = document.createElement("div");
+    label.className = "month-label";
+    label.textContent = "Mon-Sun";
+    const slots = document.createElement("div");
+    slots.className = "day-row";
+    const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    for (let i = 0; i < DAYS_PER_WEEK; i++) {
+      const slot = document.createElement("button");
+      slot.className = "slot " + state.daily[i];
+      slot.innerHTML = `<span class="order">${dayNames[i]}</span>${state.daily[i].toUpperCase()}`;
+      slot.addEventListener("click", () => {
+        const cur = state.daily[i];
+        state.daily[i] = SLOT_CYCLE[(SLOT_CYCLE.indexOf(cur) + 1) % SLOT_CYCLE.length];
+        renderEditor();
+      });
+      slots.appendChild(slot);
+    }
+    row.appendChild(label);
+    row.appendChild(slots);
+    ed.appendChild(row);
+  }
+}
+
+// ---- mode + reset ----
+document.querySelectorAll(".mode-tab").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
+    tab.classList.add("active");
+    state.mode = tab.dataset.mode;
+    renderDurationButtons();
+    renderEditor();
+  });
+});
+$("#btn-reset").addEventListener("click", () => {
+  if (state.mode === "monthly")
+    state.monthly = Array.from({length: state.monthlyEditCount}, defaultMonth);
+  else
+    state.daily = defaultWeek();
+  renderEditor();
+});
+
+// =================================================================
+//  SIMULATION ENGINE — uses GoMining's calcDailyReward formula
+// =================================================================
+
+function readInputs() {
+  return {
+    th0:        Math.max(0, +$("#in-th").value || 0),
+    satPerTH:   Math.max(0, +$("#in-sat").value || 0),
+    eff:        Math.max(1, +$("#in-eff").value || 15),
+    elec:       Math.max(0, +$("#in-elec").value || 0),
+    discPct:    Math.max(0, +$("#in-disc").value || 0),
+    btcUsd:     Math.max(0, +$("#in-btc-price").value || 0),
+    gmtUsd:     Math.max(0.0001, +$("#in-gmt-price").value || 0.0001),
+    thReinv:    Math.max(0.01, +$("#in-th-reinv").value || 11),
+    thMarket:   Math.max(0.01, +$("#in-th-market").value || 22),
+  };
+}
+
+// Per-TH per-day net reward, expressed three ways. Mirrors index.html
+// calcDailyReward but parameterised for our simulator state.
+function perTHPerDay(p) {
+  const discMult = 1 - p.discPct / 100;
+  const prBtcPerTH  = p.satPerTH * 1e-8;
+  const prGmtPerTH  = prBtcPerTH * p.btcUsd / p.gmtUsd;          // before fees
+  const c1GmtPerTH  = (p.elec * 24 * p.eff / p.gmtUsd / 1000) * discMult;
+  const c2GmtPerTH  = (SERVICE_COST_PER_TH / p.gmtUsd)         * discMult;
+  const netGmtPerTH = prGmtPerTH - (c1GmtPerTH + c2GmtPerTH);
+  const netBtcPerTH = netGmtPerTH * p.gmtUsd / p.btcUsd;
+  const netUsdPerTH = netGmtPerTH * p.gmtUsd;
+  return { netGmtPerTH, netBtcPerTH, netUsdPerTH };
+}
+
+function buildSequence() {
+  if (state.mode === "monthly") {
+    const seq = [];
+    for (let m = 0; m < MAX_MONTHS; m++) {
+      const src = state.monthly[m % state.monthlyEditCount];
+      for (let s = 0; s < SLOTS_PER_MONTH; s++) {
+        seq.push({ action: src[s], periodDays: DAYS_PER_WEEK_PERIOD, monthIdx: m, slotIdx: s });
+      }
+    }
+    return { seq, mode: "monthly" };
+  } else {
+    const seq = [];
+    const totalDays = state.dailyMonths * DAYS_PER_MONTH;
+    for (let d = 0; d < totalDays; d++) {
+      seq.push({ action: state.daily[d % DAYS_PER_WEEK], periodDays: 1, dayIdx: d });
+    }
+    return { seq, mode: "daily" };
+  }
+}
+
+function simulate() {
+  const p = readInputs();
+  const { seq, mode } = buildSequence();
+
+  const sim = { th: p.th0, btc: 0, gmt: 0, days: 0 };
+  const samples = [];
+  const rows = [];
+  let groupAgg = null;
+
+  for (let i = 0; i < seq.length; i++) {
+    const slot = seq[i];
+
+    // 1. compute per-TH/day yields at CURRENT hashrate (net of fees)
+    const y = perTHPerDay(p);
+    const periodNetGmt = y.netGmtPerTH * sim.th * slot.periodDays;
+    const periodNetBtc = y.netBtcPerTH * sim.th * slot.periodDays;
+    const periodNetUsd = y.netUsdPerTH * sim.th * slot.periodDays;
+
+    // If the math goes negative (fees > rewards) the miner is bleeding —
+    // we DON'T magically print value: BTC/GMT balances can decrease
+    // (you'd be paying fees from existing balance), and TH mode produces
+    // 0 added TH (you can't reinvest a loss).
+    let addTh = 0, addBtc = 0, addGmt = 0;
+    if (slot.action === "btc") {
+      addBtc = periodNetBtc;             // can be negative
+      sim.btc += addBtc;
+    } else if (slot.action === "gmt") {
+      addGmt = periodNetGmt;             // can be negative
+      sim.gmt += addGmt;
+    } else if (slot.action === "th") {
+      // TH mode: effective conversion at p.thReinv USD per TH.
+      // Negative net = nothing to convert → 0 TH added (and you're losing
+      // money to fees during this period — reflected in net USD < 0 but
+      // we don't decrement TH).
+      addTh = periodNetUsd > 0 ? (periodNetUsd / p.thReinv) : 0;
+      sim.th += addTh;
+    }
+    sim.days += slot.periodDays;
+
+    // 2. snapshot
+    const portfolioUsd =
+      sim.btc * p.btcUsd +
+      sim.gmt * p.gmtUsd +
+      sim.th  * p.thMarket;
+
+    samples.push({
+      idx: i,
+      th: sim.th,
+      btcUsd: sim.btc * p.btcUsd,
+      gmtUsd: sim.gmt * p.gmtUsd,
+      portfolio: portfolioUsd,
+    });
+
+    // 3. group rows
+    const groupSize = mode === "monthly" ? SLOTS_PER_MONTH : DAYS_PER_WEEK;
+    if (i % groupSize === 0) {
+      if (groupAgg) rows.push(groupAgg);
+      groupAgg = {
+        label: mode === "monthly" ? `Month ${slot.monthIdx + 1}` : `Week ${Math.floor(i / 7) + 1}`,
+        actions: [], thAdded: 0, btcAdded: 0, gmtAdded: 0, netUsd: 0,
+      };
+    }
+    groupAgg.actions.push(mode === "monthly" ? slot.action.toUpperCase() : slot.action[0].toUpperCase());
+    groupAgg.thAdded  += addTh;
+    groupAgg.btcAdded += addBtc;
+    groupAgg.gmtAdded += addGmt;
+    groupAgg.netUsd   += periodNetUsd;
+    groupAgg.endTh         = sim.th;
+    groupAgg.endBtcUsd     = sim.btc * p.btcUsd;
+    groupAgg.endGmtUsd     = sim.gmt * p.gmtUsd;
+    groupAgg.endPortfolio  = portfolioUsd;
+  }
+  if (groupAgg) rows.push(groupAgg);
+
+  return { samples, rows, sim, params: p, mode };
+}
+
+// =================================================================
+//  RENDER
+// =================================================================
+function fmtUsd(n)   { return (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString(); }
+function fmtNum(n,p=0){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:p}); }
+function fmtBtc(n)   { return (n < 0 ? "-" : "") + Math.abs(n).toFixed(6) + " BTC"; }
+
+function renderResults(out) {
+  $("#results-empty").style.display = "none";
+  $("#results-content").style.display = "block";
+  $("#result-hint").textContent = out.mode === "monthly"
+    ? "6-month projection · 24 weekly slots"
+    : `${state.dailyMonths}-month projection · ${state.dailyMonths * DAYS_PER_MONTH} daily slots`;
+
+  const last = out.samples[out.samples.length - 1];
+  const initialPortfolio = out.params.th0 * out.params.thMarket;
+  const gain = last.portfolio - initialPortfolio;
+  const pct  = initialPortfolio > 0 ? (gain / initialPortfolio) * 100 : 0;
+  const gainClass = gain >= 0 ? "green" : "red";
+
+  $("#stats-grid").innerHTML = `
+    <div class="stat purple">
+      <div class="lbl">Final hashrate</div>
+      <div class="val">${fmtNum(last.th, 1)}</div>
+      <div class="sub">TH/s · started at ${fmtNum(out.params.th0, 1)} (+${fmtNum(last.th - out.params.th0, 1)})</div></div>
+    <div class="stat accent">
+      <div class="lbl">BTC balance</div>
+      <div class="val">${fmtUsd(last.btcUsd)}</div>
+      <div class="sub">${fmtBtc(out.params.btcUsd ? last.btcUsd / out.params.btcUsd : 0)}</div></div>
+    <div class="stat blue">
+      <div class="lbl">GMT balance</div>
+      <div class="val">${fmtUsd(last.gmtUsd)}</div>
+      <div class="sub">${fmtNum(out.params.gmtUsd ? last.gmtUsd / out.params.gmtUsd : 0, 0)} GMT</div></div>
+    <div class="stat ${gainClass}">
+      <div class="lbl">Total portfolio</div>
+      <div class="val">${fmtUsd(last.portfolio)}</div>
+      <div class="sub">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs start (${fmtUsd(initialPortfolio)})</div></div>`;
+
+  drawChart(out.samples);
+
+  $("#timeline-head").innerHTML = `
+    <th>Period</th>
+    <th>Plan</th>
+    <th>Net earned</th>
+    <th>+TH</th>
+    <th>+BTC</th>
+    <th>+GMT</th>
+    <th>End TH/s</th>
+    <th>End portfolio</th>`;
+  $("#timeline-body").innerHTML = out.rows.map(r => `
+    <tr>
+      <td><strong>${r.label}</strong></td>
+      <td style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;color:var(--text-dim)">${r.actions.join(" → ")}</td>
+      <td class="${r.netUsd >= 0 ? "green" : "red"}">${fmtUsd(r.netUsd)}</td>
+      <td class="purple">${r.thAdded > 0 ? "+" + fmtNum(r.thAdded, 1) : "—"}</td>
+      <td class="accent">${r.btcAdded ? (r.btcAdded > 0 ? "+" : "") + r.btcAdded.toFixed(6) : "—"}</td>
+      <td class="blue">${r.gmtAdded ? (r.gmtAdded > 0 ? "+" : "") + fmtNum(r.gmtAdded, 0) : "—"}</td>
+      <td>${fmtNum(r.endTh, 1)}</td>
+      <td class="${r.endPortfolio >= 0 ? 'green' : 'red'}">${fmtUsd(r.endPortfolio)}</td>
+    </tr>`).join("");
+}
+
+// SVG line chart — 4 series, each scaled to its own max for readability.
+function drawChart(samples) {
+  const svg = $("#chart");
+  const W = 800, H = 300, padL = 56, padR = 14, padT = 12, padB = 28;
+  const innerW = W - padL - padR, innerH = H - padT - padB;
+  if (samples.length < 2) { svg.innerHTML = ""; return; }
+
+  const max = {
+    th:        Math.max(1, ...samples.map(s => s.th)),
+    btcUsd:    Math.max(1, ...samples.map(s => Math.abs(s.btcUsd))),
+    gmtUsd:    Math.max(1, ...samples.map(s => Math.abs(s.gmtUsd))),
+    portfolio: Math.max(1, ...samples.map(s => Math.abs(s.portfolio))),
+  };
+  const x = i => padL + (i / (samples.length - 1)) * innerW;
+  const y = (v, m) => padT + innerH - (m > 0 ? (v / m) * innerH : 0);
+
+  const path = (key, color) => {
+    const m = max[key];
+    let d = "";
+    samples.forEach((s, i) => {
+      const px = x(i).toFixed(1);
+      const py = y(s[key], m).toFixed(1);
+      d += (i ? " L" : "M") + px + " " + py;
+    });
+    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  };
+
+  let grid = "";
+  for (let g = 0; g <= 4; g++) {
+    const gy = padT + (innerH * g / 4);
+    grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+  }
+  let labels = "";
+  const labelEvery = Math.max(1, Math.floor(samples.length / 6));
+  for (let i = 0; i < samples.length; i += labelEvery) {
+    const lx = x(i).toFixed(1);
+    labels += `<text x="${lx}" y="${H - 8}" fill="#6e7681" font-size="10" text-anchor="middle">${i + 1}</text>`;
+  }
+
+  svg.innerHTML =
+    grid +
+    path("th",        "#bc8cff") +
+    path("btcUsd",    "#f7931a") +
+    path("gmtUsd",    "#58a6ff") +
+    path("portfolio", "#3fb950") +
+    labels;
+}
+
+$("#btn-run").addEventListener("click", () => renderResults(simulate()));
+renderDurationButtons();
+renderEditor();
+</script>
+</body>
+</html>
