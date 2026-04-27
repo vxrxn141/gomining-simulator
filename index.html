@@ -1569,9 +1569,14 @@
 
 
             <!-- Reward Calendar -->
-            <div class="section" id="dash-history-section" style="display:none;">
+            <div class="section" id="dash-history-section">
                 <h2 data-i18n="sec_reward_history">Reward History</h2>
-                <div id="dash-history-chart" style="position:relative;"></div>
+                <div id="dash-history-chart" style="position:relative;">
+                    <div id="dash-history-empty" style="text-align:center;padding:30px 20px;color:var(--text-dim);">
+                        <div style="font-size:2em;margin-bottom:10px;">📅</div>
+                        <div data-i18n="cal_empty">Sync your GoMining data to see your reward history calendar.</div>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -3084,7 +3089,7 @@
                 if (res) {
                     html += `<div style="background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:8px 12px;text-align:center;min-width:80px;">
                         <div style="font-weight:700;color:var(--accent2);">${m} TH</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">${res.days}j (~${(res.days/30).toFixed(0)}m)</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">${res.days}${t('d_suffix')} (~${(res.days/30).toFixed(0)}${t('m_suffix')})</div>
                     </div>`;
                 }
             }
@@ -3520,10 +3525,10 @@
             const gmActualNet = gmActualGross - gmActualC1 - gmActualC2;
 
             const rows = [
-                { label: 'Pool Reward (brut)', gm: gmActualGross, my: myR.grossBtc, unit: 'BTC' },
-                { label: 'C1 (électricité)', gm: gmActualC1, my: myR.feesBtc * (gmActualC1 / (gmActualC1 + gmActualC2)), unit: 'BTC' },
-                { label: 'C2 (service)', gm: gmActualC2, my: myR.feesBtc * (gmActualC2 / (gmActualC1 + gmActualC2)), unit: 'BTC' },
-                { label: 'Net reward', gm: gmActualNet, my: myR.netBtc, unit: 'BTC' }
+                { label: t('val_row_gross'), gm: gmActualGross, my: myR.grossBtc, unit: 'BTC' },
+                { label: t('val_row_c1'), gm: gmActualC1, my: myR.feesBtc * (gmActualC1 / (gmActualC1 + gmActualC2)), unit: 'BTC' },
+                { label: t('val_row_c2'), gm: gmActualC2, my: myR.feesBtc * (gmActualC2 / (gmActualC1 + gmActualC2)), unit: 'BTC' },
+                { label: t('val_row_net'), gm: gmActualNet, my: myR.netBtc, unit: 'BTC' }
             ];
 
             let html = `<div style="font-size:0.85em;color:var(--text-dim);margin-bottom:10px;">
@@ -4571,7 +4576,7 @@
                 miner_info: 'Miner Info', miner_current_level: 'Current Level', miner_next_level: 'Next Level',
                 miner_needed: 'needed', miner_upgrade_cost: 'Direct Upgrade Cost',
                 dash_gross: 'Gross', dash_fees: 'Fees', dash_next: 'Next',
-                days_remaining: 'days remaining', days: 'days', months: 'months', years: 'years', d_suffix: 'd', and: 'and',
+                days_remaining: 'days remaining', days: 'days', months: 'months', years: 'years', d_suffix: 'd', m_suffix: 'mo', and: 'and',
                 th_already_reached: 'Objective already reached!', th_unreachable: 'Not reachable under current conditions',
                 strat_buy_nft: 'Buy a New NFT', strat_upgrade_nft: 'Upgrade an Existing NFT', strat_lock_gmt: 'Lock GMT (veGOMINING)',
                 strat_th_obtained: 'TH/s Obtained', strat_th_added: 'TH/s Added',
@@ -4602,7 +4607,9 @@
                 notif_strategy: 'GoMining Strategy', notif_strategy_change: 'Recommended change', notif_price_alert: 'GoMining Price Alert',
                 val_metric: 'Metric', val_simulator: 'Simulator', val_last_data: 'Latest data',
                 val_accuracy: 'Accuracy', val_validated: 'Calculations validated!', val_net_gap: 'Net gap', val_check_params: 'check parameters',
+                val_row_gross: 'Pool Reward (gross)', val_row_c1: 'C1 (electricity)', val_row_c2: 'C2 (service)', val_row_net: 'Net reward',
                 cal_week: 'Week', cal_average: 'Average', cal_day: 'day', cal_week_short: 'wk',
+                cal_empty: 'Sync your GoMining data to see your reward history calendar.',
                 goal_month_est: 'month estimated', goal_above: 'above objective', goal_missing: 'missing',
                 import_invalid: 'Invalid file.', import_confirm: 'Import backup from',
                 import_overwrite: 'This will overwrite your current data.',
@@ -4741,7 +4748,7 @@
                 miner_info: 'Info Mineur', miner_current_level: 'Niveau actuel', miner_next_level: 'Prochain palier',
                 miner_needed: 'nécessaires', miner_upgrade_cost: 'Coût upgrade direct',
                 dash_gross: 'Brut', dash_fees: 'Frais', dash_next: 'Prochain',
-                days_remaining: 'jours restants', days: 'jours', months: 'mois', years: 'ans', d_suffix: 'j', and: 'et',
+                days_remaining: 'jours restants', days: 'jours', months: 'mois', years: 'ans', d_suffix: 'j', m_suffix: 'm', and: 'et',
                 th_already_reached: 'Objectif déjà atteint !', th_unreachable: 'Non atteignable aux conditions actuelles',
                 strat_buy_nft: 'Acheter un nouveau NFT', strat_upgrade_nft: 'Upgrader un NFT existant', strat_lock_gmt: 'Lock GMT (veGOMINING)',
                 strat_th_obtained: 'TH/s obtenus', strat_th_added: 'TH/s ajoutés',
@@ -4772,7 +4779,9 @@
                 notif_strategy: 'GoMining Stratégie', notif_strategy_change: 'Changement recommandé', notif_price_alert: 'GoMining Alerte Prix',
                 val_metric: 'Métrique', val_simulator: 'Simulateur', val_last_data: 'Dernière donnée',
                 val_accuracy: 'Précision', val_validated: 'Calculs validés !', val_net_gap: 'Écart net', val_check_params: 'vérifier les paramètres',
+                val_row_gross: 'Pool Reward (brut)', val_row_c1: 'C1 (électricité)', val_row_c2: 'C2 (service)', val_row_net: 'Profit net',
                 cal_week: 'Semaine', cal_average: 'Moyenne', cal_day: 'jour', cal_week_short: 'sem',
+                cal_empty: 'Synchronise tes données GoMining pour voir ton calendrier des rewards.',
                 goal_month_est: 'mois estimé', goal_above: "au-dessus de l'objectif", goal_missing: 'manquants',
                 import_invalid: 'Fichier invalide.', import_confirm: 'Importer le backup du',
                 import_overwrite: 'Ceci va écraser tes données actuelles.',
