@@ -959,6 +959,24 @@
         }
     </style>
 
+    <script>
+      // Preview-mode bypass: shareable feedback link (?preview=darun) skips
+      // the auth gate entirely. Inline so it runs before deferred modules
+      // and the gate is never visually shown.
+      (function () {
+        if (new URLSearchParams(location.search).get('preview') !== 'darun') return;
+        window.__previewBypass = true;
+        const apply = () => {
+          const g = document.getElementById('auth-gate');
+          const a = document.getElementById('app-root');
+          if (g) g.style.display = 'none';
+          if (a) a.style.display = '';
+        };
+        if (document.readyState !== 'loading') apply();
+        else document.addEventListener('DOMContentLoaded', apply);
+      })();
+    </script>
+
     <div id="auth-gate" style="position:fixed;inset:0;z-index:9999;display:flex;background:#0a0e14;overflow:hidden;">
 
       <!-- LEFT: hero + features + community -->
