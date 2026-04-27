@@ -477,6 +477,8 @@
         .cur-btn[data-cur="btc"].active { background: var(--accent); }
         .cur-btn[data-cur="gmt"].active { background: var(--purple); }
         .cur-btn[data-cur="usd"].active { background: var(--green); }
+        .cur-btn.fee-btn[data-fee="gmt"].active { background: var(--purple); color: #000; }
+        .cur-btn.fee-btn[data-fee="btc"].active { background: var(--accent); color: #000; }
 
         .map-legend {
             display: flex;
@@ -1403,10 +1405,19 @@
     <div id="live-ticker" style="display:none;padding:8px 24px;display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
         <div><span class="ticker-gain" id="ticker-gain">$0.00</span> <span style="color:var(--text-dim);font-size:0.8em;" data-i18n="lbl_today_label">today</span></div>
         <span id="ticker-btc" style="display:none;"></span><span id="ticker-gmt" style="display:none;"></span><span id="ticker-pr" style="display:none;"></span>
-        <div class="currency-toggle" style="font-size:0.9em;">
-            <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">$</button>
-            <button class="cur-btn" data-cur="btc" onclick="setCurrency('btc')">₿</button>
-            <button class="cur-btn" data-cur="gmt" onclick="setCurrency('gmt')">G</button>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+            <!-- Fee payment mode toggle -->
+            <div class="fee-mode-toggle currency-toggle" style="font-size:0.85em;" title="Pay fees in BTC = no token discount. Pay fees in GMT = full token discount.">
+                <span style="padding:8px 10px;color:var(--text-dim);font-size:0.85em;border-right:1px solid var(--border);" data-i18n="lbl_fees_in">Fees:</span>
+                <button class="cur-btn fee-btn active" data-fee="gmt" onclick="setFeeMode('gmt')" title="Pay fees in GMT — full discount applies">GMT</button>
+                <button class="cur-btn fee-btn" data-fee="btc" onclick="setFeeMode('btc')" title="Pay fees in BTC — token discount removed">BTC</button>
+            </div>
+            <!-- Display currency toggle -->
+            <div class="currency-toggle" style="font-size:0.9em;">
+                <button class="cur-btn active" data-cur="usd" onclick="setCurrency('usd')">$</button>
+                <button class="cur-btn" data-cur="btc" onclick="setCurrency('btc')">₿</button>
+                <button class="cur-btn" data-cur="gmt" onclick="setCurrency('gmt')">G</button>
+            </div>
         </div>
     </div>
 
@@ -2227,8 +2238,30 @@
             currency: 'usd', // 'usd', 'btc', 'gmt'
             walletMode: 'btc', // 'btc', 'gmt', 'cash' — toggle on the unified Wallet KPI card
             rewardHistory: [], // loaded from localStorage on init
-            costPerTH: 0 // upgrade cost per TH from /nft/get-power-upgrade-info (extension sync)
+            costPerTH: 0, // upgrade cost per TH from /nft/get-power-upgrade-info (extension sync)
+            feeMode: 'gmt' // 'gmt' = pay fees in GMT (token discount applies) | 'btc' = pay in BTC (no token discount)
         };
+
+        const FEE_MODE_KEY = 'gomining_fee_mode';
+
+        function setFeeMode(mode) {
+            state.feeMode = mode;
+            try { localStorage.setItem(FEE_MODE_KEY, mode); } catch(e) {}
+            document.querySelectorAll('.fee-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll(`.fee-btn[data-fee="${mode}"]`).forEach(b => b.classList.add('active'));
+            // Recalculate everything: token discount changes, total discount changes, all results change
+            calcTotalDiscount();
+            if (typeof calculate === 'function') calculate();
+        }
+
+        function loadFeeMode() {
+            try {
+                const m = localStorage.getItem(FEE_MODE_KEY);
+                if (m === 'btc' || m === 'gmt') state.feeMode = m;
+            } catch(e) {}
+            document.querySelectorAll('.fee-btn').forEach(b => b.classList.remove('active'));
+            document.querySelectorAll(`.fee-btn[data-fee="${state.feeMode}"]`).forEach(b => b.classList.add('active'));
+        }
 
         function setCurrency(cur) {
             state.currency = cur;
@@ -2312,7 +2345,10 @@
             const vip = parseFloat(document.getElementById('discount-vip').value) || 0;
             const streak = parseFloat(document.getElementById('discount-streak').value) || 0;
             const solo = parseFloat(document.getElementById('discount-solo').value) || 0;
-            const total = maint + vip + streak + solo;
+            // Token (maintenance) discount only applies when paying fees in GMT.
+            // If user pays in BTC, they lose the token discount but keep VIP/streak/mining-mode.
+            const effectiveMaint = state.feeMode === 'btc' ? 0 : maint;
+            const total = effectiveMaint + vip + streak + solo;
             document.getElementById('discount').value = total.toFixed(2);
             const dd = document.getElementById('discount-display');
             if (dd) dd.textContent = total.toFixed(2) + '%';
@@ -3148,11 +3184,14 @@
                 : null;
 
             if (latest && latest.power && latest.poolReward && latest.totalDiscount !== undefined) {
+                // Use form's discount (already adjusted for fee mode via calcTotalDiscount)
+                // instead of latest.totalDiscount (which reflects historical fee mode at time of mining).
+                const formDiscount = parseFloat(document.getElementById('discount').value) || 0;
                 return {
                     hashrate: latest.power,
                     efficiency: 15, // GoMining standard for level-up miners
                     elecCost: 0.05,  // GoMining standard rate
-                    discount: latest.totalDiscount * 100,
+                    discount: formDiscount,
                     satPerTH: Math.round(latest.poolReward / latest.power * 1e8),
                     source: 'rewardHistory',
                     sourceDate: latest.date
@@ -4918,6 +4957,7 @@
                 strategy_smart_result: 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.',
                 strategy_smart_impossible: "Cannot cover fees: GMT mining doesn't earn enough to cover daily fees with current params.",
                 strategy_source_real: 'Using real GoMining data from', strategy_source_match: '— matches the Validation table.',
+                lbl_fees_in: 'Fees:',
                 strategy_run: 'Run Simulation',
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
@@ -5116,6 +5156,7 @@
                 strategy_smart_result: 'Mine en GMT pendant {x} jours pour couvrir les frais, puis bascule en {target} pour les {y} jours restants.',
                 strategy_smart_impossible: 'Impossible de couvrir les frais : le minage GMT ne génère pas assez avec les paramètres actuels.',
                 strategy_source_real: 'Utilise les vraies données GoMining du', strategy_source_match: '— correspond au tableau de Validation.',
+                lbl_fees_in: 'Frais :',
                 strategy_run: 'Lancer la Simulation',
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
@@ -5786,6 +5827,7 @@
 
         // ===== INIT =====
         loadTheme();
+        loadFeeMode();
         loadSettings();
         loadDashCache(); // After loadSettings so API prices override saved values
         calcTotalDiscount();

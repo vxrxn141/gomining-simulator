@@ -566,23 +566,37 @@
                     const dateStr = day.createdAt?.substring(0, 10);
                     if (!dateStr || dateStr < cutoffDate) continue; // Skip old data
 
-                    const mainIncome = day.incomeListV2?.find(i => i.nftId !== 21521713);
-                    if (!mainIncome) continue;
+                    // Aggregate ALL miner NFTs for this day (exclude nft 21521713 which is staking-related).
+                    // Previously we only picked the FIRST NFT, which broke for users with multiple miners
+                    // (gave per-NFT power instead of total → 10 TH instead of 197 TH for example).
+                    const incomes = (day.incomeListV2 || []).filter(i => i.nftId !== 21521713);
+                    if (incomes.length === 0) continue;
+
+                    const sumPower = incomes.reduce((s, i) => s + (i.power || 0), 0);
+                    const sumC1 = incomes.reduce((s, i) => s + (i.c1Value || 0), 0);
+                    const sumC2 = incomes.reduce((s, i) => s + (i.c2Value || 0), 0);
+                    const sumPoolReward = incomes.reduce((s, i) => s + (i.metaData?.poolReward || 0), 0);
+                    const sumMaintGmt = incomes.reduce((s, i) => s + (i.maintenanceForWithdrawInGmt || 0), 0);
+                    const sumGmtIncome = incomes.reduce((s, i) => s + (i.gmtIncomeBasedOnBtcIncome || 0), 0);
+
+                    // For totalDiscount, take the value from the largest NFT (they should all have the same discount)
+                    const main = incomes.reduce((a, b) => (b.power || 0) > (a.power || 0) ? b : a, incomes[0]);
+
                     result.rewardHistory.push({
                         date: dateStr,
                         valueBtc: day.valueV2 || day.value || 0,
-                        power: mainIncome.power,
-                        c1: mainIncome.c1Value,
-                        c2: mainIncome.c2Value,
-                        poolReward: mainIncome.metaData?.poolReward,
-                        totalDiscount: mainIncome.totalDiscount,
+                        power: sumPower,
+                        c1: sumC1,
+                        c2: sumC2,
+                        poolReward: sumPoolReward,
+                        totalDiscount: main.totalDiscount,
                         gmtPrice: day.incomeStatistic?.gmtPrice,
                         btcPrice: day.incomeStatistic?.btcCourseInUsd,
-                        maintenanceGmt: mainIncome.maintenanceForWithdrawInGmt,
-                        gmtIncome: mainIncome.gmtIncomeBasedOnBtcIncome,
-                        reinvestment: mainIncome.reinvestment,
-                        reinvestInTH: !!mainIncome.reinvestmentInPowerNftId,
-                        toWalletType: mainIncome.toWalletType
+                        maintenanceGmt: sumMaintGmt,
+                        gmtIncome: sumGmtIncome,
+                        reinvestment: main.reinvestment,
+                        reinvestInTH: !!main.reinvestmentInPowerNftId,
+                        toWalletType: main.toWalletType
                     });
                 }
             }
