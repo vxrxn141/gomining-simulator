@@ -2034,6 +2034,18 @@
                     <button class="quick-fill-btn" data-fill="th"><span style="color:var(--green);">●</span> <span data-i18n="strategy_all_th">All TH</span></button>
                 </div>
 
+                <!-- Smart fill: cover fees first -->
+                <div style="margin-bottom:14px;padding:10px 12px;background:var(--bg2);border:1px dashed var(--border);border-radius:8px;">
+                    <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
+                        <span style="font-size:0.85em;color:var(--text);font-weight:600;" data-i18n="strategy_smart_hint">Auto-fill: GMT-mining first to cover all fees, then switch to your target.</span>
+                        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+                            <button class="quick-fill-btn" onclick="smartFillStrategy('th')" style="background:rgba(46,204,113,0.12);border-color:var(--green);color:var(--green);"><span data-i18n="strategy_smart_th">⚖ GMT → TH</span></button>
+                            <button class="quick-fill-btn" onclick="smartFillStrategy('btc')" style="background:rgba(247,147,26,0.12);border-color:var(--accent);color:var(--accent);"><span data-i18n="strategy_smart_btc">⚖ GMT → BTC</span></button>
+                        </div>
+                    </div>
+                    <div id="strategy-smart-output" style="font-size:0.85em;color:var(--text-dim);margin-top:4px;"></div>
+                </div>
+
                 <!-- Day grid (calendar layout) -->
                 <div id="strategy-day-grid" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;max-width:760px;"></div>
 
@@ -3033,6 +3045,72 @@
             rebuildStrategyGrid();
         }
 
+        // Auto-fill X days of GMT mining first (to build up GMT for fees), then switch to target.
+        // Computes minimum X such that GMT earned in X days ≥ fees for all N days.
+        // Math: X * grossGmt ≥ N * feesGmt  →  X = ceil(N * feesGmt / grossGmt)
+        function smartFillStrategy(target) {
+            const hashrate = parseFloat(document.getElementById('hashrate').value);
+            const efficiency = parseFloat(document.getElementById('efficiency').value);
+            const elecCost = parseFloat(document.getElementById('elec-cost').value);
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
+            const outEl = document.getElementById('strategy-smart-output');
+
+            if (!hashrate || !satPerTH || !state.btcPrice || !state.gmtPrice) {
+                outEl.textContent = t('alert_calc_first') || 'Please calculate first in the Simulator tab.';
+                outEl.style.color = 'var(--red)';
+                return;
+            }
+
+            // Use override prices if set
+            const btcOverride = parseFloat(document.getElementById('strategy-btc-override').value);
+            const gmtOverride = parseFloat(document.getElementById('strategy-gmt-override').value);
+            const btcPrice = !isNaN(btcOverride) && btcOverride > 0 ? btcOverride : state.btcPrice;
+            const gmtPrice = !isNaN(gmtOverride) && gmtOverride > 0 ? gmtOverride : state.gmtPrice;
+
+            const savedGmt = state.gmtPrice;
+            state.gmtPrice = gmtPrice;
+            const r = calcDailyReward(hashrate, efficiency, elecCost, discount, btcPrice, satPerTH);
+            state.gmtPrice = savedGmt;
+
+            if (!r || r.grossGmt <= 0 || r.feesGmt <= 0) {
+                outEl.textContent = t('strategy_smart_impossible');
+                outEl.style.color = 'var(--red)';
+                return;
+            }
+
+            // GMT mining is unprofitable if grossGmt ≤ feesGmt (rare, but possible with high elec cost)
+            if (r.grossGmt <= r.feesGmt) {
+                outEl.textContent = t('strategy_smart_impossible');
+                outEl.style.color = 'var(--red)';
+                return;
+            }
+
+            const N = strategyPeriod;
+            // Min X such that X*grossGmt ≥ N*feesGmt
+            const X = Math.ceil((N * r.feesGmt) / r.grossGmt);
+
+            if (X >= N) {
+                // Need every day in GMT just to cover fees — no room for target strategy
+                outEl.innerHTML = `<span style="color:var(--accent);">${t('strategy_smart_impossible')}</span> (${t('strategy_period_short') || 'period too short'}: ${N} ${t('days')}, ${X} ${t('days')} ${t('strategy_needed') || 'needed'})`;
+                fillStrategyAll('gmt');
+                rebuildStrategyGrid();
+                return;
+            }
+
+            // Fill: first X days GMT, remaining days target
+            for (let i = 0; i < N; i++) {
+                strategyDays[i] = i < X ? 'gmt' : target;
+            }
+            rebuildStrategyGrid();
+
+            const Y = N - X;
+            const targetLabel = target.toUpperCase();
+            const tmpl = t('strategy_smart_result') || 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.';
+            outEl.innerHTML = '✓ ' + tmpl.replace('{x}', X).replace('{y}', Y).replace('{target}', targetLabel);
+            outEl.style.color = 'var(--green)';
+        }
+
         function updateStrategyPriceHints() {
             const btcInput = document.getElementById('strategy-btc-override');
             const gmtInput = document.getElementById('strategy-gmt-override');
@@ -3066,22 +3144,17 @@
         }
 
         function runStrategySimulation() {
-            const c = state.lastCalc;
-            if (!c) {
-                // Try to read from form directly if no lastCalc
-                const hashrate = parseFloat(document.getElementById('hashrate').value);
-                const efficiency = parseFloat(document.getElementById('efficiency').value);
-                const elecCost = parseFloat(document.getElementById('elec-cost').value);
-                const discount = parseFloat(document.getElementById('discount').value) || 0;
-                const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
-                if (!hashrate || !satPerTH) {
-                    alert(t('alert_calc_first') || 'Please calculate first in the Simulator tab');
-                    return;
-                }
-                state.lastCalc = { hashrate, efficiency, elecCost, discount, satPerTH };
+            // Always pull fresh values from the form to avoid stale state.lastCalc
+            const hashrate = parseFloat(document.getElementById('hashrate').value);
+            const efficiency = parseFloat(document.getElementById('efficiency').value);
+            const elecCost = parseFloat(document.getElementById('elec-cost').value);
+            const discount = parseFloat(document.getElementById('discount').value) || 0;
+            const satPerTH = parseFloat(document.getElementById('sat-per-th').value);
+            if (!hashrate || !satPerTH) {
+                alert(t('alert_calc_first') || 'Please calculate first in the Simulator tab');
+                return;
             }
-
-            const cfg = state.lastCalc;
+            const cfg = { hashrate, efficiency, elecCost, discount, satPerTH };
             const btcOverride = parseFloat(document.getElementById('strategy-btc-override').value);
             const gmtOverride = parseFloat(document.getElementById('strategy-gmt-override').value);
             const costPerTH = parseFloat(document.getElementById('strategy-cost-per-th').value) || 12;
@@ -3147,6 +3220,8 @@
                 totalBtcUsd, totalGmtUsd, totalThUsd, totalUsd, totalFeesUsd, netUsd,
                 finalPower: power, startPower: cfg.hashrate,
                 btcPrice, gmtPrice, costPerTH,
+                hashrate: cfg.hashrate, efficiency: cfg.efficiency, elecCost: cfg.elecCost,
+                discount: cfg.discount, satPerTH: cfg.satPerTH,
                 dayLog
             });
         }
@@ -3189,8 +3264,10 @@
                         <div style="font-size:1.6em;font-weight:700;color:${r.netUsd >= 0 ? 'var(--green)' : 'var(--red)'};">${formatUSD(r.netUsd)}</div>
                     </div>
                 </div>
-                <div style="margin-top:14px;font-size:0.8em;color:var(--text-dim);">
-                    <span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}
+                <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.8em;color:var(--text-dim);line-height:1.7;">
+                    <div><strong>${t('strategy_inputs_used') || 'Inputs used'}:</strong> ${r.hashrate} TH | ${r.satPerTH} sat/TH | ${(r.discount).toFixed(2)}% discount | ${r.efficiency} W/TH | $${r.elecCost}/kWh</div>
+                    <div><span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}</div>
+                    <div style="margin-top:6px;color:var(--text-dim);font-style:italic;">${t('strategy_verify_inputs') || "⚠ Inputs come from the Simulator tab. Update them there if numbers don't match your reality."}</div>
                 </div>
             </div>`;
             el.innerHTML = html;
@@ -4809,6 +4886,13 @@
                 strategy_current: 'current',
                 strategy_auto: 'Auto-filled', strategy_from_sync: 'from sync',
                 strategy_week: 'Week',
+                strategy_inputs_used: 'Inputs used',
+                strategy_verify_inputs: "⚠ Inputs come from the Simulator tab. Update them there if numbers don't match your reality.",
+                strategy_smart_th: '⚖ GMT → TH',
+                strategy_smart_btc: '⚖ GMT → BTC',
+                strategy_smart_hint: 'Auto-fill: GMT-mining first to cover all fees, then switch to your target.',
+                strategy_smart_result: 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.',
+                strategy_smart_impossible: 'Cannot cover fees: GMT mining doesn\'t earn enough to cover daily fees with current params.',
                 strategy_run: 'Run Simulation',
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
@@ -4999,6 +5083,13 @@
                 strategy_current: 'actuel',
                 strategy_auto: 'Auto-rempli', strategy_from_sync: 'depuis sync',
                 strategy_week: 'Semaine',
+                strategy_inputs_used: 'Paramètres utilisés',
+                strategy_verify_inputs: '⚠ Les paramètres viennent de l\'onglet Simulateur. Modifie-les là si les chiffres ne correspondent pas à ta réalité.',
+                strategy_smart_th: '⚖ GMT → TH',
+                strategy_smart_btc: '⚖ GMT → BTC',
+                strategy_smart_hint: 'Auto-remplir : miner en GMT d\'abord pour couvrir tous les frais, puis basculer vers ta cible.',
+                strategy_smart_result: 'Mine en GMT pendant {x} jours pour couvrir les frais, puis bascule en {target} pour les {y} jours restants.',
+                strategy_smart_impossible: 'Impossible de couvrir les frais : le minage GMT ne génère pas assez avec les paramètres actuels.',
                 strategy_run: 'Lancer la Simulation',
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
