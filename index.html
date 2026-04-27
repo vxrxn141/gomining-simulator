@@ -3252,6 +3252,11 @@
             const savedGmtPrice = state.gmtPrice;
             state.gmtPrice = gmtPrice;
 
+            // Use the global fee mode toggle from the dashboard:
+            // toggle = GMT → cfg.discount includes the token discount (full)
+            // toggle = BTC → cfg.discount excludes the token discount (calcTotalDiscount handles this)
+            const simDiscount = cfg.discount;
+
             // Simulation loop — per-day with compounding
             let power = cfg.hashrate;
             let totalBtc = 0, totalGmt = 0, totalThGained = 0, totalFeesGmt = 0, totalFeesUsd = 0;
@@ -3259,7 +3264,7 @@
 
             for (let i = 0; i < strategyPeriod; i++) {
                 const strat = strategyDays[i];
-                const dayR = calcDailyReward(power, cfg.efficiency, cfg.elecCost, cfg.discount, btcPrice, cfg.satPerTH);
+                const dayR = calcDailyReward(power, cfg.efficiency, cfg.elecCost, simDiscount, btcPrice, cfg.satPerTH);
                 if (!dayR) break;
 
                 let dayBtc = 0, dayGmt = 0, dayTh = 0;
@@ -3348,7 +3353,7 @@
                     </div>
                 </div>
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.8em;color:var(--text-dim);line-height:1.7;">
-                    <div><strong>${t('strategy_inputs_used') || 'Inputs used'}:</strong> ${r.hashrate} TH | ${r.satPerTH} sat/TH | ${(r.discount).toFixed(2)}% discount | ${r.efficiency} W/TH | $${r.elecCost}/kWh</div>
+                    <div><strong>${t('strategy_inputs_used') || 'Inputs used'}:</strong> ${r.hashrate} TH | ${r.satPerTH} sat/TH | ${(r.discount).toFixed(2)}% discount (Fee mode: ${state.feeMode.toUpperCase()}) | ${r.efficiency} W/TH | $${r.elecCost}/kWh</div>
                     <div><span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}</div>
                     <div style="margin-top:6px;color:${r.source === 'rewardHistory' ? 'var(--green)' : 'var(--accent)'};font-style:italic;">
                         ${r.source === 'rewardHistory'
