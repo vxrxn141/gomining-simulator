@@ -960,9 +960,11 @@
     </style>
 
     <script>
-      // Preview-mode bypass: shareable feedback link (?preview=darun) skips
-      // the auth gate entirely. Inline so it runs before deferred modules
-      // and the gate is never visually shown.
+      // Preview-mode bypass: shareable feedback link (?preview=darun)
+      //   - skips the Firebase auth gate
+      //   - reveals the Strategy Lab nav item (hidden by default in production)
+      //   - auto-switches to the Strategy Lab tab
+      // Inline so it runs before deferred modules; the gate never visually shows.
       (function () {
         if (new URLSearchParams(location.search).get('preview') !== 'darun') return;
         window.__previewBypass = true;
@@ -971,6 +973,19 @@
           const a = document.getElementById('app-root');
           if (g) g.style.display = 'none';
           if (a) a.style.display = '';
+          const navStrategy = document.getElementById('nav-strategy');
+          if (navStrategy) navStrategy.style.display = '';
+          if (typeof window.switchTab === 'function') {
+            try { window.switchTab('strategy'); } catch {}
+          } else {
+            // switchTab is defined later in the inline app script — retry once it's available
+            const tryRetry = () => {
+              if (typeof window.switchTab === 'function') {
+                try { window.switchTab('strategy'); } catch {}
+              } else setTimeout(tryRetry, 50);
+            };
+            tryRetry();
+          }
         };
         if (document.readyState !== 'loading') apply();
         else document.addEventListener('DOMContentLoaded', apply);
@@ -1287,7 +1302,7 @@
                 <span class="nav-icon">📈</span> <span data-i18n="nav_scenarios">BTC Scenarios</span>
                 <span class="nav-dot"></span>
             </div>
-            <div class="nav-item" data-tab="strategy" onclick="switchTab('strategy')">
+            <div class="nav-item" data-tab="strategy" onclick="switchTab('strategy')" id="nav-strategy" style="display:none;">
                 <span class="nav-icon">🧪</span> <span data-i18n="nav_strategy">Strategy Lab</span>
                 <span class="nav-dot"></span>
             </div>
