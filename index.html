@@ -2059,7 +2059,7 @@
                 </div>
 
                 <!-- Day grid (calendar layout) -->
-                <div id="strategy-day-grid" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;max-width:760px;"></div>
+                <div id="strategy-day-grid" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;"></div>
 
                 <!-- Price overrides -->
                 <div class="section" style="background:var(--bg2);padding:14px;margin-bottom:14px;">
@@ -2078,8 +2078,8 @@
                         </div>
                         <div class="form-group">
                             <label data-i18n="strategy_cost_per_th">Cost per TH ($)</label>
-                            <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12" oninput="this.dataset.userEdited='1'">
-                            <span class="hint" id="strategy-cost-current" data-i18n="strategy_cost_per_th_hint">Current upgrade cost (~$12)</span>
+                            <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12.34" oninput="this.dataset.userEdited='1'">
+                            <span class="hint" id="strategy-cost-current" data-i18n="strategy_cost_per_th_hint">$12.34/TH (confirmed in GoMining app)</span>
                         </div>
                     </div>
                 </div>
@@ -3185,21 +3185,13 @@
             if (gmtInput && state.gmtPrice && !gmtInput.dataset.userEdited) {
                 gmtInput.value = state.gmtPrice.toFixed(4);
             }
-            // Auto-fill cost per TH from sync data if available
-            if (costInput && state.costPerTH && !costInput.dataset.userEdited) {
-                costInput.value = state.costPerTH.toFixed(2);
-            }
+            // Cost per TH: $12.34 is the confirmed GoMining upgrade rate.
+            // Sync field detection is unreliable (returns wrong values), so we keep the hardcoded default.
 
             // Hints showing the auto-filled value
             if (btcEl && state.btcPrice) btcEl.textContent = `${t('strategy_auto')}: $${Math.round(state.btcPrice).toLocaleString()}`;
             if (gmtEl && state.gmtPrice) gmtEl.textContent = `${t('strategy_auto')}: $${state.gmtPrice.toFixed(4)}`;
-            if (costEl) {
-                if (state.costPerTH) {
-                    costEl.textContent = `${t('strategy_auto')}: $${state.costPerTH.toFixed(2)} (${t('strategy_from_sync')})`;
-                } else {
-                    costEl.textContent = t('strategy_cost_per_th_hint');
-                }
-            }
+            if (costEl) costEl.textContent = t('strategy_cost_per_th_hint');
         }
 
         function getStrategyBaseConfig() {
@@ -3301,16 +3293,27 @@
             state.gmtPrice = savedGmtPrice;
 
             // Compute final USD value
+            // TH gained is an ASSET (funded by the BTC reward of TH-days), not realized cash.
+            // Cash profit = liquid earnings (BTC + GMT) − fees. TH is shown separately as a hashrate gain.
             const totalBtcUsd = totalBtc * btcPrice;
             const totalGmtUsd = totalGmt * gmtPrice;
-            const totalThUsd = totalThGained * costPerTH;
-            const totalUsd = totalBtcUsd + totalGmtUsd + totalThUsd;
-            const netUsd = totalUsd - totalFeesUsd;
+            const totalThUsd = totalThGained * costPerTH; // paper value of TH asset
+            const netCashUsd = totalBtcUsd + totalGmtUsd - totalFeesUsd;
+
+            // Per-currency net (deduct fees from whichever currency the user pays them in)
+            const feeMode = state.feeMode || 'gmt';
+            const totalFeesBtc = feeMode === 'btc' ? totalFeesUsd / btcPrice : 0;
+            const netBtc = Math.max(0, totalBtc - totalFeesBtc);
+            const netGmt = feeMode === 'gmt' ? Math.max(0, totalGmt - totalFeesGmt) : totalGmt;
+            const netBtcUsd = netBtc * btcPrice;
+            const netGmtUsd = netGmt * gmtPrice;
 
             renderStrategyResults({
                 period: strategyPeriod,
-                totalBtc, totalGmt, totalThGained, totalFeesGmt,
-                totalBtcUsd, totalGmtUsd, totalThUsd, totalUsd, totalFeesUsd, netUsd,
+                totalBtc, totalGmt, totalThGained, totalFeesGmt, totalFeesBtc,
+                netBtc, netGmt, netBtcUsd, netGmtUsd,
+                totalBtcUsd, totalGmtUsd, totalThUsd, totalFeesUsd, netCashUsd,
+                feeMode,
                 finalPower: power, startPower: cfg.hashrate,
                 btcPrice, gmtPrice, costPerTH,
                 hashrate: cfg.hashrate, efficiency: cfg.efficiency, elecCost: cfg.elecCost,
@@ -3328,14 +3331,20 @@
                 <h3 style="margin:0 0 14px 0;color:var(--a-strategy);" data-i18n="strategy_results">📊 Results — ${r.period} ${t_('days', 'days')}</h3>
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
                     <div class="strategy-result-card">
-                        <div class="res-label" data-i18n="strategy_total_btc">Total BTC</div>
-                        <div class="res-value" style="color:var(--accent);">${r.totalBtc.toFixed(8)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalBtcUsd)}</div>
+                        <div class="res-label" data-i18n="strategy_net_btc">BTC Net</div>
+                        <div class="res-value" style="color:var(--accent);">+${r.netBtc.toFixed(8)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netBtcUsd)}</div>
+                        ${r.feeMode === 'btc' && r.totalFeesBtc > 0
+                            ? `<div style="font-size:0.7em;color:var(--text-dim);margin-top:2px;">${r.totalBtc.toFixed(8)} − ${r.totalFeesBtc.toFixed(8)} fees</div>`
+                            : ''}
                     </div>
                     <div class="strategy-result-card">
-                        <div class="res-label" data-i18n="strategy_total_gmt">Total GMT</div>
-                        <div class="res-value" style="color:var(--purple);">${r.totalGmt.toFixed(2)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalGmtUsd)}</div>
+                        <div class="res-label" data-i18n="strategy_net_gmt">GMT Net</div>
+                        <div class="res-value" style="color:var(--purple);">+${r.netGmt.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netGmtUsd)}</div>
+                        ${r.feeMode === 'gmt' && r.totalFeesGmt > 0
+                            ? `<div style="font-size:0.7em;color:var(--text-dim);margin-top:2px;">${r.totalGmt.toFixed(2)} − ${r.totalFeesGmt.toFixed(2)} fees</div>`
+                            : ''}
                     </div>
                     <div class="strategy-result-card">
                         <div class="res-label" data-i18n="strategy_total_th">TH Gained</div>
@@ -3350,12 +3359,13 @@
                 </div>
                 <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
                     <div>
-                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_total_value">Total value generated</div>
-                        <div style="font-size:1.6em;font-weight:700;color:var(--green);">${formatUSD(r.totalUsd)}</div>
+                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_net_cash">Net cash profit (BTC + GMT − fees)</div>
+                        <div style="font-size:1.6em;font-weight:700;color:${r.netCashUsd >= 0 ? 'var(--green)' : 'var(--red)'};">${formatUSD(r.netCashUsd)}</div>
                     </div>
                     <div style="text-align:right;">
-                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_net_value">Net (after fees)</div>
-                        <div style="font-size:1.6em;font-weight:700;color:${r.netUsd >= 0 ? 'var(--green)' : 'var(--red)'};">${formatUSD(r.netUsd)}</div>
+                        <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_th_gained_label">+ Hashrate gained</div>
+                        <div style="font-size:1.6em;font-weight:700;color:var(--green);">+${r.totalThGained.toFixed(2)} TH</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">${t('strategy_th_paper_value') || 'asset, paper value'} ≈ ${formatUSD(r.totalThUsd)}</div>
                     </div>
                 </div>
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.8em;color:var(--text-dim);line-height:1.7;">
@@ -4980,7 +4990,7 @@
                 strategy_prices: 'Price Overrides (optional)',
                 strategy_prices_hint: 'Test scenarios — what if BTC pumps or GMT moves? Leave blank to use current snapshot.',
                 strategy_btc_price: 'BTC Price ($)', strategy_gmt_price: 'GMT Price ($)', strategy_cost_per_th: 'Cost per TH ($)',
-                strategy_cost_per_th_hint: 'Current upgrade cost (~$12)',
+                strategy_cost_per_th_hint: '$12.34/TH (confirmed in GoMining app)',
                 strategy_current: 'current',
                 strategy_auto: 'Auto-filled', strategy_from_sync: 'from sync',
                 strategy_week: 'Week',
@@ -4996,7 +5006,8 @@
                 strategy_run: 'Run Simulation',
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
-                strategy_total_value: 'Total value generated', strategy_net_value: 'Net (after fees)',
+                strategy_net_btc: 'BTC Net', strategy_net_gmt: 'GMT Net',
+                strategy_net_cash: 'Net cash profit (BTC + GMT − fees)', strategy_th_gained_label: '+ Hashrate gained', strategy_th_paper_value: 'asset, paper value',
                 strategy_used_prices: 'Prices used',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
                 btn_export: 'Export', btn_import: 'Import',
@@ -5179,7 +5190,7 @@
                 strategy_prices: 'Prix personnalisés (optionnel)',
                 strategy_prices_hint: 'Teste des scénarios — que se passe-t-il si BTC monte ou si GMT bouge ? Laisse vide pour utiliser les prix actuels.',
                 strategy_btc_price: 'Prix BTC ($)', strategy_gmt_price: 'Prix GMT ($)', strategy_cost_per_th: 'Coût par TH ($)',
-                strategy_cost_per_th_hint: 'Coût d\'upgrade actuel (~12$)',
+                strategy_cost_per_th_hint: '12,34$/TH (confirmé dans l\'app GoMining)',
                 strategy_current: 'actuel',
                 strategy_auto: 'Auto-rempli', strategy_from_sync: 'depuis sync',
                 strategy_week: 'Semaine',
@@ -5195,7 +5206,8 @@
                 strategy_run: 'Lancer la Simulation',
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
-                strategy_total_value: 'Valeur totale générée', strategy_net_value: 'Net (après frais)',
+                strategy_net_btc: 'BTC Net', strategy_net_gmt: 'GMT Net',
+                strategy_net_cash: 'Profit net liquide (BTC + GMT − frais)', strategy_th_gained_label: '+ Hashrate gagné', strategy_th_paper_value: 'actif, valeur papier',
                 strategy_used_prices: 'Prix utilisés',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
                 btn_export: 'Export', btn_import: 'Import',
