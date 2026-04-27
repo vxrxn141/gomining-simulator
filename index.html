@@ -2034,8 +2034,8 @@
                     <button class="quick-fill-btn" data-fill="th"><span style="color:var(--green);">●</span> <span data-i18n="strategy_all_th">All TH</span></button>
                 </div>
 
-                <!-- Day grid -->
-                <div id="strategy-day-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(72px,1fr));gap:6px;margin-bottom:18px;"></div>
+                <!-- Day grid (calendar layout) -->
+                <div id="strategy-day-grid" style="display:flex;flex-direction:column;gap:6px;margin-bottom:18px;max-width:760px;"></div>
 
                 <!-- Price overrides -->
                 <div class="section" style="background:var(--bg2);padding:14px;margin-bottom:14px;">
@@ -2044,18 +2044,18 @@
                     <div class="form-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
                         <div class="form-group">
                             <label data-i18n="strategy_btc_price">BTC Price ($)</label>
-                            <input type="number" id="strategy-btc-override" min="0" step="100" placeholder="">
+                            <input type="number" id="strategy-btc-override" min="0" step="100" placeholder="" oninput="this.dataset.userEdited='1'">
                             <span class="hint" id="strategy-btc-current"></span>
                         </div>
                         <div class="form-group">
                             <label data-i18n="strategy_gmt_price">GMT Price ($)</label>
-                            <input type="number" id="strategy-gmt-override" min="0" step="0.001" placeholder="">
+                            <input type="number" id="strategy-gmt-override" min="0" step="0.001" placeholder="" oninput="this.dataset.userEdited='1'">
                             <span class="hint" id="strategy-gmt-current"></span>
                         </div>
                         <div class="form-group">
                             <label data-i18n="strategy_cost_per_th">Cost per TH ($)</label>
-                            <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12">
-                            <span class="hint" data-i18n="strategy_cost_per_th_hint">Current upgrade cost (~$12)</span>
+                            <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12" oninput="this.dataset.userEdited='1'">
+                            <span class="hint" id="strategy-cost-current" data-i18n="strategy_cost_per_th_hint">Current upgrade cost (~$12)</span>
                         </div>
                     </div>
                 </div>
@@ -2214,7 +2214,8 @@
             lastCalc: null,
             currency: 'usd', // 'usd', 'btc', 'gmt'
             walletMode: 'btc', // 'btc', 'gmt', 'cash' — toggle on the unified Wallet KPI card
-            rewardHistory: [] // loaded from localStorage on init
+            rewardHistory: [], // loaded from localStorage on init
+            costPerTH: 0 // upgrade cost per TH from /nft/get-power-upgrade-info (extension sync)
         };
 
         function setCurrency(cur) {
@@ -2997,13 +2998,25 @@
             strategyDays = strategyDays.slice(0, strategyPeriod);
 
             const labelMap = { btc: 'BTC', gmt: 'GMT', th: 'TH' };
+            const weekLabel = t('strategy_week') || 'Week';
             let html = '';
-            for (let i = 0; i < strategyPeriod; i++) {
-                const strat = strategyDays[i];
-                html += `<div class="day-cell" data-strat="${strat}" data-day="${i}" onclick="cycleStrategyDay(${i})">
-                    <div class="day-num">D${i + 1}</div>
-                    <div class="day-strat">${labelMap[strat]}</div>
-                </div>`;
+            for (let weekStart = 0; weekStart < strategyPeriod; weekStart += 7) {
+                const weekNum = Math.floor(weekStart / 7) + 1;
+                html += `<div style="display:grid;grid-template-columns:60px repeat(7,1fr);gap:6px;align-items:stretch;">`;
+                html += `<div style="display:flex;align-items:center;justify-content:flex-start;font-size:0.75em;font-weight:700;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;">${weekLabel} ${weekNum}</div>`;
+                for (let col = 0; col < 7; col++) {
+                    const i = weekStart + col;
+                    if (i >= strategyPeriod) {
+                        html += `<div></div>`;
+                    } else {
+                        const strat = strategyDays[i];
+                        html += `<div class="day-cell" data-strat="${strat}" data-day="${i}" onclick="cycleStrategyDay(${i})">
+                            <div class="day-num">D${i + 1}</div>
+                            <div class="day-strat">${labelMap[strat]}</div>
+                        </div>`;
+                    }
+                }
+                html += `</div>`;
             }
             grid.innerHTML = html;
         }
@@ -3021,10 +3034,35 @@
         }
 
         function updateStrategyPriceHints() {
+            const btcInput = document.getElementById('strategy-btc-override');
+            const gmtInput = document.getElementById('strategy-gmt-override');
+            const costInput = document.getElementById('strategy-cost-per-th');
             const btcEl = document.getElementById('strategy-btc-current');
             const gmtEl = document.getElementById('strategy-gmt-current');
-            if (btcEl && state.btcPrice) btcEl.textContent = `${t('strategy_current')}: $${Math.round(state.btcPrice).toLocaleString()}`;
-            if (gmtEl && state.gmtPrice) gmtEl.textContent = `${t('strategy_current')}: $${state.gmtPrice.toFixed(4)}`;
+            const costEl = document.getElementById('strategy-cost-current');
+
+            // Auto-fill BTC price (only if user hasn't manually edited)
+            if (btcInput && state.btcPrice && !btcInput.dataset.userEdited) {
+                btcInput.value = Math.round(state.btcPrice);
+            }
+            if (gmtInput && state.gmtPrice && !gmtInput.dataset.userEdited) {
+                gmtInput.value = state.gmtPrice.toFixed(4);
+            }
+            // Auto-fill cost per TH from sync data if available
+            if (costInput && state.costPerTH && !costInput.dataset.userEdited) {
+                costInput.value = state.costPerTH.toFixed(2);
+            }
+
+            // Hints showing the auto-filled value
+            if (btcEl && state.btcPrice) btcEl.textContent = `${t('strategy_auto')}: $${Math.round(state.btcPrice).toLocaleString()}`;
+            if (gmtEl && state.gmtPrice) gmtEl.textContent = `${t('strategy_auto')}: $${state.gmtPrice.toFixed(4)}`;
+            if (costEl) {
+                if (state.costPerTH) {
+                    costEl.textContent = `${t('strategy_auto')}: $${state.costPerTH.toFixed(2)} (${t('strategy_from_sync')})`;
+                } else {
+                    costEl.textContent = t('strategy_cost_per_th_hint');
+                }
+            }
         }
 
         function runStrategySimulation() {
@@ -3760,6 +3798,12 @@
                     state.apiSatPerTH = satPerTH;
                     document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
                 }
+            }
+
+            // Auto-fill cost per TH from extension data (upgrade price endpoint)
+            if (data.upgrade?.costPerTH && data.upgrade.costPerTH > 0) {
+                state.costPerTH = data.upgrade.costPerTH;
+                if (typeof updateStrategyPriceHints === 'function') updateStrategyPriceHints();
             }
 
             // Auto-fill staking weekly GMT from extension data
@@ -4762,6 +4806,8 @@
                 strategy_btc_price: 'BTC Price ($)', strategy_gmt_price: 'GMT Price ($)', strategy_cost_per_th: 'Cost per TH ($)',
                 strategy_cost_per_th_hint: 'Current upgrade cost (~$12)',
                 strategy_current: 'current',
+                strategy_auto: 'Auto-filled', strategy_from_sync: 'from sync',
+                strategy_week: 'Week',
                 strategy_run: 'Run Simulation',
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
@@ -4950,6 +4996,8 @@
                 strategy_btc_price: 'Prix BTC ($)', strategy_gmt_price: 'Prix GMT ($)', strategy_cost_per_th: 'Coût par TH ($)',
                 strategy_cost_per_th_hint: 'Coût d\'upgrade actuel (~12$)',
                 strategy_current: 'actuel',
+                strategy_auto: 'Auto-rempli', strategy_from_sync: 'depuis sync',
+                strategy_week: 'Semaine',
                 strategy_run: 'Lancer la Simulation',
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',

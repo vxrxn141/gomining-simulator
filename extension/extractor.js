@@ -458,6 +458,43 @@
             }
         }
 
+        // Upgrade cost per TH (from /nft/get-power-upgrade-info)
+        // Field name is uncertain — try several common patterns and log what we found
+        result.upgrade = {};
+        const findCostPerTH = (data) => {
+            if (!data) return null;
+            const candidates = ['priceForOneTh', 'priceForOneTH', 'pricePerTh', 'pricePerTH',
+                                'priceUsd', 'priceUSD', 'price', 'upgradePrice', 'usdPriceForOneTh',
+                                'oneThPrice', 'thPrice'];
+            for (const key of candidates) {
+                if (typeof data[key] === 'number' && data[key] > 0 && data[key] < 1000) return data[key];
+                if (typeof data[key] === 'string' && parseFloat(data[key]) > 0) return parseFloat(data[key]);
+            }
+            return null;
+        };
+        for (const m of Object.values(DATA.miners)) {
+            if (m.url?.includes('/nft/get-power-upgrade-info') || m.url?.includes('/nft/get-upgrade-rate')) {
+                const d = m.data?.data || m.data;
+                const cost = findCostPerTH(d);
+                if (cost) {
+                    result.upgrade.costPerTH = cost;
+                    log('Upgrade cost per TH detected: $' + cost);
+                } else {
+                    log('Upgrade endpoint captured but cost field unknown — raw keys: ' + Object.keys(d || {}).join(','));
+                }
+            }
+        }
+        for (const r of Object.values(DATA.rewards)) {
+            if (r.url?.includes('/nft/get-power-upgrade-info') || r.url?.includes('/nft/get-upgrade-rate')) {
+                const d = r.data?.data || r.data;
+                const cost = findCostPerTH(d);
+                if (cost && !result.upgrade.costPerTH) {
+                    result.upgrade.costPerTH = cost;
+                    log('Upgrade cost per TH detected: $' + cost);
+                }
+            }
+        }
+
         // veGMT staking data
         result.staking = {};
         for (const r of Object.values(DATA.rewards)) {
