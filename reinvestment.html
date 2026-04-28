@@ -4,274 +4,358 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="robots" content="noindex,nofollow"><!-- WIP, not linked from anywhere -->
-  <title>Reinvestment Planner · GoMining Simulator</title>
+  <title>Reinvestment Strategy Lab · GoMining Simulator</title>
   <link rel="icon" type="image/png" href="icon.png">
   <style>
     :root {
       --bg:#0a0e14; --bg2:#0d1117;
-      --card:rgba(22,27,34,.65); --card-solid:#161b22;
-      --border:rgba(255,255,255,.06); --border-hover:rgba(255,255,255,.12);
-      --text:#e6edf3; --text-dim:#8b949e;
+      --card-solid:#0e131b; --card-bordered:#11161e;
+      --border:rgba(255,255,255,.07); --border-hover:rgba(255,255,255,.15);
+      --text:#e6edf3; --text-dim:#8b949e; --text-mute:#5a6372;
+      --yellow:#ffd60a; --yellow-bright:#ffe85c;
       --accent:#f7931a; --accent2:#58a6ff;
       --green:#3fb950; --red:#f85149; --purple:#bc8cff;
+      --btc:#f7931a;  --gmt:#bc8cff;  --th:#3fb950;     /* match partner palette */
       --radius:14px; --radius-sm:10px;
-      /* slot colours */
-      --btc:#f7931a;  --gmt:#58a6ff;  --th:#bc8cff;
     }
     *{box-sizing:border-box;margin:0;padding:0}
     body{
       font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
-      background:radial-gradient(circle at 20% 0%,#1a1f2e 0%,#0a0e14 60%);
-      color:var(--text);line-height:1.6;font-size:15px;min-height:100vh;
+      background:#0a0e14;
+      color:var(--text);line-height:1.55;font-size:15px;min-height:100vh;
     }
-    .wrap{max-width:1180px;margin:0 auto;padding:32px 24px 80px}
-    header{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;
-           padding-bottom:18px;border-bottom:1px solid var(--border)}
+    .wrap{max-width:1240px;margin:0 auto;padding:24px 22px 80px}
+
+    /* Top bar */
+    .topbar{display:flex;align-items:center;justify-content:space-between;
+            margin-bottom:18px;flex-wrap:wrap;gap:12px}
     .brand{display:flex;align-items:center;gap:12px}
-    .brand img{width:42px;height:42px;border-radius:10px}
-    .brand h1{font-size:1.15rem;font-weight:800;letter-spacing:-.02em}
+    .brand img{width:40px;height:40px;border-radius:10px}
+    .brand h1{font-size:1.1rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
     .brand h1 .accent{color:var(--accent)}
-    .brand p{font-size:.72em;color:var(--text-dim)}
+    .brand p{font-size:.7em;color:var(--text-dim)}
+    .pillbar{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+    .pillbar .label{font-size:.78em;color:var(--text-dim);font-weight:600;margin-right:4px}
+    .seg{display:inline-flex;background:#11161e;border:1px solid var(--border);
+         border-radius:9px;padding:3px;gap:2px}
+    .seg-btn{padding:5px 14px;border-radius:6px;cursor:pointer;
+             color:var(--text-dim);font-size:.78em;font-weight:700;
+             border:none;background:transparent;font-family:inherit;
+             transition:all .12s;letter-spacing:.04em}
+    .seg-btn:hover{color:var(--text)}
+    .seg-btn.active.fees-gmt{background:var(--gmt);color:#1a1a1a}
+    .seg-btn.active.fees-btc{background:var(--btc);color:#1a1a1a}
+    .seg-btn.active.cur-usd{background:var(--green);color:#0e131b}
+    .seg-btn.active.cur-btc{background:var(--btc);color:#1a1a1a}
+    .seg-btn.active.cur-gmt{background:var(--gmt);color:#1a1a1a}
     .back{color:var(--text-dim);text-decoration:none;font-size:.85em;
-          padding:8px 14px;border:1px solid var(--border);border-radius:8px;
-          transition:all .15s}
+          padding:7px 14px;border:1px solid var(--border);border-radius:8px;transition:all .15s}
     .back:hover{color:var(--text);border-color:var(--text-dim)}
-    .wip{display:inline-block;margin-left:8px;padding:2px 8px;border-radius:6px;
-         font-size:.7em;font-weight:700;letter-spacing:.04em;
-         background:rgba(247,147,26,.12);color:var(--accent)}
-    .hero{margin-bottom:24px}
-    .hero h2{font-size:clamp(1.4rem,2.4vw,2rem);font-weight:800;
-             letter-spacing:-.02em;margin-bottom:8px}
-    .hero h2 .accent{color:var(--accent)}
-    .hero p{color:var(--text-dim);max-width:760px;font-size:.95em}
 
-    .card{background:var(--card);backdrop-filter:blur(20px);
-          border:1px solid var(--border);border-radius:var(--radius);
-          padding:22px;margin-bottom:18px}
-    .card h3{font-size:.95rem;font-weight:700;margin-bottom:4px;
-             display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
-    .card h3 .hint{font-weight:400;font-size:.78em;color:var(--text-dim)}
-    .card .desc{color:var(--text-dim);font-size:.85em;margin-bottom:16px}
+    .summary-pill{font-size:.86em;font-weight:600;color:var(--text-dim)}
+    .summary-pill .val{color:var(--green);font-weight:800;font-size:1.1em}
 
-    .mode-tabs{display:flex;gap:6px;background:var(--bg2);padding:4px;
-               border-radius:10px;border:1px solid var(--border);
-               width:fit-content;margin-bottom:18px}
-    .mode-tab{padding:8px 18px;border-radius:8px;cursor:pointer;
-              color:var(--text-dim);font-size:.86em;font-weight:600;
-              border:none;background:transparent;transition:all .15s;font-family:inherit}
-    .mode-tab.active{background:var(--accent);color:#000}
-    .mode-tab:hover:not(.active){color:var(--text)}
+    /* Card */
+    .card{background:var(--card-solid);border:1px solid var(--border);
+          border-radius:var(--radius);padding:24px;margin-bottom:14px}
+    .card-title{font-size:1.05rem;font-weight:800;color:var(--yellow);
+                margin-bottom:6px;display:flex;align-items:center;gap:10px;letter-spacing:-.01em}
+    .card-title .icon{font-size:1.05em}
+    .card-desc{color:var(--text-dim);font-size:.88em;margin-bottom:18px;line-height:1.6}
 
-    .duration-row{display:flex;gap:8px;flex-wrap:wrap}
-    .dur-btn{padding:9px 18px;border:1px solid var(--border);
-             background:var(--bg2);color:var(--text-dim);
-             border-radius:9px;cursor:pointer;font-size:.85em;font-weight:600;
-             transition:all .15s;font-family:inherit;min-width:64px}
-    .dur-btn:hover{border-color:var(--border-hover);color:var(--text)}
-    .dur-btn.active{background:var(--accent);color:#000;border-color:var(--accent)}
+    /* Period buttons */
+    .field-label{font-size:.78em;color:var(--text-dim);font-weight:600;
+                 margin-bottom:8px;letter-spacing:.02em}
+    .period-row{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+    .period-btn{padding:11px 24px;border:1px solid var(--border);
+                background:#11161e;color:var(--text-dim);
+                border-radius:10px;cursor:pointer;font-size:.92em;font-weight:800;
+                transition:all .15s;font-family:inherit;min-width:90px}
+    .period-btn:hover{border-color:var(--border-hover);color:var(--text)}
+    .period-btn.active{background:var(--yellow);color:#1a1a1a;border-color:var(--yellow)}
 
-    .legend{display:flex;gap:14px;flex-wrap:wrap;margin-bottom:14px;font-size:.78em;color:var(--text-dim)}
-    .legend .key{display:flex;align-items:center;gap:6px}
-    .legend .dot{width:10px;height:10px;border-radius:3px}
-    .legend .dot.btc{background:var(--btc)} .legend .dot.gmt{background:var(--gmt)} .legend .dot.th{background:var(--th)}
+    /* Quick-fill */
+    .quick-row{display:flex;gap:10px;align-items:center;margin-bottom:16px;flex-wrap:wrap}
+    .quick-row .lbl{font-size:.85em;color:var(--text-dim);margin-right:4px}
+    .quick-chip{display:inline-flex;align-items:center;gap:7px;
+                background:#11161e;border:1px solid var(--border);
+                color:var(--text);padding:7px 14px;border-radius:8px;
+                cursor:pointer;font-size:.83em;font-weight:600;font-family:inherit;
+                transition:all .15s}
+    .quick-chip:hover{border-color:var(--border-hover)}
+    .quick-chip .dot{width:8px;height:8px;border-radius:50%}
+    .quick-chip.btc .dot{background:var(--btc)}
+    .quick-chip.gmt .dot{background:var(--gmt)}
+    .quick-chip.th  .dot{background:var(--th)}
 
-    .month-row{display:grid;grid-template-columns:80px 1fr;align-items:center;
-               gap:14px;padding:10px 0;border-bottom:1px dashed var(--border)}
-    .month-row:last-child{border-bottom:none}
-    .month-label{font-size:.78em;color:var(--text-dim);font-weight:600;letter-spacing:.04em}
-    .month-label.locked{color:#4a5260;font-style:italic}
-    .slots{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
-    .slot{position:relative;padding:11px 8px;text-align:center;border-radius:8px;
-          font-size:.8em;font-weight:700;cursor:pointer;border:1px solid transparent;
-          background:rgba(255,255,255,.03);color:var(--text-dim);
-          user-select:none;transition:all .12s;display:flex;align-items:center;
-          justify-content:center;gap:6px}
-    .slot:hover{background:rgba(255,255,255,.06);color:var(--text)}
-    .slot.btc{background:rgba(247,147,26,.15);color:var(--btc);border-color:rgba(247,147,26,.4)}
-    .slot.gmt{background:rgba(88,166,255,.15);color:var(--gmt);border-color:rgba(88,166,255,.4)}
-    .slot.th {background:rgba(188,140,255,.15);color:var(--th); border-color:rgba(188,140,255,.4)}
-    .slot.disabled{opacity:.45;pointer-events:none}
-    .slot .order{position:absolute;top:3px;left:5px;font-size:.62em;color:rgba(255,255,255,.35);font-weight:800}
+    /* Auto-fill banner */
+    .auto-fill{display:flex;align-items:center;justify-content:space-between;
+               gap:12px;padding:14px 18px;background:#0c1118;
+               border:1px solid var(--border);border-radius:10px;
+               margin-bottom:18px;flex-wrap:wrap}
+    .auto-fill .text{font-size:.86em;color:var(--text);font-weight:600}
+    .auto-fill .hint{color:var(--text-dim);font-weight:400;font-size:.92em}
+    .auto-fill .btns{display:flex;gap:8px;flex-wrap:wrap}
+    .auto-btn{padding:8px 14px;border-radius:8px;font-size:.8em;font-weight:700;
+              cursor:pointer;border:1px solid;font-family:inherit;display:flex;
+              align-items:center;gap:6px;transition:transform .1s}
+    .auto-btn:hover{transform:translateY(-1px)}
+    .auto-btn.to-th  {background:rgba(63,185,80,.1); color:var(--th); border-color:var(--th)}
+    .auto-btn.to-btc {background:rgba(247,147,26,.1);color:var(--btc);border-color:var(--btc)}
 
-    .day-row{display:grid;grid-template-columns:repeat(7,1fr);gap:8px}
+    /* Slots — month/week rows */
+    .slot-row-wrap{display:flex;flex-direction:column;gap:10px}
+    .slot-row{display:grid;grid-template-columns:90px 1fr;gap:14px;align-items:stretch}
+    .slot-row .row-label{font-size:.7em;color:var(--text-dim);font-weight:700;
+       letter-spacing:.06em;display:flex;align-items:center;padding:0 6px}
+    .slot-row.locked .row-label{color:var(--text-mute);font-style:italic}
+    .slot-cells{display:grid;gap:10px}
+    .slot-cells.cells-4{grid-template-columns:repeat(4,1fr)}
+    .slot-cells.cells-7{grid-template-columns:repeat(7,1fr)}
+    .slot{background:#11161e;border:2px solid transparent;border-radius:11px;
+          padding:14px 8px;text-align:center;cursor:pointer;user-select:none;
+          font-family:inherit;transition:all .15s;position:relative;
+          display:flex;flex-direction:column;justify-content:center;align-items:center;gap:4px;min-height:62px}
+    .slot:hover{transform:translateY(-1px);background:#161c25}
+    .slot .num{font-size:.62em;color:var(--text-mute);font-weight:700;letter-spacing:.04em}
+    .slot .lbl{font-size:1em;font-weight:800;letter-spacing:.02em}
+    .slot.btc{border-color:var(--btc);color:var(--btc)}
+    .slot.gmt{border-color:var(--gmt);color:var(--gmt)}
+    .slot.th {border-color:var(--th); color:var(--th)}
+    .slot.disabled{opacity:.5;pointer-events:none}
 
-    .inputs{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
-    .input-field label{display:block;color:var(--text-dim);font-size:.74em;
-                       margin-bottom:5px;font-weight:600;letter-spacing:.03em;text-transform:uppercase}
-    .input-field input{width:100%;background:#0d1117;border:1px solid var(--border);
-                       color:var(--text);padding:9px 11px;border-radius:8px;
-                       font-size:.92em;font-family:inherit;outline:none;transition:all .15s}
-    .input-field input:focus{border-color:var(--accent)}
-    .input-field .unit{color:var(--text-dim);font-size:.72em;margin-top:3px}
+    /* Price overrides */
+    .grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}
+    @media (max-width:780px){.grid-3{grid-template-columns:1fr 1fr}}
+    @media (max-width:520px){.grid-3{grid-template-columns:1fr}}
+    .price-input{display:flex;flex-direction:column;gap:6px}
+    .price-input label{font-size:.82em;color:var(--text-dim);font-weight:600}
+    .price-input input{background:#0a0e14;border:1px solid var(--border);
+                       color:var(--text);padding:11px 14px;border-radius:8px;
+                       font-size:.95em;font-family:inherit;outline:none;width:100%}
+    .price-input input:focus{border-color:var(--yellow)}
+    .price-input .sub{font-size:.74em;color:var(--text-mute)}
 
-    .run-row{display:flex;gap:10px;margin-bottom:18px}
-    .btn-run{flex:1;background:linear-gradient(90deg,var(--accent),#ffb84d);
-             color:#000;border:none;padding:14px 20px;border-radius:10px;
-             font-size:.95em;font-weight:800;cursor:pointer;
-             transition:filter .15s;font-family:inherit;letter-spacing:.02em}
-    .btn-run:hover{filter:brightness(1.08)}
-    .btn-reset{background:transparent;border:1px solid var(--border);
-               color:var(--text-dim);padding:14px 18px;border-radius:10px;
-               font-size:.85em;cursor:pointer;font-family:inherit}
-    .btn-reset:hover{color:var(--text);border-color:var(--text-dim)}
+    /* Run button */
+    .btn-run{width:100%;background:var(--yellow);color:#1a1a1a;border:none;
+             padding:16px 20px;border-radius:11px;font-size:1.02em;font-weight:800;
+             cursor:pointer;font-family:inherit;letter-spacing:.02em;
+             transition:filter .15s;border:2px solid #76b6ff}
+    .btn-run:hover{filter:brightness(1.05)}
 
-    .results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:12px;margin-bottom:18px}
-    .stat{background:var(--card-solid);border:1px solid var(--border);border-radius:11px;padding:14px}
-    .stat .lbl{font-size:.7em;color:var(--text-dim);text-transform:uppercase;
-               letter-spacing:.06em;margin-bottom:5px;font-weight:600}
-    .stat .val{font-size:1.45rem;font-weight:800;letter-spacing:-.02em}
-    .stat .sub{font-size:.74em;color:var(--text-dim);margin-top:3px}
-    .stat.accent .val{color:var(--accent)}
-    .stat.green  .val{color:var(--green)}
-    .stat.purple .val{color:var(--purple)}
-    .stat.blue   .val{color:var(--accent2)}
-    .stat.red    .val{color:var(--red)}
+    /* Inputs row (mining params) */
+    .grid-mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
 
-    .chart-wrap{position:relative;background:var(--card-solid);
-                border:1px solid var(--border);border-radius:11px;padding:18px;
-                overflow-x:auto}
-    .chart-wrap svg{width:100%;height:300px;display:block;min-width:520px}
-    .chart-legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:10px;
-                  font-size:.78em;color:var(--text-dim)}
+    /* Results */
+    .results-title{font-size:1.05rem;font-weight:800;color:var(--yellow);
+                   display:flex;align-items:center;gap:10px;margin-bottom:14px}
+    .results-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:14px;margin-bottom:18px}
+    .stat{background:#0c1118;border:1px solid var(--border);border-radius:12px;padding:18px}
+    .stat .lbl{font-size:.74em;color:var(--text-dim);text-transform:uppercase;
+               letter-spacing:.08em;margin-bottom:6px;font-weight:700}
+    .stat .val{font-size:1.7rem;font-weight:800;letter-spacing:-.02em;line-height:1.1}
+    .stat .sub{font-size:.78em;color:var(--text-dim);margin-top:6px;line-height:1.5}
+    .stat.btc .val{color:var(--btc)}
+    .stat.gmt .val{color:var(--gmt)}
+    .stat.th  .val{color:var(--th)}
+    .stat.red .val{color:var(--red)}
+    .stat.green .val{color:var(--green)}
+
+    .summary-row{display:flex;justify-content:space-between;align-items:flex-start;
+                 padding:18px 0;border-top:1px solid var(--border);
+                 border-bottom:1px solid var(--border);gap:24px;flex-wrap:wrap}
+    .summary-block .ttl{font-size:.84em;color:var(--text-dim);margin-bottom:6px}
+    .summary-block .num{font-size:1.6rem;font-weight:800;color:var(--green);letter-spacing:-.02em}
+    .summary-block .num.red{color:var(--red)}
+    .summary-block .ext{font-size:.78em;color:var(--text-dim);margin-top:4px}
+    .summary-block.right{text-align:right}
+
+    .meta{margin-top:14px;font-size:.85em;color:var(--text-dim);line-height:1.7}
+    .meta strong{color:var(--text)}
+
+    .chart-wrap{position:relative;background:#0c1118;border:1px solid var(--border);
+                border-radius:12px;padding:18px;margin-top:20px;overflow-x:auto}
+    .chart-wrap svg{width:100%;height:280px;display:block;min-width:540px}
+    .chart-legend{display:flex;gap:16px;flex-wrap:wrap;margin-top:10px;font-size:.8em;color:var(--text-dim)}
     .chart-legend .dot{width:10px;height:10px;border-radius:3px;display:inline-block;vertical-align:middle;margin-right:5px}
 
-    table.timeline{width:100%;border-collapse:collapse;font-size:.85em;margin-top:8px}
-    table.timeline th,table.timeline td{padding:9px 10px;text-align:right;
-                       border-bottom:1px solid var(--border)}
+    table.timeline{width:100%;border-collapse:collapse;font-size:.86em;margin-top:8px}
+    table.timeline th,table.timeline td{padding:10px 12px;text-align:right;border-bottom:1px solid var(--border)}
     table.timeline th:first-child,table.timeline td:first-child{text-align:left}
-    table.timeline th{color:var(--text-dim);font-weight:600;font-size:.72em;
-       text-transform:uppercase;letter-spacing:.05em;background:rgba(255,255,255,.02)}
-    table.timeline td.green{color:var(--green)}
-    table.timeline td.purple{color:var(--purple)}
-    table.timeline td.accent{color:var(--accent)}
-    table.timeline td.blue{color:var(--accent2)}
+    table.timeline th{color:var(--text-dim);font-weight:700;font-size:.72em;
+       text-transform:uppercase;letter-spacing:.06em;background:rgba(255,255,255,.02)}
+    table.timeline td.btc{color:var(--btc)}
+    table.timeline td.gmt{color:var(--gmt)}
+    table.timeline td.th {color:var(--th)}
     table.timeline td.red{color:var(--red)}
 
-    .empty{padding:40px;text-align:center;color:var(--text-dim);font-size:.9em}
+    .empty{padding:40px;text-align:center;color:var(--text-dim)}
 
     @media (max-width:680px){
-      .month-row{grid-template-columns:1fr}
-      .month-label{margin-bottom:4px}
+      .slot-row{grid-template-columns:1fr}
+      .row-label{margin-bottom:4px}
     }
   </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
+    <!-- Top bar -->
+    <div class="topbar">
       <div class="brand">
         <img src="icon.png" alt="">
         <div>
           <h1>GoMining <span class="accent">Simulator</span></h1>
-          <p>Reinvestment Planner <span class="wip">WIP</span></p>
+          <p>Reinvestment Strategy Lab</p>
         </div>
       </div>
-      <a href="index.html" class="back">← Back to app</a>
-    </header>
-
-    <div class="hero">
-      <h2>Reinvestment <span class="accent">Strategy Planner</span></h2>
-      <p>In GoMining solo mode you mine <strong>one</strong> reward type at a time — BTC, GMT, or TH. Plan which mode to run each period and watch how the order changes outcomes (TH today = more rewards next period).</p>
-    </div>
-
-    <!-- Mode tabs -->
-    <div class="mode-tabs" id="mode-tabs">
-      <button class="mode-tab active" data-mode="monthly">Monthly · 6-month projection</button>
-      <button class="mode-tab" data-mode="daily">Daily · weekly pattern</button>
-    </div>
-
-    <!-- DURATION -->
-    <div class="card">
-      <h3 id="dur-title">Editable months</h3>
-      <div class="desc" id="dur-desc"></div>
-      <div class="duration-row" id="duration-row"></div>
-    </div>
-
-    <!-- STRATEGY -->
-    <div class="card">
-      <h3>Strategy <span class="hint">Click a slot to cycle BTC → GMT → TH. Order matters.</span></h3>
-      <div class="legend">
-        <div class="key"><div class="dot btc"></div>BTC mode — solo-mine BTC</div>
-        <div class="key"><div class="dot gmt"></div>GMT mode — solo-mine GMT</div>
-        <div class="key"><div class="dot th"></div>TH mode — auto-convert rewards into added TH/s</div>
+      <div class="pillbar">
+        <span class="summary-pill"><span class="val" id="topbar-net">$0.00</span> net today</span>
+        <span class="label">Fees:</span>
+        <div class="seg" id="seg-fees">
+          <button class="seg-btn fees-gmt active" data-fees="gmt">GMT</button>
+          <button class="seg-btn fees-btc" data-fees="btc">BTC</button>
+        </div>
+        <div class="seg" id="seg-cur">
+          <button class="seg-btn cur-usd active" data-cur="usd">$</button>
+          <button class="seg-btn cur-btc" data-cur="btc">₿</button>
+          <button class="seg-btn cur-gmt" data-cur="gmt">G</button>
+        </div>
+        <a href="index.html" class="back">← Back</a>
       </div>
-      <div id="strategy-editor"></div>
     </div>
 
-    <!-- INPUTS — match index.html GoMining formula -->
+    <!-- Strategy Lab -->
     <div class="card">
-      <h3>Mining parameters <span class="hint">Match these to your real setup or pull from app.gomining.com</span></h3>
-      <div class="desc">Formula matches the main simulator. Service cost is fixed at $0.0089/TH/day per GoMining.</div>
-      <div class="inputs">
-        <div class="input-field">
-          <label>Starting hashrate</label>
+      <div class="card-title"><span class="icon">🧪</span>Reinvestment Strategy Lab</div>
+      <div class="card-desc">In GoMining solo mode you mine <strong>one</strong> reward type at a time. Build a per-period plan and see what you'd earn — order matters, since TH today means more rewards next period.</div>
+
+      <!-- Mode tabs (hidden minimal) -->
+      <div style="margin-bottom:12px">
+        <div class="field-label">Mode</div>
+        <div class="seg" id="mode-tabs" style="background:#0c1118;border-color:var(--border)">
+          <button class="seg-btn active" data-mode="monthly" style="background:var(--accent);color:#000">Monthly · 6-month projection</button>
+          <button class="seg-btn" data-mode="daily">Daily · weekly pattern</button>
+        </div>
+      </div>
+
+      <!-- Period -->
+      <div class="field-label" id="dur-label">Period</div>
+      <div class="period-row" id="duration-row"></div>
+
+      <!-- Quick fill -->
+      <div class="quick-row">
+        <span class="lbl">Quick fill:</span>
+        <button class="quick-chip btc" data-fill="btc"><span class="dot"></span>All BTC</button>
+        <button class="quick-chip gmt" data-fill="gmt"><span class="dot"></span>All GMT</button>
+        <button class="quick-chip th"  data-fill="th"><span class="dot"></span>All TH</button>
+      </div>
+
+      <!-- Auto-fill -->
+      <div class="auto-fill">
+        <div class="text">Auto-fill: <span class="hint">GMT-mining first to cover all fees, then switch to your target.</span></div>
+        <div class="btns">
+          <button class="auto-btn to-th"  data-auto="th">⚡ GMT → TH</button>
+          <button class="auto-btn to-btc" data-auto="btc">⚡ GMT → BTC</button>
+        </div>
+      </div>
+
+      <!-- Slots -->
+      <div id="strategy-editor" class="slot-row-wrap"></div>
+    </div>
+
+    <!-- Mining Parameters (advanced) -->
+    <div class="card">
+      <div class="card-title"><span class="icon">⛏️</span>Mining parameters</div>
+      <div class="card-desc">Match these to your real setup. Formula matches the main simulator.</div>
+      <div class="grid-mini">
+        <div class="price-input">
+          <label>Starting hashrate (TH/s)</label>
           <input type="number" id="in-th" value="100" step="1" min="1">
-          <div class="unit">TH/s today</div>
         </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Sat / TH / day (PR)</label>
           <input type="number" id="in-sat" value="47" step="1" min="0">
-          <div class="unit">Pool reward — check your dashboard</div>
         </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Efficiency (W/TH)</label>
           <input type="number" id="in-eff" value="15" step="0.5" min="1">
-          <div class="unit">Lower = newer-gen miner</div>
         </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Electricity ($/kWh)</label>
           <input type="number" id="in-elec" value="0.05" step="0.01" min="0">
-          <div class="unit">GoMining default</div>
         </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Total discount (%)</label>
           <input type="number" id="in-disc" value="10" step="1" min="0" max="50">
-          <div class="unit">Maintenance + VIP + streak + solo</div>
         </div>
-        <div class="input-field">
-          <label>BTC price (USD)</label>
-          <input type="number" id="in-btc-price" value="95000" step="100" min="0">
-          <div class="unit">Used for portfolio value</div>
-        </div>
-        <div class="input-field">
-          <label>GMT price (USD)</label>
-          <input type="number" id="in-gmt-price" value="0.30" step="0.01" min="0">
-          <div class="unit">Used for portfolio + fees</div>
-        </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Reinvest cost (TH mode)</label>
           <input type="number" id="in-th-reinv" value="11" step="0.10" min="0.01">
-          <div class="unit">$/TH when mining in TH mode (~5% bonus vs direct)</div>
         </div>
-        <div class="input-field">
+        <div class="price-input">
           <label>Market TH price</label>
           <input type="number" id="in-th-market" value="22" step="0.10" min="0.01">
-          <div class="unit">Marketplace value used for portfolio totals</div>
         </div>
       </div>
     </div>
 
-    <div class="run-row">
-      <button class="btn-run" id="btn-run">Run simulation</button>
-      <button class="btn-reset" id="btn-reset">Reset strategy</button>
+    <!-- Price overrides -->
+    <div class="card">
+      <div class="card-title"><span class="icon">💱</span>Price Overrides (optional)</div>
+      <div class="card-desc">Test scenarios — what if BTC pumps or GMT moves? Leave blank to use current snapshot.</div>
+      <div class="grid-3">
+        <div class="price-input">
+          <label>BTC Price ($)</label>
+          <input type="number" id="in-btc-price" value="95000" step="100" min="0">
+          <div class="sub">Used for portfolio value and BTC-fee mode.</div>
+        </div>
+        <div class="price-input">
+          <label>GMT Price ($)</label>
+          <input type="number" id="in-gmt-price" value="0.30" step="0.01" min="0">
+          <div class="sub">Used for portfolio + GMT-fee mode.</div>
+        </div>
+        <div class="price-input">
+          <label>Cost per TH ($)</label>
+          <input type="number" id="in-th-cost-display" value="12.34" step="0.01" min="0">
+          <div class="sub">Display only — reinvest rate above is what's actually used.</div>
+        </div>
+      </div>
     </div>
 
-    <!-- RESULTS -->
-    <div class="card" id="results-card">
-      <h3>Projected outcome <span class="hint" id="result-hint">Run a simulation to see the projection</span></h3>
-      <div id="results-empty" class="empty">No simulation yet. Click <strong>Run simulation</strong> above.</div>
+    <button class="btn-run" id="btn-run">Run Simulation</button>
+
+    <!-- Results -->
+    <div class="card" id="results-card" style="margin-top:14px">
+      <div class="results-title">📊 <span id="results-title-text">Results</span></div>
+      <div id="results-empty" class="empty">No simulation yet. Click <strong>Run Simulation</strong> above.</div>
       <div id="results-content" style="display:none">
         <div class="results-grid" id="stats-grid"></div>
-        <div class="chart-wrap">
-          <svg id="chart" viewBox="0 0 800 300" preserveAspectRatio="none"></svg>
-          <div class="chart-legend">
-            <div class="key"><span class="dot" style="background:var(--purple)"></span>Hashrate (TH/s)</div>
-            <div class="key"><span class="dot" style="background:var(--accent)"></span>BTC balance (USD value)</div>
-            <div class="key"><span class="dot" style="background:var(--accent2)"></span>GMT balance (USD value)</div>
-            <div class="key"><span class="dot" style="background:var(--green)"></span>Total portfolio (USD)</div>
+
+        <div class="summary-row">
+          <div class="summary-block">
+            <div class="ttl">Net cash profit (BTC + GMT − fees)</div>
+            <div class="num" id="sum-net">$0.00</div>
+          </div>
+          <div class="summary-block right">
+            <div class="ttl">+ Hashrate gained</div>
+            <div class="num" id="sum-th">+0.00 TH</div>
+            <div class="ext" id="sum-th-value">asset, paper value ≈ $0.00</div>
           </div>
         </div>
 
-        <h3 style="margin-top:20px">Period-by-period</h3>
+        <div class="meta" id="meta-line"></div>
+
+        <div class="chart-wrap">
+          <svg id="chart" viewBox="0 0 800 280" preserveAspectRatio="none"></svg>
+          <div class="chart-legend">
+            <div class="key"><span class="dot" style="background:var(--th)"></span>Hashrate (TH/s)</div>
+            <div class="key"><span class="dot" style="background:var(--btc)"></span>BTC balance (USD value)</div>
+            <div class="key"><span class="dot" style="background:var(--gmt)"></span>GMT balance (USD value)</div>
+            <div class="key"><span class="dot" style="background:var(--accent2)"></span>Total portfolio (USD)</div>
+          </div>
+        </div>
+
+        <div class="results-title" style="margin-top:24px">📋 <span>Period-by-period</span></div>
         <div style="overflow-x:auto;margin-top:8px">
           <table class="timeline" id="timeline-table">
             <thead><tr id="timeline-head"></tr></thead>
@@ -284,48 +368,71 @@
 
 <script>
 //-----------------------------------------------------------------
-// Reinvestment Planner — solo-mode aware (mines ONE thing per period)
-//-----------------------------------------------------------------
-// Math model lifted from the main simulator (calcDailyReward):
-//   PR_gmt    = sat/TH × 1e-8 × btcPrice / gmtPrice          [GMT/TH/day]
-//   C1_gmt    = elec × 24 × W/TH / gmtPrice / 1000           [pre-discount]
-//   C2_gmt    = SERVICE_COST_PER_TH / gmtPrice               [pre-discount]
-//   net_gmt/TH/day = PR_gmt - (C1_gmt + C2_gmt) × (1 - discount)
+//  Reinvestment Strategy Lab
+//  Math model lifted from index.html calcDailyReward.
+//  Solo-mode aware: each slot = ONE mining mode for that period.
 //
-// Per slot we choose ONE solo mode:
-//   BTC : net rewards land as BTC      (btc_balance grows)
-//   GMT : net rewards land as GMT      (gmt_balance grows)
-//   TH  : net rewards convert to TH    (hashrate grows; reinvest_cost ≈ $11/TH)
+//  PR_gmt    = (sat/TH × 1e-8) × btcPrice / gmtPrice            [GMT/TH/day pre-fee]
+//  C1_gmt    = elec × 24 × W/TH / gmtPrice / 1000 × (1 - disc)  [GMT/TH/day fees]
+//  C2_gmt    = SERVICE_COST_PER_TH / gmtPrice × (1 - disc)
 //
-// Hashrate grows ONLY on TH-mode periods; that compounds future yield.
-// BTC and GMT balances are non-productive (they sit there until you act).
+//  Fee mode (GMT vs BTC) decides which currency the fees are
+//  *paid out of* — not whether they exist. GoMining nets fees from
+//  whichever balance you've set as the fee currency.
 //-----------------------------------------------------------------
 
-const SERVICE_COST_PER_TH = 0.0089; // $/TH/day — same constant as main app
+const SERVICE_COST_PER_TH = 0.0089;
 const SLOT_CYCLE = ["btc", "gmt", "th"];
 const MAX_MONTHS = 6;
 const MAX_DAILY_MONTHS = 3;
 const SLOTS_PER_MONTH = 4;
 const DAYS_PER_WEEK = 7;
-const DAYS_PER_WEEK_PERIOD = 7;     // 1 monthly slot = 1 week
-const DAYS_PER_MONTH = 30;          // for daily horizon
+const DAYS_PER_WEEK_PERIOD = 7;
+const DAYS_PER_MONTH = 30;
 
 const state = {
   mode: "monthly",
   monthlyEditCount: 1,
-  monthly: [],
+  monthly: [["btc","btc","th","th"]],
   dailyMonths: 1,
-  daily: [],
+  daily: ["btc","btc","gmt","th","th","btc","btc"],
+  feeMode: "gmt",     // "gmt" | "btc"
+  currency: "usd",    // "usd" | "btc" | "gmt"
 };
-
-function defaultMonth() { return ["btc","btc","th","th"]; }
-function defaultWeek()  { return ["btc","btc","gmt","th","th","btc","btc"]; }
-state.monthly = [defaultMonth()];
-state.daily   = defaultWeek();
 
 const $ = sel => document.querySelector(sel);
 
-// ---- duration buttons ----
+// ---- top-bar segmented controls ----
+$("#seg-fees").addEventListener("click", e => {
+  const b = e.target.closest(".seg-btn"); if (!b) return;
+  state.feeMode = b.dataset.fees;
+  $("#seg-fees").querySelectorAll(".seg-btn").forEach(x => x.classList.toggle("active", x === b));
+});
+$("#seg-cur").addEventListener("click", e => {
+  const b = e.target.closest(".seg-btn"); if (!b) return;
+  state.currency = b.dataset.cur;
+  $("#seg-cur").querySelectorAll(".seg-btn").forEach(x => x.classList.toggle("active", x === b));
+});
+
+// ---- mode + duration ----
+document.querySelectorAll("#mode-tabs .seg-btn").forEach(tab => {
+  tab.addEventListener("click", () => {
+    document.querySelectorAll("#mode-tabs .seg-btn").forEach(t => {
+      t.classList.remove("active");
+      t.style.background = "transparent";
+      t.style.color = "var(--text-dim)";
+    });
+    tab.classList.add("active");
+    tab.style.background = "var(--accent)";
+    tab.style.color = "#000";
+    state.mode = tab.dataset.mode;
+    renderDurationButtons();
+    renderEditor();
+  });
+});
+function defaultMonth(){return ["btc","btc","th","th"]}
+function defaultWeek(){ return ["btc","btc","gmt","th","th","btc","btc"]}
+
 function renderDurationButtons() {
   const row = $("#duration-row");
   const max = state.mode === "monthly" ? MAX_MONTHS : MAX_DAILY_MONTHS;
@@ -333,40 +440,23 @@ function renderDurationButtons() {
   row.innerHTML = "";
   for (let i = 1; i <= max; i++) {
     const b = document.createElement("button");
-    b.className = "dur-btn" + (i === cur ? " active" : "");
-    b.textContent = i + " " + (i === 1 ? "month" : "months");
+    b.className = "period-btn" + (i === cur ? " active" : "");
+    b.textContent = i + (state.mode === "monthly" ? (i===1?" month":" months") : (i===1?" month":" months"));
     b.addEventListener("click", () => {
       if (state.mode === "monthly") {
-        const prev = state.monthly;
-        const next = [];
+        const prev = state.monthly, next = [];
         for (let m = 0; m < i; m++) next.push(prev[m] ? prev[m].slice() : defaultMonth());
-        state.monthly = next;
-        state.monthlyEditCount = i;
-      } else {
-        state.dailyMonths = i;
-      }
-      renderDurationButtons();
-      renderEditor();
+        state.monthly = next; state.monthlyEditCount = i;
+      } else state.dailyMonths = i;
+      renderDurationButtons(); renderEditor();
     });
     row.appendChild(b);
   }
-  if (state.mode === "monthly") {
-    $("#dur-title").innerHTML =
-      'Editable months <span class="hint">Fewer than 6 = pattern repeats to fill the projection</span>';
-    $("#dur-desc").innerHTML =
-      'Each month has 4 weekly slots. Click a slot to cycle ' +
-      '<span style="color:var(--btc)">BTC</span> → ' +
-      '<span style="color:var(--gmt)">GMT</span> → ' +
-      '<span style="color:var(--th)">TH</span>.';
-  } else {
-    $("#dur-title").innerHTML =
-      'Projection length <span class="hint">How many months to repeat your daily pattern over</span>';
-    $("#dur-desc").innerHTML =
-      'Set 7 daily slots (Mon → Sun). The pattern repeats every week for the chosen number of months.';
-  }
+  $("#dur-label").textContent = state.mode === "monthly"
+    ? "Editable months — fewer than 6 = pattern repeats to fill the projection"
+    : "Projection length — pattern repeats every week";
 }
 
-// ---- strategy editor ----
 function renderEditor() {
   const ed = $("#strategy-editor");
   ed.innerHTML = "";
@@ -376,103 +466,125 @@ function renderEditor() {
       const sourceIdx  = m % state.monthlyEditCount;
       const month = state.monthly[sourceIdx];
       const row = document.createElement("div");
-      row.className = "month-row";
-      const label = document.createElement("div");
-      label.className = "month-label" + (isEditable ? "" : " locked");
-      label.innerHTML = `Month ${m + 1}` +
-        (isEditable ? "" : `<br><span style="font-size:.78em;font-weight:400">cycles M${sourceIdx + 1}</span>`);
-      const slots = document.createElement("div");
-      slots.className = "slots";
+      row.className = "slot-row" + (isEditable ? "" : " locked");
+      row.innerHTML = `
+        <div class="row-label">${isEditable ? `MONTH ${m + 1}` : `↻ M${sourceIdx + 1}`}</div>
+        <div class="slot-cells cells-4"></div>`;
+      const cells = row.querySelector(".slot-cells");
       for (let s = 0; s < SLOTS_PER_MONTH; s++) {
         const slot = document.createElement("button");
         slot.className = "slot " + month[s] + (isEditable ? "" : " disabled");
-        slot.innerHTML = `<span class="order">${s + 1}</span>${month[s].toUpperCase()}`;
+        slot.innerHTML = `<span class="num">W${s + 1}</span><span class="lbl">${month[s].toUpperCase()}</span>`;
         slot.addEventListener("click", () => {
           if (!isEditable) return;
           const cur = state.monthly[sourceIdx][s];
           state.monthly[sourceIdx][s] = SLOT_CYCLE[(SLOT_CYCLE.indexOf(cur) + 1) % SLOT_CYCLE.length];
           renderEditor();
         });
-        slots.appendChild(slot);
+        cells.appendChild(slot);
       }
-      row.appendChild(label);
-      row.appendChild(slots);
       ed.appendChild(row);
     }
   } else {
+    const days = ["MON","TUE","WED","THU","FRI","SAT","SUN"];
     const row = document.createElement("div");
-    row.className = "month-row";
-    const label = document.createElement("div");
-    label.className = "month-label";
-    label.textContent = "Mon-Sun";
-    const slots = document.createElement("div");
-    slots.className = "day-row";
-    const dayNames = ["Mon","Tue","Wed","Thu","Fri","Sat","Sun"];
+    row.className = "slot-row";
+    row.innerHTML = `<div class="row-label">WEEK 1</div><div class="slot-cells cells-7"></div>`;
+    const cells = row.querySelector(".slot-cells");
     for (let i = 0; i < DAYS_PER_WEEK; i++) {
       const slot = document.createElement("button");
       slot.className = "slot " + state.daily[i];
-      slot.innerHTML = `<span class="order">${dayNames[i]}</span>${state.daily[i].toUpperCase()}`;
+      slot.innerHTML = `<span class="num">D${i+1}</span><span class="lbl">${state.daily[i].toUpperCase()}</span>`;
       slot.addEventListener("click", () => {
         const cur = state.daily[i];
         state.daily[i] = SLOT_CYCLE[(SLOT_CYCLE.indexOf(cur) + 1) % SLOT_CYCLE.length];
         renderEditor();
       });
-      slots.appendChild(slot);
+      cells.appendChild(slot);
     }
-    row.appendChild(label);
-    row.appendChild(slots);
     ed.appendChild(row);
   }
 }
 
-// ---- mode + reset ----
-document.querySelectorAll(".mode-tab").forEach(tab => {
-  tab.addEventListener("click", () => {
-    document.querySelectorAll(".mode-tab").forEach(t => t.classList.remove("active"));
-    tab.classList.add("active");
-    state.mode = tab.dataset.mode;
-    renderDurationButtons();
+// ---- quick-fill ----
+document.querySelectorAll(".quick-chip").forEach(chip => {
+  chip.addEventListener("click", () => {
+    const t = chip.dataset.fill;
+    if (state.mode === "monthly") {
+      state.monthly = state.monthly.map(_ => Array(SLOTS_PER_MONTH).fill(t));
+    } else {
+      state.daily = Array(DAYS_PER_WEEK).fill(t);
+    }
     renderEditor();
   });
 });
-$("#btn-reset").addEventListener("click", () => {
-  if (state.mode === "monthly")
-    state.monthly = Array.from({length: state.monthlyEditCount}, defaultMonth);
-  else
-    state.daily = defaultWeek();
+
+// ---- auto-fill: cover fees with GMT, then switch to target ----
+// Heuristic: estimate total fees over horizon at starting hashrate, then
+// figure out how many periods of GMT mining cover it, place those FIRST,
+// fill the rest with the target type. Quick-and-dirty but useful UI.
+function autoFill(target) {
+  const p = readInputs();
+  const y = perTHPerDay(p);
+  // total slot count and per-slot day length
+  const slots = state.mode === "monthly"
+    ? MAX_MONTHS * SLOTS_PER_MONTH
+    : state.dailyMonths * DAYS_PER_MONTH;
+  const periodDays = state.mode === "monthly" ? DAYS_PER_WEEK_PERIOD : 1;
+  // total fees over horizon (GMT)
+  const totalFeesGmt = y.feesGmtPerTH * p.th0 * periodDays * slots;
+  // GMT mined per slot (gross GMT, not net — auto-fill assumes gross
+  // covers fees; that's the whole point)
+  const gmtPerSlot = y.grossGmtPerTH * p.th0 * periodDays;
+  const slotsNeeded = gmtPerSlot > 0
+    ? Math.ceil(totalFeesGmt / gmtPerSlot)
+    : 0;
+  // build sequence
+  if (state.mode === "monthly") {
+    let placed = 0;
+    state.monthly = state.monthly.map((m, mi) =>
+      m.map((_, si) => (placed++ < slotsNeeded) ? "gmt" : target)
+    );
+  } else {
+    state.daily = state.daily.map((_, i) => (i < Math.min(slotsNeeded, DAYS_PER_WEEK)) ? "gmt" : target);
+  }
   renderEditor();
-});
+}
+document.querySelectorAll(".auto-btn").forEach(b =>
+  b.addEventListener("click", () => autoFill(b.dataset.auto)));
 
 // =================================================================
-//  SIMULATION ENGINE — uses GoMining's calcDailyReward formula
+//  SIMULATION
 // =================================================================
-
 function readInputs() {
   return {
-    th0:        Math.max(0, +$("#in-th").value || 0),
-    satPerTH:   Math.max(0, +$("#in-sat").value || 0),
-    eff:        Math.max(1, +$("#in-eff").value || 15),
-    elec:       Math.max(0, +$("#in-elec").value || 0),
-    discPct:    Math.max(0, +$("#in-disc").value || 0),
-    btcUsd:     Math.max(0, +$("#in-btc-price").value || 0),
+    th0:        Math.max(0,   +$("#in-th").value || 0),
+    satPerTH:   Math.max(0,   +$("#in-sat").value || 0),
+    eff:        Math.max(1,   +$("#in-eff").value || 15),
+    elec:       Math.max(0,   +$("#in-elec").value || 0),
+    discPct:    Math.max(0,   +$("#in-disc").value || 0),
+    btcUsd:     Math.max(0,   +$("#in-btc-price").value || 0),
     gmtUsd:     Math.max(0.0001, +$("#in-gmt-price").value || 0.0001),
     thReinv:    Math.max(0.01, +$("#in-th-reinv").value || 11),
     thMarket:   Math.max(0.01, +$("#in-th-market").value || 22),
   };
 }
 
-// Per-TH per-day net reward, expressed three ways. Mirrors index.html
-// calcDailyReward but parameterised for our simulator state.
+// Per-TH per-day yield, broken into gross + fees so we can route fees
+// to whatever currency the user picked.
 function perTHPerDay(p) {
-  const discMult = 1 - p.discPct / 100;
+  const discMult    = 1 - p.discPct / 100;
   const prBtcPerTH  = p.satPerTH * 1e-8;
-  const prGmtPerTH  = prBtcPerTH * p.btcUsd / p.gmtUsd;          // before fees
+  const grossGmtPerTH = prBtcPerTH * p.btcUsd / p.gmtUsd;
+  const grossBtcPerTH = prBtcPerTH;
+  const grossUsdPerTH = grossGmtPerTH * p.gmtUsd;
   const c1GmtPerTH  = (p.elec * 24 * p.eff / p.gmtUsd / 1000) * discMult;
   const c2GmtPerTH  = (SERVICE_COST_PER_TH / p.gmtUsd)         * discMult;
-  const netGmtPerTH = prGmtPerTH - (c1GmtPerTH + c2GmtPerTH);
-  const netBtcPerTH = netGmtPerTH * p.gmtUsd / p.btcUsd;
-  const netUsdPerTH = netGmtPerTH * p.gmtUsd;
-  return { netGmtPerTH, netBtcPerTH, netUsdPerTH };
+  const feesGmtPerTH = c1GmtPerTH + c2GmtPerTH;
+  const feesBtcPerTH = feesGmtPerTH * p.gmtUsd / p.btcUsd;
+  const feesUsdPerTH = feesGmtPerTH * p.gmtUsd;
+  return { grossBtcPerTH, grossGmtPerTH, grossUsdPerTH,
+           feesBtcPerTH,  feesGmtPerTH,  feesUsdPerTH };
 }
 
 function buildSequence() {
@@ -480,17 +592,15 @@ function buildSequence() {
     const seq = [];
     for (let m = 0; m < MAX_MONTHS; m++) {
       const src = state.monthly[m % state.monthlyEditCount];
-      for (let s = 0; s < SLOTS_PER_MONTH; s++) {
+      for (let s = 0; s < SLOTS_PER_MONTH; s++)
         seq.push({ action: src[s], periodDays: DAYS_PER_WEEK_PERIOD, monthIdx: m, slotIdx: s });
-      }
     }
     return { seq, mode: "monthly" };
   } else {
     const seq = [];
-    const totalDays = state.dailyMonths * DAYS_PER_MONTH;
-    for (let d = 0; d < totalDays; d++) {
+    const days = state.dailyMonths * DAYS_PER_MONTH;
+    for (let d = 0; d < days; d++)
       seq.push({ action: state.daily[d % DAYS_PER_WEEK], periodDays: 1, dayIdx: d });
-    }
     return { seq, mode: "daily" };
   }
 }
@@ -498,124 +608,155 @@ function buildSequence() {
 function simulate() {
   const p = readInputs();
   const { seq, mode } = buildSequence();
-
-  const sim = { th: p.th0, btc: 0, gmt: 0, days: 0 };
-  const samples = [];
-  const rows = [];
-  let groupAgg = null;
+  const sim = { th: p.th0, btc: 0, gmt: 0, totalFeesGmt: 0, totalFeesBtc: 0, totalFeesUsd: 0 };
+  const samples = [], rows = []; let agg = null;
 
   for (let i = 0; i < seq.length; i++) {
     const slot = seq[i];
-
-    // 1. compute per-TH/day yields at CURRENT hashrate (net of fees)
     const y = perTHPerDay(p);
-    const periodNetGmt = y.netGmtPerTH * sim.th * slot.periodDays;
-    const periodNetBtc = y.netBtcPerTH * sim.th * slot.periodDays;
-    const periodNetUsd = y.netUsdPerTH * sim.th * slot.periodDays;
+    // gross over the period
+    const grossBtc = y.grossBtcPerTH * sim.th * slot.periodDays;
+    const grossGmt = y.grossGmtPerTH * sim.th * slot.periodDays;
+    const grossUsd = y.grossUsdPerTH * sim.th * slot.periodDays;
+    const feesGmt  = y.feesGmtPerTH  * sim.th * slot.periodDays;
+    const feesBtc  = y.feesBtcPerTH  * sim.th * slot.periodDays;
+    const feesUsd  = y.feesUsdPerTH  * sim.th * slot.periodDays;
 
-    // If the math goes negative (fees > rewards) the miner is bleeding —
-    // we DON'T magically print value: BTC/GMT balances can decrease
-    // (you'd be paying fees from existing balance), and TH mode produces
-    // 0 added TH (you can't reinvest a loss).
-    let addTh = 0, addBtc = 0, addGmt = 0;
+    // route gross to balance based on slot
+    let addBtc = 0, addGmt = 0, addTh = 0;
     if (slot.action === "btc") {
-      addBtc = periodNetBtc;             // can be negative
+      addBtc = grossBtc;
       sim.btc += addBtc;
     } else if (slot.action === "gmt") {
-      addGmt = periodNetGmt;             // can be negative
+      addGmt = grossGmt;
       sim.gmt += addGmt;
-    } else if (slot.action === "th") {
-      // TH mode: effective conversion at p.thReinv USD per TH.
-      // Negative net = nothing to convert → 0 TH added (and you're losing
-      // money to fees during this period — reflected in net USD < 0 but
-      // we don't decrement TH).
-      addTh = periodNetUsd > 0 ? (periodNetUsd / p.thReinv) : 0;
+    } else {
+      addTh = grossUsd > 0 ? grossUsd / p.thReinv : 0;
       sim.th += addTh;
     }
-    sim.days += slot.periodDays;
+    // route fees to chosen fee currency
+    if (state.feeMode === "gmt") {
+      sim.gmt -= feesGmt;
+      sim.totalFeesGmt += feesGmt;
+    } else {
+      sim.btc -= feesBtc;
+      sim.totalFeesBtc += feesBtc;
+    }
+    sim.totalFeesUsd += feesUsd;
 
-    // 2. snapshot
-    const portfolioUsd =
-      sim.btc * p.btcUsd +
-      sim.gmt * p.gmtUsd +
-      sim.th  * p.thMarket;
-
+    const portfolioUsd = sim.btc * p.btcUsd + sim.gmt * p.gmtUsd + sim.th * p.thMarket;
     samples.push({
-      idx: i,
-      th: sim.th,
-      btcUsd: sim.btc * p.btcUsd,
-      gmtUsd: sim.gmt * p.gmtUsd,
+      idx: i, th: sim.th,
+      btcUsd: sim.btc * p.btcUsd, gmtUsd: sim.gmt * p.gmtUsd,
       portfolio: portfolioUsd,
     });
 
-    // 3. group rows
+    // group rows
     const groupSize = mode === "monthly" ? SLOTS_PER_MONTH : DAYS_PER_WEEK;
     if (i % groupSize === 0) {
-      if (groupAgg) rows.push(groupAgg);
-      groupAgg = {
-        label: mode === "monthly" ? `Month ${slot.monthIdx + 1}` : `Week ${Math.floor(i / 7) + 1}`,
-        actions: [], thAdded: 0, btcAdded: 0, gmtAdded: 0, netUsd: 0,
+      if (agg) rows.push(agg);
+      agg = {
+        label: mode === "monthly" ? `Month ${slot.monthIdx + 1}` : `Week ${Math.floor(i/7)+1}`,
+        actions: [], thAdded:0, btcAdded:0, gmtAdded:0,
+        feesGmt:0, feesBtc:0, feesUsd:0, grossUsd:0,
       };
     }
-    groupAgg.actions.push(mode === "monthly" ? slot.action.toUpperCase() : slot.action[0].toUpperCase());
-    groupAgg.thAdded  += addTh;
-    groupAgg.btcAdded += addBtc;
-    groupAgg.gmtAdded += addGmt;
-    groupAgg.netUsd   += periodNetUsd;
-    groupAgg.endTh         = sim.th;
-    groupAgg.endBtcUsd     = sim.btc * p.btcUsd;
-    groupAgg.endGmtUsd     = sim.gmt * p.gmtUsd;
-    groupAgg.endPortfolio  = portfolioUsd;
+    agg.actions.push(mode === "monthly" ? slot.action.toUpperCase() : slot.action[0].toUpperCase());
+    agg.thAdded   += addTh;
+    agg.btcAdded  += addBtc;
+    agg.gmtAdded  += addGmt;
+    agg.feesGmt   += feesGmt;
+    agg.feesBtc   += feesBtc;
+    agg.feesUsd   += feesUsd;
+    agg.grossUsd  += grossUsd;
+    agg.endTh         = sim.th;
+    agg.endBtcUsd     = sim.btc * p.btcUsd;
+    agg.endGmtUsd     = sim.gmt * p.gmtUsd;
+    agg.endPortfolio  = portfolioUsd;
   }
-  if (groupAgg) rows.push(groupAgg);
-
+  if (agg) rows.push(agg);
   return { samples, rows, sim, params: p, mode };
 }
 
 // =================================================================
-//  RENDER
+//  RENDER RESULTS
 // =================================================================
 function fmtUsd(n)   { return (n < 0 ? "-$" : "$") + Math.abs(Math.round(n)).toLocaleString(); }
 function fmtNum(n,p=0){ return Number(n).toLocaleString(undefined,{maximumFractionDigits:p}); }
-function fmtBtc(n)   { return (n < 0 ? "-" : "") + Math.abs(n).toFixed(6) + " BTC"; }
+function fmtBtc(n)   { return (n < 0 ? "-" : "+") + Math.abs(n).toFixed(8); }
+function fmtGmt(n)   { return (n < 0 ? "-" : "+") + fmtNum(Math.abs(n), 2); }
 
 function renderResults(out) {
   $("#results-empty").style.display = "none";
   $("#results-content").style.display = "block";
-  $("#result-hint").textContent = out.mode === "monthly"
-    ? "6-month projection · 24 weekly slots"
-    : `${state.dailyMonths}-month projection · ${state.dailyMonths * DAYS_PER_MONTH} daily slots`;
+  const periods = out.mode === "monthly" ? "6 months · 24 weekly slots" :
+                  `${state.dailyMonths} month${state.dailyMonths>1?"s":""} · ${state.dailyMonths * DAYS_PER_MONTH} daily slots`;
+  $("#results-title-text").textContent = `Results — ${periods}`;
 
   const last = out.samples[out.samples.length - 1];
   const initialPortfolio = out.params.th0 * out.params.thMarket;
   const gain = last.portfolio - initialPortfolio;
   const pct  = initialPortfolio > 0 ? (gain / initialPortfolio) * 100 : 0;
-  const gainClass = gain >= 0 ? "green" : "red";
+
+  // Net BTC/GMT (excluding fees that went to other currency)
+  const sim = out.sim;
+  const p = out.params;
+  // Pretty totals — note .btc and .gmt already net of fees per fee mode.
+  const btcNet = sim.btc;
+  const gmtNet = sim.gmt;
+  const thGained = last.th - p.th0;
 
   $("#stats-grid").innerHTML = `
-    <div class="stat purple">
-      <div class="lbl">Final hashrate</div>
-      <div class="val">${fmtNum(last.th, 1)}</div>
-      <div class="sub">TH/s · started at ${fmtNum(out.params.th0, 1)} (+${fmtNum(last.th - out.params.th0, 1)})</div></div>
-    <div class="stat accent">
-      <div class="lbl">BTC balance</div>
-      <div class="val">${fmtUsd(last.btcUsd)}</div>
-      <div class="sub">${fmtBtc(out.params.btcUsd ? last.btcUsd / out.params.btcUsd : 0)}</div></div>
-    <div class="stat blue">
-      <div class="lbl">GMT balance</div>
-      <div class="val">${fmtUsd(last.gmtUsd)}</div>
-      <div class="sub">${fmtNum(out.params.gmtUsd ? last.gmtUsd / out.params.gmtUsd : 0, 0)} GMT</div></div>
-    <div class="stat ${gainClass}">
-      <div class="lbl">Total portfolio</div>
-      <div class="val">${fmtUsd(last.portfolio)}</div>
-      <div class="sub">${pct >= 0 ? "+" : ""}${pct.toFixed(1)}% vs start (${fmtUsd(initialPortfolio)})</div></div>`;
+    <div class="stat btc">
+      <div class="lbl">BTC NET</div>
+      <div class="val">${fmtBtc(btcNet)}</div>
+      <div class="sub">≈ ${fmtUsd(btcNet * p.btcUsd)}</div>
+    </div>
+    <div class="stat gmt">
+      <div class="lbl">GMT NET</div>
+      <div class="val">${fmtGmt(gmtNet)}</div>
+      <div class="sub">≈ ${fmtUsd(gmtNet * p.gmtUsd)}</div>
+    </div>
+    <div class="stat th">
+      <div class="lbl">TH GAINED</div>
+      <div class="val">+${fmtNum(thGained, 2)}</div>
+      <div class="sub">${fmtNum(p.th0, 2)} → ${fmtNum(last.th, 2)} TH</div>
+    </div>
+    <div class="stat red">
+      <div class="lbl">FEES PAID</div>
+      <div class="val">${state.feeMode === "gmt"
+        ? fmtNum(sim.totalFeesGmt, 2) + " GMT"
+        : sim.totalFeesBtc.toFixed(8) + " BTC"}</div>
+      <div class="sub">≈ ${fmtUsd(sim.totalFeesUsd)}</div>
+    </div>`;
+
+  // Summary row
+  const netCash = btcNet * p.btcUsd + gmtNet * p.gmtUsd;
+  $("#sum-net").textContent = fmtUsd(netCash);
+  $("#sum-net").classList.toggle("red", netCash < 0);
+  $("#sum-th").textContent = `+${fmtNum(thGained, 2)} TH`;
+  $("#sum-th-value").textContent = `asset, paper value ≈ ${fmtUsd(thGained * p.thMarket)}`;
+
+  // Top-bar live "today" net (per-day at current state)
+  const y = perTHPerDay(p);
+  const todayNet = (y.grossUsdPerTH - y.feesUsdPerTH) * p.th0;
+  $("#topbar-net").textContent = fmtUsd(todayNet);
+  $("#topbar-net").style.color = todayNet >= 0 ? "var(--green)" : "var(--red)";
+
+  // meta
+  $("#meta-line").innerHTML =
+    `<strong>Inputs used:</strong> ${fmtNum(p.th0, 4)} TH | ${p.satPerTH} sat/TH | ${p.discPct}% discount ` +
+    `(Fee mode: ${state.feeMode.toUpperCase()}) | ${p.eff} W/TH | $${p.elec}/kWh<br>` +
+    `<strong>Prices used:</strong> BTC ${fmtUsd(p.btcUsd)} | GMT $${p.gmtUsd.toFixed(4)} | TH cost $${p.thReinv} (reinvest) / $${p.thMarket} (market)`;
 
   drawChart(out.samples);
 
+  // timeline table
   $("#timeline-head").innerHTML = `
     <th>Period</th>
     <th>Plan</th>
-    <th>Net earned</th>
+    <th>Gross</th>
+    <th>Fees</th>
     <th>+TH</th>
     <th>+BTC</th>
     <th>+GMT</th>
@@ -625,22 +766,22 @@ function renderResults(out) {
     <tr>
       <td><strong>${r.label}</strong></td>
       <td style="font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.85em;color:var(--text-dim)">${r.actions.join(" → ")}</td>
-      <td class="${r.netUsd >= 0 ? "green" : "red"}">${fmtUsd(r.netUsd)}</td>
-      <td class="purple">${r.thAdded > 0 ? "+" + fmtNum(r.thAdded, 1) : "—"}</td>
-      <td class="accent">${r.btcAdded ? (r.btcAdded > 0 ? "+" : "") + r.btcAdded.toFixed(6) : "—"}</td>
-      <td class="blue">${r.gmtAdded ? (r.gmtAdded > 0 ? "+" : "") + fmtNum(r.gmtAdded, 0) : "—"}</td>
-      <td>${fmtNum(r.endTh, 1)}</td>
-      <td class="${r.endPortfolio >= 0 ? 'green' : 'red'}">${fmtUsd(r.endPortfolio)}</td>
+      <td>${fmtUsd(r.grossUsd)}</td>
+      <td class="red">-${fmtUsd(r.feesUsd)}</td>
+      <td class="th">${r.thAdded > 0 ? "+" + fmtNum(r.thAdded, 2) : "—"}</td>
+      <td class="btc">${r.btcAdded ? (r.btcAdded > 0 ? "+" : "") + r.btcAdded.toFixed(6) : "—"}</td>
+      <td class="gmt">${r.gmtAdded ? (r.gmtAdded > 0 ? "+" : "") + fmtNum(r.gmtAdded, 1) : "—"}</td>
+      <td>${fmtNum(r.endTh, 2)}</td>
+      <td>${fmtUsd(r.endPortfolio)}</td>
     </tr>`).join("");
 }
 
-// SVG line chart — 4 series, each scaled to its own max for readability.
+// SVG chart
 function drawChart(samples) {
   const svg = $("#chart");
-  const W = 800, H = 300, padL = 56, padR = 14, padT = 12, padB = 28;
+  const W = 800, H = 280, padL = 50, padR = 14, padT = 10, padB = 26;
   const innerW = W - padL - padR, innerH = H - padT - padB;
   if (samples.length < 2) { svg.innerHTML = ""; return; }
-
   const max = {
     th:        Math.max(1, ...samples.map(s => s.th)),
     btcUsd:    Math.max(1, ...samples.map(s => Math.abs(s.btcUsd))),
@@ -649,42 +790,28 @@ function drawChart(samples) {
   };
   const x = i => padL + (i / (samples.length - 1)) * innerW;
   const y = (v, m) => padT + innerH - (m > 0 ? (v / m) * innerH : 0);
-
-  const path = (key, color) => {
-    const m = max[key];
-    let d = "";
-    samples.forEach((s, i) => {
-      const px = x(i).toFixed(1);
-      const py = y(s[key], m).toFixed(1);
-      d += (i ? " L" : "M") + px + " " + py;
-    });
-    return `<path d="${d}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const path = (k, c) => {
+    let d = ""; samples.forEach((s, i) =>
+      d += (i ? " L" : "M") + x(i).toFixed(1) + " " + y(s[k], max[k]).toFixed(1));
+    return `<path d="${d}" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round"/>`;
   };
-
   let grid = "";
   for (let g = 0; g <= 4; g++) {
-    const gy = padT + (innerH * g / 4);
-    grid += `<line x1="${padL}" y1="${gy.toFixed(1)}" x2="${W - padR}" y2="${gy.toFixed(1)}" stroke="rgba(255,255,255,.05)" stroke-width="1"/>`;
+    const gy = padT + innerH * g / 4;
+    grid += `<line x1="${padL}" y1="${gy}" x2="${W-padR}" y2="${gy}" stroke="rgba(255,255,255,.05)"/>`;
   }
   let labels = "";
-  const labelEvery = Math.max(1, Math.floor(samples.length / 6));
-  for (let i = 0; i < samples.length; i += labelEvery) {
-    const lx = x(i).toFixed(1);
-    labels += `<text x="${lx}" y="${H - 8}" fill="#6e7681" font-size="10" text-anchor="middle">${i + 1}</text>`;
+  const every = Math.max(1, Math.floor(samples.length / 6));
+  for (let i = 0; i < samples.length; i += every) {
+    labels += `<text x="${x(i)}" y="${H-8}" fill="#6e7681" font-size="10" text-anchor="middle">${i+1}</text>`;
   }
-
-  svg.innerHTML =
-    grid +
-    path("th",        "#bc8cff") +
-    path("btcUsd",    "#f7931a") +
-    path("gmtUsd",    "#58a6ff") +
-    path("portfolio", "#3fb950") +
-    labels;
+  svg.innerHTML = grid +
+    path("th", "#3fb950") + path("btcUsd", "#f7931a") +
+    path("gmtUsd", "#bc8cff") + path("portfolio", "#58a6ff") + labels;
 }
 
 $("#btn-run").addEventListener("click", () => renderResults(simulate()));
-renderDurationButtons();
-renderEditor();
+renderDurationButtons(); renderEditor();
 </script>
 </body>
 </html>
