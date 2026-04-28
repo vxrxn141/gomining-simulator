@@ -2064,9 +2064,9 @@
                 <!-- Mode toggle: Daily (existing) vs Monthly (new — 6-month projection) -->
                 <div style="margin-bottom:14px;">
                     <label style="display:block;color:var(--text-dim);font-size:0.85em;margin-bottom:6px;" data-i18n="strategy_mode_label">Mode</label>
-                    <div class="period-selector" id="strategy-mode-selector" style="max-width:none;">
-                        <button class="period-btn" data-mode="monthly"><span data-i18n="strategy_mode_monthly">Monthly · 6-month projection</span></button>
-                        <button class="period-btn active" data-mode="daily"><span data-i18n="strategy_mode_daily">Daily · weekly pattern</span></button>
+                    <div class="period-selector" id="strategy-mode-selector" style="max-width:240px;">
+                        <button class="period-btn" data-mode="monthly"><span data-i18n="strategy_mode_monthly">Monthly</span></button>
+                        <button class="period-btn active" data-mode="daily"><span data-i18n="strategy_mode_daily">Daily</span></button>
                     </div>
                 </div>
 
@@ -2078,7 +2078,7 @@
                         <button class="period-btn" data-period="14"><span data-i18n="strategy_period_14">14 days</span></button>
                         <button class="period-btn" data-period="30"><span data-i18n="strategy_period_30">30 days</span></button>
                     </div>
-                    <div class="period-selector" id="strategy-monthly-selector" style="display:none;max-width:none;">
+                    <div class="period-selector" id="strategy-monthly-selector" style="display:none;max-width:480px;">
                         <button class="period-btn active" data-months="1">1 <span data-i18n="strategy_month_singular">month</span></button>
                         <button class="period-btn" data-months="2">2 <span data-i18n="strategy_months">months</span></button>
                         <button class="period-btn" data-months="3">3 <span data-i18n="strategy_months">months</span></button>
@@ -5334,8 +5334,8 @@
                 strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
                 strategy_no_th_fees: 'no fees on TH',
                 strategy_mode_label: 'Mode',
-                strategy_mode_monthly: 'Monthly · 6-month projection',
-                strategy_mode_daily: 'Daily · weekly pattern',
+                strategy_mode_monthly: 'Monthly',
+                strategy_mode_daily: 'Daily',
                 strategy_monthly_label: 'Editable months — fewer than 6 = pattern repeats to fill the projection',
                 strategy_month_singular: 'month', strategy_months: 'months',
                 strategy_month_label: 'Month',
@@ -5557,8 +5557,8 @@
                 strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
                 strategy_no_th_fees: 'pas de frais sur TH',
                 strategy_mode_label: 'Mode',
-                strategy_mode_monthly: 'Mensuel · projection 6 mois',
-                strategy_mode_daily: 'Quotidien · pattern hebdo',
+                strategy_mode_monthly: 'Mensuel',
+                strategy_mode_daily: 'Quotidien',
                 strategy_monthly_label: 'Mois éditables — moins de 6 = le pattern se répète sur la projection',
                 strategy_month_singular: 'mois', strategy_months: 'mois',
                 strategy_month_label: 'Mois',
