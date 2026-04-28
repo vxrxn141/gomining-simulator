@@ -3667,18 +3667,26 @@
             const tipBtc = btc => `≈ ${formatUSD(btc * r.btcPrice)}`;
             const tipGmt = gmt => `≈ ${formatUSD(gmt * r.gmtPrice)}`;
             const wrap = (text, tipText) => `<span class="has-tooltip" data-tooltip="${tipText}" style="border-bottom:none;">${text}</span>`;
-            const rowsHtml = r.weekRows.map(row => `
+            const rowsHtml = r.weekRows.map(row => {
+                // Net per period = gross USD − fees USD. Goes negative when fees
+                // exceed earnings (e.g. all-TH mode where gross is reinvested).
+                const netUsd = row.grossUsd - row.feesUsd;
+                const netColor = netUsd >= 0 ? 'var(--green)' : 'var(--red)';
+                const netStr = (netUsd < 0 ? '-' : '') + formatUSD(Math.abs(netUsd)).replace('$', '$');
+                return `
                 <tr style="border-top:1px solid var(--border);">
                     <td style="padding:10px 8px;"><strong>${row.label}</strong></td>
                     <td style="padding:10px 8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.85em;color:var(--text-dim);">${row.actions.join(' → ')}</td>
                     <td style="padding:10px 8px;text-align:right;">${formatUSD(row.grossUsd)}</td>
                     <td style="padding:10px 8px;text-align:right;color:var(--red);">${wrap(formatFeesByMode(row.feesUsd), '≈ ' + formatUSD(row.feesUsd))}</td>
+                    <td style="padding:10px 8px;text-align:right;color:${netColor};font-weight:600;">${netStr}</td>
                     <td style="padding:10px 8px;text-align:right;color:var(--green);">${row.thAdded > 0 ? wrap('+' + row.thAdded.toFixed(2), tipTh(row.thAdded)) : '—'}</td>
                     <td style="padding:10px 8px;text-align:right;color:var(--accent);">${row.btcAdded > 0 ? wrap(formatBtc(row.btcAdded), tipBtc(row.btcAdded)) : '—'}</td>
                     <td style="padding:10px 8px;text-align:right;color:var(--purple);">${row.gmtAdded > 0 ? wrap(formatGmt(row.gmtAdded), tipGmt(row.gmtAdded)) : '—'}</td>
                     <td style="padding:10px 8px;text-align:right;">${wrap(row.endTh.toFixed(2), tipTh(row.endTh))}</td>
                     <td style="padding:10px 8px;text-align:right;">${formatUSD(row.endPortfolio)}</td>
-                </tr>`).join('');
+                </tr>`;
+            }).join('');
 
             return `
                 <div style="margin-top:18px;padding-top:14px;border-top:1px solid var(--border);">
@@ -3691,6 +3699,7 @@
                                     <th style="padding:8px;text-align:left;" data-i18n="strategy_col_plan">Plan</th>
                                     <th style="padding:8px;text-align:right;" data-i18n="strategy_col_gross">Gross</th>
                                     <th style="padding:8px;text-align:right;" data-i18n="strategy_col_fees">Fees</th>
+                                    <th style="padding:8px;text-align:right;" data-i18n="strategy_col_net">Net</th>
                                     <th style="padding:8px;text-align:right;">+TH</th>
                                     <th style="padding:8px;text-align:right;">+BTC</th>
                                     <th style="padding:8px;text-align:right;">+GMT</th>
@@ -5320,7 +5329,7 @@
                 strategy_th_fallback: 'fallback to reinvest cost',
                 strategy_period_by_period: 'Period-by-period',
                 strategy_col_period: 'Period', strategy_col_plan: 'Plan',
-                strategy_col_gross: 'Gross', strategy_col_fees: 'Fees',
+                strategy_col_gross: 'Gross', strategy_col_fees: 'Fees', strategy_col_net: 'Net',
                 strategy_col_end_th: 'End TH/s', strategy_col_end_portfolio: 'End portfolio',
                 strategy_current: 'current',
                 strategy_auto: 'Auto-filled', strategy_from_sync: 'from sync',
@@ -5543,7 +5552,7 @@
                 strategy_th_fallback: 'défaut sur coût de réinvest',
                 strategy_period_by_period: 'Détail par période',
                 strategy_col_period: 'Période', strategy_col_plan: 'Plan',
-                strategy_col_gross: 'Brut', strategy_col_fees: 'Frais',
+                strategy_col_gross: 'Brut', strategy_col_fees: 'Frais', strategy_col_net: 'Net',
                 strategy_col_end_th: 'TH/s final', strategy_col_end_portfolio: 'Portefeuille final',
                 strategy_current: 'actuel',
                 strategy_auto: 'Auto-rempli', strategy_from_sync: 'depuis sync',
