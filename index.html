@@ -3164,28 +3164,23 @@
             const valid = ['btc', 'gmt', 'th'];
 
             if (strategyMode === 'monthly') {
-                // Monthly grid: 6 rows (months), 4 cells (weekly slots) each.
-                // Editable months are clickable; remaining months show as locked
-                // and display the source month they repeat from.
+                // Monthly grid: render exactly strategyMonthlyEditCount months.
+                // Each row = one month with 4 weekly slots, all editable.
+                // Projection length matches the user's selection (no repeating pattern).
                 let html = '';
-                for (let m = 0; m < STRATEGY_MONTHLY_TOTAL; m++) {
-                    const isEditable = m < strategyMonthlyEditCount;
-                    const sourceIdx = m % strategyMonthlyEditCount;
-                    const monthArr = strategyMonthly[sourceIdx] || ['btc', 'btc', 'th', 'th'];
-                    // Sanitize
+                for (let m = 0; m < strategyMonthlyEditCount; m++) {
+                    if (!strategyMonthly[m]) strategyMonthly[m] = ['btc', 'btc', 'th', 'th'];
+                    const monthArr = strategyMonthly[m];
                     for (let s = 0; s < STRATEGY_SLOTS_PER_MONTH; s++) {
                         if (!valid.includes(monthArr[s])) monthArr[s] = 'btc';
                     }
-                    const rowLabel = isEditable
-                        ? `${t('strategy_month_label') || 'MONTH'} ${m + 1}`
-                        : `↻ M${sourceIdx + 1}`;
-                    html += `<div style="display:grid;grid-template-columns:80px repeat(4,1fr);gap:6px;align-items:stretch;${isEditable ? '' : 'opacity:0.45;'}">`;
+                    const rowLabel = `${t('strategy_month_label') || 'MONTH'} ${m + 1}`;
+                    html += `<div style="display:grid;grid-template-columns:80px repeat(4,1fr);gap:6px;align-items:stretch;">`;
                     html += `<div style="display:flex;align-items:center;justify-content:flex-start;font-size:0.75em;font-weight:700;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;">${rowLabel}</div>`;
                     for (let s = 0; s < STRATEGY_SLOTS_PER_MONTH; s++) {
                         const strat = monthArr[s];
                         const lbl = labelMap[strat] || 'BTC';
-                        const handler = isEditable ? `onclick="cycleStrategyMonthSlot(${sourceIdx},${s})"` : 'style="cursor:not-allowed;"';
-                        html += `<div class="day-cell" data-strat="${strat}" ${handler}>
+                        html += `<div class="day-cell" data-strat="${strat}" onclick="cycleStrategyMonthSlot(${m},${s})">
                             <div class="day-num">W${s + 1}</div>
                             <div class="day-strat">${lbl}</div>
                         </div>`;
@@ -3293,13 +3288,13 @@
 
             // Smart-fill works at the day level for both modes.
             // Daily mode: N = strategyPeriod (7/14/30 days)
-            // Monthly mode: N = total projection days = 168, with X rounded UP to the
+            // Monthly mode: N = editCount × 4 × 7 days. X is rounded UP to the
             // next 7-day boundary so it lines up with the weekly slot grid.
             let N, X;
             if (strategyMode === 'monthly') {
-                N = STRATEGY_MONTHLY_TOTAL * STRATEGY_SLOTS_PER_MONTH * 7; // 168
+                N = strategyMonthlyEditCount * STRATEGY_SLOTS_PER_MONTH * 7;
                 const xDays = Math.ceil((N * feesSource) / grossSource);
-                X = Math.ceil(xDays / 7) * 7; // round up to weekly slot boundary
+                X = Math.ceil(xDays / 7) * 7;
             } else {
                 N = strategyPeriod;
                 X = Math.ceil((N * feesSource) / grossSource);
@@ -3401,14 +3396,13 @@
 
         // Build the per-day strategy sequence based on the active mode.
         // Daily mode: strategyDays as-is (length = strategyPeriod, 7/14/30).
-        // Monthly mode: expand strategyMonthly pattern to a 168-day sequence
-        // (6 months × 4 weekly slots × 7 days). Edited months repeat to fill 6.
+        // Monthly mode: expand strategyMonthly to a sequence of length
+        // editCount × 4 × 7 days. Each weekly slot expands to 7 days.
         function buildStrategyDaySequence() {
             if (strategyMode === 'monthly') {
                 const seq = [];
-                for (let m = 0; m < STRATEGY_MONTHLY_TOTAL; m++) {
-                    const sourceIdx = m % strategyMonthlyEditCount;
-                    const monthArr = strategyMonthly[sourceIdx] || ['btc', 'btc', 'th', 'th'];
+                for (let m = 0; m < strategyMonthlyEditCount; m++) {
+                    const monthArr = strategyMonthly[m] || ['btc', 'btc', 'th', 'th'];
                     for (let w = 0; w < STRATEGY_SLOTS_PER_MONTH; w++) {
                         const strat = monthArr[w];
                         for (let d = 0; d < 7; d++) seq.push(strat);
@@ -3556,7 +3550,7 @@
             renderStrategyResults({
                 period: totalDays,
                 periodLabel: strategyMode === 'monthly'
-                    ? `${STRATEGY_MONTHLY_TOTAL} ${t('strategy_months') || 'months'} · ${STRATEGY_MONTHLY_TOTAL * STRATEGY_SLOTS_PER_MONTH} ${t('strategy_weekly_slots') || 'weekly slots'}`
+                    ? `${strategyMonthlyEditCount} ${strategyMonthlyEditCount === 1 ? (t('strategy_month_singular') || 'month') : (t('strategy_months') || 'months')} · ${strategyMonthlyEditCount * STRATEGY_SLOTS_PER_MONTH} ${t('strategy_weekly_slots') || 'weekly slots'}`
                     : `${strategyPeriod} ${t('days') || 'days'}`,
                 mode: strategyMode,
                 totalBtc, totalGmt, totalThGained, totalFeesGmt, totalFeesBtc,
@@ -5336,7 +5330,7 @@
                 strategy_mode_label: 'Mode',
                 strategy_mode_monthly: 'Monthly',
                 strategy_mode_daily: 'Daily',
-                strategy_monthly_label: 'Editable months — fewer than 6 = pattern repeats to fill the projection',
+                strategy_monthly_label: 'Projection length',
                 strategy_month_singular: 'month', strategy_months: 'months',
                 strategy_month_label: 'Month',
                 strategy_weekly_slots: 'weekly slots',
@@ -5559,7 +5553,7 @@
                 strategy_mode_label: 'Mode',
                 strategy_mode_monthly: 'Mensuel',
                 strategy_mode_daily: 'Quotidien',
-                strategy_monthly_label: 'Mois éditables — moins de 6 = le pattern se répète sur la projection',
+                strategy_monthly_label: 'Durée de projection',
                 strategy_month_singular: 'mois', strategy_months: 'mois',
                 strategy_month_label: 'Mois',
                 strategy_weekly_slots: 'plages hebdo',
