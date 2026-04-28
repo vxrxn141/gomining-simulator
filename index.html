@@ -3432,7 +3432,9 @@
                     </div>
                     <div class="strategy-result-card">
                         <div class="res-label" data-i18n="strategy_total_fees">Fees Paid</div>
-                        <div class="res-value" style="color:var(--red);">${r.totalFeesGmt.toFixed(2)} GMT</div>
+                        <div class="res-value" style="color:var(--red);">${r.feeMode === 'btc'
+                            ? (r.totalFeesUsd / r.btcPrice).toFixed(8) + ' BTC'
+                            : r.totalFeesGmt.toFixed(2) + ' GMT'}</div>
                         <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalFeesUsd)}</div>
                     </div>
                 </div>
