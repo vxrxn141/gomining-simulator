@@ -2061,13 +2061,30 @@
                 </div>
                 <p style="color:var(--text-dim);font-size:0.95em;margin-bottom:18px;" data-i18n="strategy_intro">Build a day-by-day reinvestment plan and see what you'd earn over the period. Choose for each day: collect BTC, reinvest in GMT, or buy more TH.</p>
 
-                <!-- Period selector -->
+                <!-- Mode toggle: Daily (existing) vs Monthly (new — 6-month projection) -->
+                <div style="margin-bottom:14px;">
+                    <label style="display:block;color:var(--text-dim);font-size:0.85em;margin-bottom:6px;" data-i18n="strategy_mode_label">Mode</label>
+                    <div class="period-selector" id="strategy-mode-selector" style="max-width:none;">
+                        <button class="period-btn" data-mode="monthly"><span data-i18n="strategy_mode_monthly">Monthly · 6-month projection</span></button>
+                        <button class="period-btn active" data-mode="daily"><span data-i18n="strategy_mode_daily">Daily · weekly pattern</span></button>
+                    </div>
+                </div>
+
+                <!-- Period selector — content swaps based on mode -->
                 <div style="margin-bottom:18px;">
-                    <label style="display:block;color:var(--text-dim);font-size:0.85em;margin-bottom:6px;" data-i18n="strategy_period">Period</label>
+                    <label id="strategy-period-label" style="display:block;color:var(--text-dim);font-size:0.85em;margin-bottom:6px;" data-i18n="strategy_period">Period</label>
                     <div class="period-selector" id="strategy-period-selector">
                         <button class="period-btn active" data-period="7"><span data-i18n="strategy_period_7">7 days</span></button>
                         <button class="period-btn" data-period="14"><span data-i18n="strategy_period_14">14 days</span></button>
                         <button class="period-btn" data-period="30"><span data-i18n="strategy_period_30">30 days</span></button>
+                    </div>
+                    <div class="period-selector" id="strategy-monthly-selector" style="display:none;max-width:none;">
+                        <button class="period-btn active" data-months="1">1 <span data-i18n="strategy_month_singular">month</span></button>
+                        <button class="period-btn" data-months="2">2 <span data-i18n="strategy_months">months</span></button>
+                        <button class="period-btn" data-months="3">3 <span data-i18n="strategy_months">months</span></button>
+                        <button class="period-btn" data-months="4">4 <span data-i18n="strategy_months">months</span></button>
+                        <button class="period-btn" data-months="5">5 <span data-i18n="strategy_months">months</span></button>
+                        <button class="period-btn" data-months="6">6 <span data-i18n="strategy_months">months</span></button>
                     </div>
                 </div>
 
@@ -3074,17 +3091,59 @@
         // Day-by-day reinvestment plan over 7/14/30 days.
         // Each day the user picks: 'btc' (collect), 'gmt' (reinvest GMT), 'th' (buy more TH).
         // TH compounds the next day. Fees scale with power.
-        let strategyDays = [];      // array of 'btc' | 'gmt' | 'th'
+        let strategyDays = [];      // array of 'btc' | 'gmt' | 'th' (daily mode)
         let strategyPeriod = 7;
-        const STRATEGY_TH_BONUS = 0.05; // 5% bonus when reinvesting in TH
+        // Monthly mode state — Darun-inspired pattern editor.
+        // Each editable month has 4 weekly slots; the pattern repeats over 6 months.
+        let strategyMode = 'daily';        // 'daily' | 'monthly'
+        let strategyMonthlyEditCount = 1;  // 1..6 editable months
+        let strategyMonthly = [['btc', 'btc', 'th', 'th']];  // [month][weekSlot]
+        const STRATEGY_TH_BONUS = 0.05;
+        const STRATEGY_MONTHLY_TOTAL = 6;  // 6-month projection
+        const STRATEGY_SLOTS_PER_MONTH = 4; // 4 weeks per month
 
         function initStrategyLab() {
-            // Period selector buttons
+            // Mode selector
+            document.querySelectorAll('#strategy-mode-selector .period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    strategyMode = btn.dataset.mode;
+                    document.querySelectorAll('#strategy-mode-selector .period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    // Toggle period vs months selector visibility + label
+                    const dailySel = document.getElementById('strategy-period-selector');
+                    const monthlySel = document.getElementById('strategy-monthly-selector');
+                    const label = document.getElementById('strategy-period-label');
+                    if (strategyMode === 'monthly') {
+                        dailySel.style.display = 'none';
+                        monthlySel.style.display = 'flex';
+                        if (label) label.textContent = t('strategy_monthly_label') || 'Editable months — fewer than 6 = pattern repeats to fill the projection';
+                    } else {
+                        dailySel.style.display = 'flex';
+                        monthlySel.style.display = 'none';
+                        if (label) label.textContent = t('strategy_period') || 'Period';
+                    }
+                    rebuildStrategyGrid();
+                });
+            });
+            // Daily period selector
             document.querySelectorAll('#strategy-period-selector .period-btn').forEach(btn => {
                 btn.addEventListener('click', () => {
                     const p = parseInt(btn.dataset.period);
                     strategyPeriod = p;
                     document.querySelectorAll('#strategy-period-selector .period-btn').forEach(b => b.classList.remove('active'));
+                    btn.classList.add('active');
+                    rebuildStrategyGrid();
+                });
+            });
+            // Monthly editable-count selector
+            document.querySelectorAll('#strategy-monthly-selector .period-btn').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const m = parseInt(btn.dataset.months);
+                    strategyMonthlyEditCount = m;
+                    // Resize strategyMonthly: keep existing months, default new ones to defaultMonth()
+                    while (strategyMonthly.length < m) strategyMonthly.push(['btc', 'btc', 'th', 'th']);
+                    strategyMonthly = strategyMonthly.slice(0, m);
+                    document.querySelectorAll('#strategy-monthly-selector .period-btn').forEach(b => b.classList.remove('active'));
                     btn.classList.add('active');
                     rebuildStrategyGrid();
                 });
@@ -3101,16 +3160,49 @@
 
         function rebuildStrategyGrid() {
             const grid = document.getElementById('strategy-day-grid');
-            // Preserve existing choices, default new days to 'btc'
-            while (strategyDays.length < strategyPeriod) strategyDays.push('btc');
-            // Sanitize: replace any undefined/invalid values with 'btc' default
+            const labelMap = { btc: 'BTC', gmt: 'GMT', th: 'TH' };
             const valid = ['btc', 'gmt', 'th'];
+
+            if (strategyMode === 'monthly') {
+                // Monthly grid: 6 rows (months), 4 cells (weekly slots) each.
+                // Editable months are clickable; remaining months show as locked
+                // and display the source month they repeat from.
+                let html = '';
+                for (let m = 0; m < STRATEGY_MONTHLY_TOTAL; m++) {
+                    const isEditable = m < strategyMonthlyEditCount;
+                    const sourceIdx = m % strategyMonthlyEditCount;
+                    const monthArr = strategyMonthly[sourceIdx] || ['btc', 'btc', 'th', 'th'];
+                    // Sanitize
+                    for (let s = 0; s < STRATEGY_SLOTS_PER_MONTH; s++) {
+                        if (!valid.includes(monthArr[s])) monthArr[s] = 'btc';
+                    }
+                    const rowLabel = isEditable
+                        ? `${t('strategy_month_label') || 'MONTH'} ${m + 1}`
+                        : `↻ M${sourceIdx + 1}`;
+                    html += `<div style="display:grid;grid-template-columns:80px repeat(4,1fr);gap:6px;align-items:stretch;${isEditable ? '' : 'opacity:0.45;'}">`;
+                    html += `<div style="display:flex;align-items:center;justify-content:flex-start;font-size:0.75em;font-weight:700;color:var(--text-dim);letter-spacing:0.5px;text-transform:uppercase;">${rowLabel}</div>`;
+                    for (let s = 0; s < STRATEGY_SLOTS_PER_MONTH; s++) {
+                        const strat = monthArr[s];
+                        const lbl = labelMap[strat] || 'BTC';
+                        const handler = isEditable ? `onclick="cycleStrategyMonthSlot(${sourceIdx},${s})"` : 'style="cursor:not-allowed;"';
+                        html += `<div class="day-cell" data-strat="${strat}" ${handler}>
+                            <div class="day-num">W${s + 1}</div>
+                            <div class="day-strat">${lbl}</div>
+                        </div>`;
+                    }
+                    html += `</div>`;
+                }
+                grid.innerHTML = html;
+                return;
+            }
+
+            // Daily mode (original): per-day picker, weekly rows
+            while (strategyDays.length < strategyPeriod) strategyDays.push('btc');
             for (let i = 0; i < strategyDays.length; i++) {
                 if (!valid.includes(strategyDays[i])) strategyDays[i] = 'btc';
             }
             strategyDays = strategyDays.slice(0, strategyPeriod);
 
-            const labelMap = { btc: 'BTC', gmt: 'GMT', th: 'TH' };
             const weekLabel = t('strategy_week') || 'Week';
             let html = '';
             for (let weekStart = 0; weekStart < strategyPeriod; weekStart += 7) {
@@ -3142,8 +3234,19 @@
             rebuildStrategyGrid();
         }
 
+        function cycleStrategyMonthSlot(monthIdx, slotIdx) {
+            const order = ['btc', 'gmt', 'th'];
+            const cur = strategyMonthly[monthIdx][slotIdx];
+            strategyMonthly[monthIdx][slotIdx] = order[(order.indexOf(cur) + 1) % 3];
+            rebuildStrategyGrid();
+        }
+
         function fillStrategyAll(strat) {
-            for (let i = 0; i < strategyPeriod; i++) strategyDays[i] = strat;
+            if (strategyMode === 'monthly') {
+                strategyMonthly = strategyMonthly.map(() => Array(STRATEGY_SLOTS_PER_MONTH).fill(strat));
+            } else {
+                for (let i = 0; i < strategyPeriod; i++) strategyDays[i] = strat;
+            }
             rebuildStrategyGrid();
         }
 
@@ -3188,21 +3291,44 @@
                 return;
             }
 
-            const N = strategyPeriod;
-            // Min X such that X*grossSource ≥ N*feesSource
-            const X = Math.ceil((N * feesSource) / grossSource);
+            // Smart-fill works at the day level for both modes.
+            // Daily mode: N = strategyPeriod (7/14/30 days)
+            // Monthly mode: N = total projection days = 168, with X rounded UP to the
+            // next 7-day boundary so it lines up with the weekly slot grid.
+            let N, X;
+            if (strategyMode === 'monthly') {
+                N = STRATEGY_MONTHLY_TOTAL * STRATEGY_SLOTS_PER_MONTH * 7; // 168
+                const xDays = Math.ceil((N * feesSource) / grossSource);
+                X = Math.ceil(xDays / 7) * 7; // round up to weekly slot boundary
+            } else {
+                N = strategyPeriod;
+                X = Math.ceil((N * feesSource) / grossSource);
+            }
 
             if (X >= N) {
-                // Need every day in source just to cover fees — no room for target strategy
                 outEl.innerHTML = `<span style="color:var(--accent);">${t('strategy_smart_impossible')}</span> (${t('strategy_period_short') || 'period too short'}: ${N} ${t('days')}, ${X} ${t('days')} ${t('strategy_needed') || 'needed'})`;
                 fillStrategyAll(source);
                 rebuildStrategyGrid();
                 return;
             }
 
-            // Fill: first X days source, remaining days target
-            for (let i = 0; i < N; i++) {
-                strategyDays[i] = i < X ? source : target;
+            // Apply: in daily mode write to strategyDays directly.
+            // In monthly mode, convert the day cutoff to weekly slots and update
+            // strategyMonthly. We only modify EDITABLE months (others repeat).
+            if (strategyMode === 'monthly') {
+                const xSlots = X / 7; // weekly slots filled with source
+                let placed = 0;
+                for (let m = 0; m < strategyMonthlyEditCount; m++) {
+                    if (!strategyMonthly[m]) strategyMonthly[m] = ['btc', 'btc', 'th', 'th'];
+                    for (let s = 0; s < STRATEGY_SLOTS_PER_MONTH; s++) {
+                        strategyMonthly[m][s] = (placed < xSlots) ? source : target;
+                        placed++;
+                    }
+                }
+            } else {
+                for (let i = 0; i < N; i++) {
+                    strategyDays[i] = i < X ? source : target;
+                }
             }
             rebuildStrategyGrid();
 
@@ -3273,6 +3399,26 @@
             return { hashrate, efficiency, elecCost, discount, satPerTH, source: 'form' };
         }
 
+        // Build the per-day strategy sequence based on the active mode.
+        // Daily mode: strategyDays as-is (length = strategyPeriod, 7/14/30).
+        // Monthly mode: expand strategyMonthly pattern to a 168-day sequence
+        // (6 months × 4 weekly slots × 7 days). Edited months repeat to fill 6.
+        function buildStrategyDaySequence() {
+            if (strategyMode === 'monthly') {
+                const seq = [];
+                for (let m = 0; m < STRATEGY_MONTHLY_TOTAL; m++) {
+                    const sourceIdx = m % strategyMonthlyEditCount;
+                    const monthArr = strategyMonthly[sourceIdx] || ['btc', 'btc', 'th', 'th'];
+                    for (let w = 0; w < STRATEGY_SLOTS_PER_MONTH; w++) {
+                        const strat = monthArr[w];
+                        for (let d = 0; d < 7; d++) seq.push(strat);
+                    }
+                }
+                return seq;
+            }
+            return strategyDays.slice(0, strategyPeriod);
+        }
+
         function runStrategySimulation() {
             const cfg = getStrategyBaseConfig();
             if (!cfg.hashrate || !cfg.satPerTH) {
@@ -3304,12 +3450,16 @@
             const simDiscount = cfg.discount;
 
             // Simulation loop — per-day with compounding
+            // Day sequence comes from buildStrategyDaySequence() which handles
+            // both daily and monthly mode (monthly = 168-day expanded pattern).
+            const daySeq = buildStrategyDaySequence();
+            const totalDays = daySeq.length;
             let power = cfg.hashrate;
             let totalBtc = 0, totalGmt = 0, totalThGained = 0, totalFeesGmt = 0, totalFeesUsd = 0;
             const dayLog = [];
 
-            for (let i = 0; i < strategyPeriod; i++) {
-                const strat = strategyDays[i];
+            for (let i = 0; i < totalDays; i++) {
+                const strat = daySeq[i];
                 const dayR = calcDailyReward(power, cfg.efficiency, cfg.elecCost, simDiscount, btcPrice, cfg.satPerTH);
                 if (!dayR) break;
 
@@ -3340,11 +3490,16 @@
             // Restore state.gmtPrice
             state.gmtPrice = savedGmtPrice;
 
-            // Build per-day chart samples + weekly aggregate rows from the dayLog.
-            // Done after the sim loop so the inner loop stays focused on the math.
+            // Build per-day chart samples + grouped aggregate rows from the dayLog.
+            // Daily mode aggregates per 7-day week; monthly mode per 28-day month.
             const _feeMode = state.feeMode || 'gmt';
             const samples = [];
             const weekRows = [];
+            const groupSize = strategyMode === 'monthly' ? 28 : 7;
+            const groupLabel = strategyMode === 'monthly' ? (t('strategy_month_label') || 'Month') : (t('strategy_week') || 'Week');
+            // For monthly mode, plan-actions get summarized to 4 weekly slots per month
+            // (otherwise the cell would show 28 BTC/GMT/TH tokens).
+            const planSlotSize = strategyMode === 'monthly' ? 7 : 1;
             let cumBtc = 0, cumGmt = 0, cumFeesGmt = 0;
             let weekAgg = null;
             for (let i = 0; i < dayLog.length; i++) {
@@ -3358,13 +3513,16 @@
                 const portfolio = netBtcAtDay * btcPrice + netGmtAtDay * gmtPrice + d.power * marketTHPrice;
                 samples.push({ day: d.day, th: d.power, btcUsd: netBtcAtDay * btcPrice, gmtUsd: netGmtAtDay * gmtPrice, portfolio });
 
-                // Weekly aggregation (group of 7 days)
-                if (i % 7 === 0) {
+                // Aggregate per period
+                if (i % groupSize === 0) {
                     if (weekAgg) weekRows.push(weekAgg);
-                    weekAgg = { label: `Week ${Math.floor(i / 7) + 1}`, actions: [], grossUsd: 0, feesUsd: 0, thAdded: 0, btcAdded: 0, gmtAdded: 0, endTh: 0, endPortfolio: 0 };
+                    weekAgg = { label: `${groupLabel} ${Math.floor(i / groupSize) + 1}`, actions: [], grossUsd: 0, feesUsd: 0, thAdded: 0, btcAdded: 0, gmtAdded: 0, endTh: 0, endPortfolio: 0 };
                 }
                 const dayGrossUsd = d.btc * btcPrice + d.gmt * gmtPrice + d.th * marketTHPrice;
-                weekAgg.actions.push(d.strat.toUpperCase());
+                // Plan column: in monthly mode show one token per weekly slot (4 per month)
+                if ((i % groupSize) % planSlotSize === 0) {
+                    weekAgg.actions.push(d.strat.toUpperCase());
+                }
                 weekAgg.grossUsd += dayGrossUsd;
                 weekAgg.feesUsd += d.feesGmt * gmtPrice;
                 weekAgg.thAdded += d.th;
@@ -3396,7 +3554,11 @@
             const netGmtUsd = netGmt * gmtPrice;
 
             renderStrategyResults({
-                period: strategyPeriod,
+                period: totalDays,
+                periodLabel: strategyMode === 'monthly'
+                    ? `${STRATEGY_MONTHLY_TOTAL} ${t('strategy_months') || 'months'} · ${STRATEGY_MONTHLY_TOTAL * STRATEGY_SLOTS_PER_MONTH} ${t('strategy_weekly_slots') || 'weekly slots'}`
+                    : `${strategyPeriod} ${t('days') || 'days'}`,
+                mode: strategyMode,
                 totalBtc, totalGmt, totalThGained, totalFeesGmt, totalFeesBtc,
                 netBtc, netGmt, netBtcUsd, netGmtUsd,
                 totalBtcUsd, totalGmtUsd, totalThUsd, totalFeesUsd, netCashUsd,
@@ -3415,7 +3577,7 @@
             const t_ = (k, fb) => t(k) || fb;
 
             let html = `<div class="section" style="background:var(--bg2);">
-                <h3 style="margin:0 0 14px 0;color:var(--a-strategy);" data-i18n="strategy_results">📊 Results — ${r.period} ${t_('days', 'days')}</h3>
+                <h3 style="margin:0 0 14px 0;color:var(--a-strategy);">📊 ${t_('strategy_results_label', 'Results')} — ${r.periodLabel || (r.period + ' ' + t_('days', 'days'))}</h3>
                 <!-- Row 1: GROSS earnings + fees -->
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;">
                     <div class="strategy-result-card">
@@ -5171,6 +5333,14 @@
                 strategy_gross_btc: 'BTC Gross', strategy_gross_gmt: 'GMT Gross',
                 strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
                 strategy_no_th_fees: 'no fees on TH',
+                strategy_mode_label: 'Mode',
+                strategy_mode_monthly: 'Monthly · 6-month projection',
+                strategy_mode_daily: 'Daily · weekly pattern',
+                strategy_monthly_label: 'Editable months — fewer than 6 = pattern repeats to fill the projection',
+                strategy_month_singular: 'month', strategy_months: 'months',
+                strategy_month_label: 'Month',
+                strategy_weekly_slots: 'weekly slots',
+                strategy_results_label: 'Results',
                 strategy_net_cash: 'Net cash profit (BTC + GMT − fees)', strategy_th_gained_label: '+ Hashrate gained', strategy_th_paper_value: 'asset, paper value',
                 strategy_used_prices: 'Prices used',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
@@ -5386,6 +5556,14 @@
                 strategy_gross_btc: 'BTC Brut', strategy_gross_gmt: 'GMT Brut',
                 strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
                 strategy_no_th_fees: 'pas de frais sur TH',
+                strategy_mode_label: 'Mode',
+                strategy_mode_monthly: 'Mensuel · projection 6 mois',
+                strategy_mode_daily: 'Quotidien · pattern hebdo',
+                strategy_monthly_label: 'Mois éditables — moins de 6 = le pattern se répète sur la projection',
+                strategy_month_singular: 'mois', strategy_months: 'mois',
+                strategy_month_label: 'Mois',
+                strategy_weekly_slots: 'plages hebdo',
+                strategy_results_label: 'Résultats',
                 strategy_net_cash: 'Profit net liquide (BTC + GMT − frais)', strategy_th_gained_label: '+ Hashrate gagné', strategy_th_paper_value: 'actif, valeur papier',
                 strategy_used_prices: 'Prix utilisés',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
