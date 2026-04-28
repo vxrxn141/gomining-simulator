@@ -273,10 +273,20 @@ function watchTier(uid) {
   }, () => { /* ignore permission errors */ });
 }
 
+// ----- preview bypass -----
+// Allows sharing a feedback link without requiring sign-in. URL must include
+// ?preview=darun. Removes the auth gate entirely; no Firebase login flow runs.
+const PREVIEW_BYPASS = new URLSearchParams(location.search).get("preview") === "darun";
+if (PREVIEW_BYPASS) {
+  document.addEventListener("DOMContentLoaded", () => hideGate());
+  setTimeout(() => hideGate(), 0);
+}
+
 // ----- main listener -----
 onAuthStateChanged(auth, async (user) => {
   currentUser = user;
   bindGateHandlers();
+  if (PREVIEW_BYPASS) { hideGate(); return; }
   if (user) {
     hideGate();
     try { await recordLogin(user); }
