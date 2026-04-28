@@ -3660,22 +3660,23 @@
                 const feesGmt = feesUsd / r.gmtPrice;
                 return '-' + feesGmt.toFixed(2) + ' GMT';
             };
-            // Helpers to compute USD-equivalent tooltips for crypto-denominated cells.
-            // Uses run-time prices captured in the result object (r.btcPrice, r.gmtPrice,
-            // r.marketTHPrice). All show on hover via the native title attribute.
+            // CSS-driven tooltip (instant) for USD equivalents of coin-denominated cells.
+            // Uses the existing .has-tooltip class — wraps the cell text in a span
+            // so the ::after pseudo shows immediately on hover.
             const tipTh  = th  => `≈ ${formatUSD(th * r.marketTHPrice)}`;
             const tipBtc = btc => `≈ ${formatUSD(btc * r.btcPrice)}`;
             const tipGmt = gmt => `≈ ${formatUSD(gmt * r.gmtPrice)}`;
+            const wrap = (text, tipText) => `<span class="has-tooltip" data-tooltip="${tipText}" style="border-bottom:none;">${text}</span>`;
             const rowsHtml = r.weekRows.map(row => `
                 <tr style="border-top:1px solid var(--border);">
                     <td style="padding:10px 8px;"><strong>${row.label}</strong></td>
                     <td style="padding:10px 8px;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:0.85em;color:var(--text-dim);">${row.actions.join(' → ')}</td>
                     <td style="padding:10px 8px;text-align:right;">${formatUSD(row.grossUsd)}</td>
-                    <td style="padding:10px 8px;text-align:right;color:var(--red);cursor:help;" title="≈ ${formatUSD(row.feesUsd)}">${formatFeesByMode(row.feesUsd)}</td>
-                    <td style="padding:10px 8px;text-align:right;color:var(--green);${row.thAdded > 0 ? 'cursor:help;' : ''}" ${row.thAdded > 0 ? `title="${tipTh(row.thAdded)}"` : ''}>${row.thAdded > 0 ? '+' + row.thAdded.toFixed(2) : '—'}</td>
-                    <td style="padding:10px 8px;text-align:right;color:var(--accent);${row.btcAdded > 0 ? 'cursor:help;' : ''}" ${row.btcAdded > 0 ? `title="${tipBtc(row.btcAdded)}"` : ''}>${row.btcAdded > 0 ? formatBtc(row.btcAdded) : '—'}</td>
-                    <td style="padding:10px 8px;text-align:right;color:var(--purple);${row.gmtAdded > 0 ? 'cursor:help;' : ''}" ${row.gmtAdded > 0 ? `title="${tipGmt(row.gmtAdded)}"` : ''}>${row.gmtAdded > 0 ? formatGmt(row.gmtAdded) : '—'}</td>
-                    <td style="padding:10px 8px;text-align:right;cursor:help;" title="${tipTh(row.endTh)}">${row.endTh.toFixed(2)}</td>
+                    <td style="padding:10px 8px;text-align:right;color:var(--red);">${wrap(formatFeesByMode(row.feesUsd), '≈ ' + formatUSD(row.feesUsd))}</td>
+                    <td style="padding:10px 8px;text-align:right;color:var(--green);">${row.thAdded > 0 ? wrap('+' + row.thAdded.toFixed(2), tipTh(row.thAdded)) : '—'}</td>
+                    <td style="padding:10px 8px;text-align:right;color:var(--accent);">${row.btcAdded > 0 ? wrap(formatBtc(row.btcAdded), tipBtc(row.btcAdded)) : '—'}</td>
+                    <td style="padding:10px 8px;text-align:right;color:var(--purple);">${row.gmtAdded > 0 ? wrap(formatGmt(row.gmtAdded), tipGmt(row.gmtAdded)) : '—'}</td>
+                    <td style="padding:10px 8px;text-align:right;">${wrap(row.endTh.toFixed(2), tipTh(row.endTh))}</td>
                     <td style="padding:10px 8px;text-align:right;">${formatUSD(row.endPortfolio)}</td>
                 </tr>`).join('');
 
