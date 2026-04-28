@@ -2110,9 +2110,14 @@
                             <span class="hint" id="strategy-gmt-current"></span>
                         </div>
                         <div class="form-group">
-                            <label data-i18n="strategy_cost_per_th">Cost per TH ($)</label>
+                            <label data-i18n="strategy_reinvest_cost">Reinvest cost per TH ($)</label>
                             <input type="number" id="strategy-cost-per-th" min="1" step="0.5" value="12.34" oninput="this.dataset.userEdited='1'">
-                            <span class="hint" id="strategy-cost-current" data-i18n="strategy_cost_per_th_hint">$12.34/TH (confirmed in GoMining app)</span>
+                            <span class="hint" id="strategy-cost-current" data-i18n="strategy_reinvest_cost_hint">In-app upgrade rate (~$12.34) — used to compute TH gained when reinvesting</span>
+                        </div>
+                        <div class="form-group">
+                            <label data-i18n="strategy_market_th_price">Market TH price ($)</label>
+                            <input type="number" id="strategy-market-th-price" min="0.01" step="0.1" placeholder="optional" oninput="this.dataset.userEdited='1'">
+                            <span class="hint" data-i18n="strategy_market_th_price_hint">Live marketplace price (volatile, changes minute-to-minute). Used only for the asset paper-value display. Leave blank to fall back to reinvest cost.</span>
                         </div>
                     </div>
                 </div>
@@ -3271,6 +3276,10 @@
             const btcOverride = parseFloat(document.getElementById('strategy-btc-override').value);
             const gmtOverride = parseFloat(document.getElementById('strategy-gmt-override').value);
             const costPerTH = parseFloat(document.getElementById('strategy-cost-per-th').value) || 12;
+            // Market TH price: used only for paper-value display of TH-asset gain.
+            // Volatile, changes minute-to-minute. Falls back to reinvest cost when blank.
+            const marketTHRaw = parseFloat(document.getElementById('strategy-market-th-price')?.value);
+            const marketTHPrice = !isNaN(marketTHRaw) && marketTHRaw > 0 ? marketTHRaw : costPerTH;
             const btcPrice = !isNaN(btcOverride) && btcOverride > 0 ? btcOverride : state.btcPrice;
             const gmtPrice = !isNaN(gmtOverride) && gmtOverride > 0 ? gmtOverride : state.gmtPrice;
 
@@ -3330,7 +3339,9 @@
             // Cash profit = liquid earnings (BTC + GMT) − fees. TH is shown separately as a hashrate gain.
             const totalBtcUsd = totalBtc * btcPrice;
             const totalGmtUsd = totalGmt * gmtPrice;
-            const totalThUsd = totalThGained * costPerTH; // paper value of TH asset
+            // Paper value of TH asset uses MARKET price (what you'd realize on resale).
+            // Cost basis (reinvest cost) is what produced the TH; market price is what it's worth now.
+            const totalThUsd = totalThGained * marketTHPrice;
             const netCashUsd = totalBtcUsd + totalGmtUsd - totalFeesUsd;
 
             // Per-currency net (deduct fees from whichever currency the user pays them in)
@@ -3348,7 +3359,7 @@
                 totalBtcUsd, totalGmtUsd, totalThUsd, totalFeesUsd, netCashUsd,
                 feeMode,
                 finalPower: power, startPower: cfg.hashrate,
-                btcPrice, gmtPrice, costPerTH,
+                btcPrice, gmtPrice, costPerTH, marketTHPrice,
                 hashrate: cfg.hashrate, efficiency: cfg.efficiency, elecCost: cfg.elecCost,
                 discount: cfg.discount, satPerTH: cfg.satPerTH,
                 source: cfg.source, sourceDate: cfg.sourceDate,
@@ -3398,12 +3409,12 @@
                     <div style="text-align:right;">
                         <div style="font-size:0.85em;color:var(--text-dim);" data-i18n="strategy_th_gained_label">+ Hashrate gained</div>
                         <div style="font-size:1.6em;font-weight:700;color:var(--green);">+${r.totalThGained.toFixed(2)} TH</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">${t('strategy_th_paper_value') || 'asset, paper value'} ≈ ${formatUSD(r.totalThUsd)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">${t('strategy_th_paper_value') || 'asset, paper value'} ≈ ${formatUSD(r.totalThUsd)} <span style="opacity:0.75;">(@ $${r.marketTHPrice.toFixed(2)}/TH ${r.marketTHPrice === r.costPerTH ? (t('strategy_th_fallback') || 'fallback to reinvest cost') : (t('strategy_th_market') || 'market')})</span></div>
                     </div>
                 </div>
                 <div style="margin-top:14px;padding-top:12px;border-top:1px solid var(--border);font-size:0.8em;color:var(--text-dim);line-height:1.7;">
                     <div><strong>${t('strategy_inputs_used') || 'Inputs used'}:</strong> ${r.hashrate} TH | ${r.satPerTH} sat/TH | ${(r.discount).toFixed(2)}% discount (Fee mode: ${state.feeMode.toUpperCase()}) | ${r.efficiency} W/TH | $${r.elecCost}/kWh</div>
-                    <div><span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH cost $${r.costPerTH.toFixed(2)}</div>
+                    <div><span data-i18n="strategy_used_prices">Prices used</span>: BTC $${Math.round(r.btcPrice).toLocaleString()} | GMT $${r.gmtPrice.toFixed(4)} | TH reinvest $${r.costPerTH.toFixed(2)}${r.marketTHPrice !== r.costPerTH ? ` | TH market $${r.marketTHPrice.toFixed(2)}` : ''}</div>
                     <div style="margin-top:6px;color:${r.source === 'rewardHistory' ? 'var(--green)' : 'var(--accent)'};font-style:italic;">
                         ${r.source === 'rewardHistory'
                             ? `✓ ${t('strategy_source_real') || 'Using real GoMining data from'} ${r.sourceDate} ${t('strategy_source_match') || '— matches the Validation table.'}`
@@ -5024,6 +5035,12 @@
                 strategy_prices_hint: 'Test scenarios — what if BTC pumps or GMT moves? Leave blank to use current snapshot.',
                 strategy_btc_price: 'BTC Price ($)', strategy_gmt_price: 'GMT Price ($)', strategy_cost_per_th: 'Cost per TH ($)',
                 strategy_cost_per_th_hint: '$12.34/TH (confirmed in GoMining app)',
+                strategy_reinvest_cost: 'Reinvest cost per TH ($)',
+                strategy_reinvest_cost_hint: 'In-app upgrade rate (~$12.34) — used to compute TH gained when reinvesting',
+                strategy_market_th_price: 'Market TH price ($)',
+                strategy_market_th_price_hint: 'Live marketplace price (volatile, changes minute-to-minute). Used only for the asset paper-value display. Leave blank to fall back to reinvest cost.',
+                strategy_th_market: 'market',
+                strategy_th_fallback: 'fallback to reinvest cost',
                 strategy_current: 'current',
                 strategy_auto: 'Auto-filled', strategy_from_sync: 'from sync',
                 strategy_week: 'Week',
@@ -5224,6 +5241,12 @@
                 strategy_prices_hint: 'Teste des scénarios — que se passe-t-il si BTC monte ou si GMT bouge ? Laisse vide pour utiliser les prix actuels.',
                 strategy_btc_price: 'Prix BTC ($)', strategy_gmt_price: 'Prix GMT ($)', strategy_cost_per_th: 'Coût par TH ($)',
                 strategy_cost_per_th_hint: '12,34$/TH (confirmé dans l\'app GoMining)',
+                strategy_reinvest_cost: 'Coût de réinvest par TH ($)',
+                strategy_reinvest_cost_hint: 'Tarif d\'upgrade in-app (~12,34$) — utilisé pour calculer les TH gagnés en réinvestissant',
+                strategy_market_th_price: 'Prix marché du TH ($)',
+                strategy_market_th_price_hint: 'Prix marketplace en direct (volatile, change à la minute). Sert uniquement à afficher la valeur papier de l\'actif. Laisse vide pour utiliser le coût de réinvest.',
+                strategy_th_market: 'marché',
+                strategy_th_fallback: 'défaut sur coût de réinvest',
                 strategy_current: 'actuel',
                 strategy_auto: 'Auto-rempli', strategy_from_sync: 'depuis sync',
                 strategy_week: 'Semaine',
