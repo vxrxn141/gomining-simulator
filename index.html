@@ -3379,11 +3379,13 @@
             const totalThUsd = totalThGained * marketTHPrice;
             const netCashUsd = totalBtcUsd + totalGmtUsd - totalFeesUsd;
 
-            // Per-currency net (deduct fees from whichever currency the user pays them in)
+            // Per-currency net (deduct fees from whichever currency the user pays them in).
+            // Allow negative values: if you mine all-GMT in BTC fee mode, BTC net goes
+            // negative (fees deducted with no BTC earned), and vice versa for GMT.
             const feeMode = state.feeMode || 'gmt';
             const totalFeesBtc = feeMode === 'btc' ? totalFeesUsd / btcPrice : 0;
-            const netBtc = Math.max(0, totalBtc - totalFeesBtc);
-            const netGmt = feeMode === 'gmt' ? Math.max(0, totalGmt - totalFeesGmt) : totalGmt;
+            const netBtc = totalBtc - totalFeesBtc;
+            const netGmt = feeMode === 'gmt' ? totalGmt - totalFeesGmt : totalGmt;
             const netBtcUsd = netBtc * btcPrice;
             const netGmtUsd = netGmt * gmtPrice;
 
@@ -3438,13 +3440,13 @@
                 <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
                     <div class="strategy-result-card" style="border:1px solid var(--border);">
                         <div class="res-label" data-i18n="strategy_total_btc_net">Total BTC (net)</div>
-                        <div class="res-value" style="color:var(--accent);">+${r.netBtc.toFixed(8)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netBtcUsd)}</div>
+                        <div class="res-value" style="color:${r.netBtc < 0 ? 'var(--red)' : 'var(--accent)'};">${r.netBtc >= 0 ? '+' : ''}${r.netBtc.toFixed(8)}</div>
+                        <div style="font-size:0.8em;color:${r.netBtcUsd < 0 ? 'var(--red)' : 'var(--text-dim)'};">≈ ${formatUSD(r.netBtcUsd)}</div>
                     </div>
                     <div class="strategy-result-card" style="border:1px solid var(--border);">
                         <div class="res-label" data-i18n="strategy_total_gmt_net">Total GMT (net)</div>
-                        <div class="res-value" style="color:var(--purple);">+${r.netGmt.toFixed(2)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netGmtUsd)}</div>
+                        <div class="res-value" style="color:${r.netGmt < 0 ? 'var(--red)' : 'var(--purple)'};">${r.netGmt >= 0 ? '+' : ''}${r.netGmt.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:${r.netGmtUsd < 0 ? 'var(--red)' : 'var(--text-dim)'};">≈ ${formatUSD(r.netGmtUsd)}</div>
                     </div>
                     <div class="strategy-result-card" style="border:1px solid var(--border);">
                         <div class="res-label" data-i18n="strategy_total_th_net">Total TH (net)</div>
