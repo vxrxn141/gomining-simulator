@@ -2084,8 +2084,9 @@
                     <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px;margin-bottom:6px;">
                         <span style="font-size:0.85em;color:var(--text);font-weight:600;" data-i18n="strategy_smart_hint">Auto-fill: GMT-mining first to cover all fees, then switch to your target.</span>
                         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                            <button class="quick-fill-btn" onclick="smartFillStrategy('th')" style="background:rgba(46,204,113,0.12);border-color:var(--green);color:var(--green);"><span data-i18n="strategy_smart_th">⚖ GMT → TH</span></button>
-                            <button class="quick-fill-btn" onclick="smartFillStrategy('btc')" style="background:rgba(247,147,26,0.12);border-color:var(--accent);color:var(--accent);"><span data-i18n="strategy_smart_btc">⚖ GMT → BTC</span></button>
+                            <button class="quick-fill-btn" onclick="smartFillStrategy('th','gmt')" style="background:rgba(46,204,113,0.12);border-color:var(--green);color:var(--green);"><span data-i18n="strategy_smart_th">⚖ GMT → TH</span></button>
+                            <button class="quick-fill-btn" onclick="smartFillStrategy('btc','gmt')" style="background:rgba(247,147,26,0.12);border-color:var(--accent);color:var(--accent);"><span data-i18n="strategy_smart_btc">⚖ GMT → BTC</span></button>
+                            <button class="quick-fill-btn" onclick="smartFillStrategy('th','btc')" style="background:rgba(46,204,113,0.12);border-color:var(--green);color:var(--green);"><span data-i18n="strategy_smart_btc_th">⚖ BTC → TH</span></button>
                         </div>
                     </div>
                     <div id="strategy-smart-output" style="font-size:0.85em;color:var(--text-dim);margin-top:4px;"></div>
@@ -3149,7 +3150,7 @@
         // Auto-fill X days of GMT mining first (to build up GMT for fees), then switch to target.
         // Computes minimum X such that GMT earned in X days ≥ fees for all N days.
         // Math: X * grossGmt ≥ N * feesGmt  →  X = ceil(N * feesGmt / grossGmt)
-        function smartFillStrategy(target) {
+        function smartFillStrategy(target, source = 'gmt') {
             const cfg = getStrategyBaseConfig();
             const outEl = document.getElementById('strategy-smart-output');
 
@@ -3170,41 +3171,46 @@
             const r = calcDailyReward(cfg.hashrate, cfg.efficiency, cfg.elecCost, cfg.discount, btcPrice, cfg.satPerTH);
             state.gmtPrice = savedGmt;
 
-            if (!r || r.grossGmt <= 0 || r.feesGmt <= 0) {
+            // Source-aware: cover fees with whichever currency is being mined first
+            const grossSource = source === 'btc' ? r?.grossBtc : r?.grossGmt;
+            const feesSource  = source === 'btc' ? r?.feesBtc  : r?.feesGmt;
+
+            if (!r || !grossSource || grossSource <= 0 || !feesSource || feesSource <= 0) {
                 outEl.textContent = t('strategy_smart_impossible');
                 outEl.style.color = 'var(--red)';
                 return;
             }
 
-            // GMT mining is unprofitable if grossGmt ≤ feesGmt (rare, but possible with high elec cost)
-            if (r.grossGmt <= r.feesGmt) {
+            // Source mining is unprofitable if grossSource ≤ feesSource
+            if (grossSource <= feesSource) {
                 outEl.textContent = t('strategy_smart_impossible');
                 outEl.style.color = 'var(--red)';
                 return;
             }
 
             const N = strategyPeriod;
-            // Min X such that X*grossGmt ≥ N*feesGmt
-            const X = Math.ceil((N * r.feesGmt) / r.grossGmt);
+            // Min X such that X*grossSource ≥ N*feesSource
+            const X = Math.ceil((N * feesSource) / grossSource);
 
             if (X >= N) {
-                // Need every day in GMT just to cover fees — no room for target strategy
+                // Need every day in source just to cover fees — no room for target strategy
                 outEl.innerHTML = `<span style="color:var(--accent);">${t('strategy_smart_impossible')}</span> (${t('strategy_period_short') || 'period too short'}: ${N} ${t('days')}, ${X} ${t('days')} ${t('strategy_needed') || 'needed'})`;
-                fillStrategyAll('gmt');
+                fillStrategyAll(source);
                 rebuildStrategyGrid();
                 return;
             }
 
-            // Fill: first X days GMT, remaining days target
+            // Fill: first X days source, remaining days target
             for (let i = 0; i < N; i++) {
-                strategyDays[i] = i < X ? 'gmt' : target;
+                strategyDays[i] = i < X ? source : target;
             }
             rebuildStrategyGrid();
 
             const Y = N - X;
             const targetLabel = target.toUpperCase();
-            const tmpl = t('strategy_smart_result') || 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.';
-            outEl.innerHTML = '✓ ' + tmpl.replace('{x}', X).replace('{y}', Y).replace('{target}', targetLabel);
+            const sourceLabel = source.toUpperCase();
+            const tmpl = t('strategy_smart_result_v2') || 'Mine {source} for {x} days to cover fees, then switch to {target} for the remaining {y} days.';
+            outEl.innerHTML = '✓ ' + tmpl.replace('{source}', sourceLabel).replace('{x}', X).replace('{y}', Y).replace('{target}', targetLabel);
             outEl.style.color = 'var(--green)';
         }
 
@@ -5151,6 +5157,8 @@
                 strategy_verify_inputs: "⚠ Inputs come from the Simulator tab. Update them there if numbers don't match your reality.",
                 strategy_smart_th: '⚖ GMT → TH',
                 strategy_smart_btc: '⚖ GMT → BTC',
+                strategy_smart_btc_th: '⚖ BTC → TH',
+                strategy_smart_result_v2: 'Mine {source} for {x} days to cover fees, then switch to {target} for the remaining {y} days.',
                 strategy_smart_hint: 'Auto-fill: GMT-mining first to cover all fees, then switch to your target.',
                 strategy_smart_result: 'Mine GMT for {x} days to cover fees, then switch to {target} for the remaining {y} days.',
                 strategy_smart_impossible: "Cannot cover fees: GMT mining doesn't earn enough to cover daily fees with current params.",
@@ -5364,6 +5372,8 @@
                 strategy_verify_inputs: '⚠ Les paramètres viennent de l\'onglet Simulateur. Modifie-les là si les chiffres ne correspondent pas à ta réalité.',
                 strategy_smart_th: '⚖ GMT → TH',
                 strategy_smart_btc: '⚖ GMT → BTC',
+                strategy_smart_btc_th: '⚖ BTC → TH',
+                strategy_smart_result_v2: 'Mine du {source} pendant {x} jours pour couvrir les frais, puis passe à {target} pour les {y} jours restants.',
                 strategy_smart_hint: 'Auto-remplir : miner en GMT d\'abord pour couvrir tous les frais, puis basculer vers ta cible.',
                 strategy_smart_result: 'Mine en GMT pendant {x} jours pour couvrir les frais, puis bascule en {target} pour les {y} jours restants.',
                 strategy_smart_impossible: 'Impossible de couvrir les frais : le minage GMT ne génère pas assez avec les paramètres actuels.',
