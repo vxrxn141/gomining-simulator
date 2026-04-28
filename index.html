@@ -6286,6 +6286,19 @@
         if (state.rewardHistory.length > 0) {
             document.getElementById('dash-history-section').style.display = 'block';
             showDashboardCalendar(state.rewardHistory);
+            // Recompute PR from yesterday's complete day to override any stale
+            // dashboard cache value (would otherwise persist a partial-day PR
+            // until the next extension sync).
+            const lastComplete = getLastCompleteRewardDay(state.rewardHistory);
+            if (lastComplete && lastComplete.poolReward && lastComplete.power) {
+                const fresh = Math.round(lastComplete.poolReward / lastComplete.power * 1e8);
+                state.satPerTH = fresh;
+                state.apiSatPerTH = fresh;
+                const satEl = document.getElementById('sat-per-th');
+                if (satEl) satEl.value = fresh;
+                const netHashEl = document.getElementById('net-hashrate');
+                if (netHashEl) netHashEl.textContent = fresh + ' PR';
+            }
         }
 
         // Check for auto-sync data
