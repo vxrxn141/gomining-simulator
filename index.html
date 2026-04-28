@@ -3408,22 +3408,17 @@
 
             let html = `<div class="section" style="background:var(--bg2);">
                 <h3 style="margin:0 0 14px 0;color:var(--a-strategy);" data-i18n="strategy_results">📊 Results — ${r.period} ${t_('days', 'days')}</h3>
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
+                <!-- Row 1: GROSS earnings + fees -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:10px;">
                     <div class="strategy-result-card">
-                        <div class="res-label" data-i18n="strategy_net_btc">BTC Net</div>
-                        <div class="res-value" style="color:var(--accent);">+${r.netBtc.toFixed(8)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netBtcUsd)}</div>
-                        ${r.feeMode === 'btc' && r.totalFeesBtc > 0
-                            ? `<div style="font-size:0.7em;color:var(--text-dim);margin-top:2px;">${r.totalBtc.toFixed(8)} − ${r.totalFeesBtc.toFixed(8)} fees</div>`
-                            : ''}
+                        <div class="res-label" data-i18n="strategy_gross_btc">BTC Gross</div>
+                        <div class="res-value" style="color:var(--accent);">+${r.totalBtc.toFixed(8)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalBtcUsd)}</div>
                     </div>
                     <div class="strategy-result-card">
-                        <div class="res-label" data-i18n="strategy_net_gmt">GMT Net</div>
-                        <div class="res-value" style="color:var(--purple);">+${r.netGmt.toFixed(2)}</div>
-                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netGmtUsd)}</div>
-                        ${r.feeMode === 'gmt' && r.totalFeesGmt > 0
-                            ? `<div style="font-size:0.7em;color:var(--text-dim);margin-top:2px;">${r.totalGmt.toFixed(2)} − ${r.totalFeesGmt.toFixed(2)} fees</div>`
-                            : ''}
+                        <div class="res-label" data-i18n="strategy_gross_gmt">GMT Gross</div>
+                        <div class="res-value" style="color:var(--purple);">+${r.totalGmt.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalGmtUsd)}</div>
                     </div>
                     <div class="strategy-result-card">
                         <div class="res-label" data-i18n="strategy_total_th">TH Gained</div>
@@ -3436,6 +3431,25 @@
                             ? (r.totalFeesUsd / r.btcPrice).toFixed(8) + ' BTC'
                             : r.totalFeesGmt.toFixed(2) + ' GMT'}</div>
                         <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.totalFeesUsd)}</div>
+                    </div>
+                </div>
+
+                <!-- Row 2: NET totals (after fees) -->
+                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px;margin-bottom:16px;">
+                    <div class="strategy-result-card" style="border:1px solid var(--border);">
+                        <div class="res-label" data-i18n="strategy_total_btc_net">Total BTC (net)</div>
+                        <div class="res-value" style="color:var(--accent);">+${r.netBtc.toFixed(8)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netBtcUsd)}</div>
+                    </div>
+                    <div class="strategy-result-card" style="border:1px solid var(--border);">
+                        <div class="res-label" data-i18n="strategy_total_gmt_net">Total GMT (net)</div>
+                        <div class="res-value" style="color:var(--purple);">+${r.netGmt.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">≈ ${formatUSD(r.netGmtUsd)}</div>
+                    </div>
+                    <div class="strategy-result-card" style="border:1px solid var(--border);">
+                        <div class="res-label" data-i18n="strategy_total_th_net">Total TH (net)</div>
+                        <div class="res-value" style="color:var(--green);">+${r.totalThGained.toFixed(2)}</div>
+                        <div style="font-size:0.8em;color:var(--text-dim);">${t('strategy_no_th_fees') || 'no fees on TH'}</div>
                     </div>
                 </div>
                 <div style="border-top:1px solid var(--border);padding-top:14px;display:flex;justify-content:space-between;flex-wrap:wrap;gap:10px;">
@@ -5144,6 +5158,9 @@
                 strategy_results: 'Results',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gained', strategy_total_fees: 'Fees Paid',
                 strategy_net_btc: 'BTC Net', strategy_net_gmt: 'GMT Net',
+                strategy_gross_btc: 'BTC Gross', strategy_gross_gmt: 'GMT Gross',
+                strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
+                strategy_no_th_fees: 'no fees on TH',
                 strategy_net_cash: 'Net cash profit (BTC + GMT − fees)', strategy_th_gained_label: '+ Hashrate gained', strategy_th_paper_value: 'asset, paper value',
                 strategy_used_prices: 'Prices used',
                 refresh: 'Refresh', sidebar_guide: 'Extension Guide',
@@ -5354,6 +5371,9 @@
                 strategy_results: 'Résultats',
                 strategy_total_btc: 'Total BTC', strategy_total_gmt: 'Total GMT', strategy_total_th: 'TH Gagnés', strategy_total_fees: 'Frais Payés',
                 strategy_net_btc: 'BTC Net', strategy_net_gmt: 'GMT Net',
+                strategy_gross_btc: 'BTC Brut', strategy_gross_gmt: 'GMT Brut',
+                strategy_total_btc_net: 'Total BTC (net)', strategy_total_gmt_net: 'Total GMT (net)', strategy_total_th_net: 'Total TH (net)',
+                strategy_no_th_fees: 'pas de frais sur TH',
                 strategy_net_cash: 'Profit net liquide (BTC + GMT − frais)', strategy_th_gained_label: '+ Hashrate gagné', strategy_th_paper_value: 'actif, valeur papier',
                 strategy_used_prices: 'Prix utilisés',
                 refresh: 'Rafraîchir', sidebar_guide: "Guide d'extension",
