@@ -3360,12 +3360,9 @@
         }
 
         function getStrategyBaseConfig() {
-            // Prefer the LAST DAY from rewardHistory (matches Validation table source-of-truth).
-            // This ensures Strategy Lab numbers align with what GoMining actually paid.
-            // Fall back to form values if no history is available.
-            const latest = state.rewardHistory?.length > 0
-                ? state.rewardHistory[state.rewardHistory.length - 1]
-                : null;
+            // Prefer the LAST COMPLETE DAY (yesterday) from rewardHistory — matches the
+            // Validation table source-of-truth and avoids the partial-day-PR distortion.
+            const latest = getLastCompleteRewardDay(state.rewardHistory);
 
             if (latest && latest.power && latest.poolReward && latest.totalDiscount !== undefined) {
                 // Strategy: use form's hashrate (TOTAL power across all NFTs from /nft/get-my)
@@ -4259,8 +4256,8 @@
             if (data.discount?.token !== undefined) document.getElementById('discount-maintenance').value = (data.discount.token * 100).toFixed(1);
 
             // Prices — GoMining API prices have priority over CoinGecko
-            // Fallback: prix du dernier jour de reward history
-            const lastDay = data.rewardHistory?.length > 0 ? data.rewardHistory[data.rewardHistory.length - 1] : null;
+            // Fallback: prices from the last complete day (yesterday) of reward history
+            const lastDay = getLastCompleteRewardDay(data.rewardHistory);
 
             const apiGmt = data.prices?.gmtPrice || (lastDay?.gmtPrice) || null;
             const apiBtc = data.prices?.btcPrice || (lastDay?.btcPrice) || null;
@@ -4294,10 +4291,11 @@
                 const btcP = apiBtc || state.apiBtcPrice || state.btcPrice;
                 let satPerTH = null;
 
-                // Primary: last complete day from reward history (poolReward / power)
+                // Primary: last complete day from reward history (always yesterday,
+                // never today — see getLastCompleteRewardDay).
                 if (data.rewardHistory?.length > 0) {
-                    const latest = data.rewardHistory[data.rewardHistory.length - 1];
-                    if (latest.poolReward && latest.power) {
+                    const latest = getLastCompleteRewardDay(data.rewardHistory);
+                    if (latest && latest.poolReward && latest.power) {
                         satPerTH = Math.round(latest.poolReward / latest.power * 1e8);
                     }
                 }
@@ -4957,6 +4955,19 @@
 
         // ===== REWARD HISTORY PERSISTENCE =====
         const RH_KEY = 'gomining_reward_history';
+
+        // Returns the last reward-history entry STRICTLY BEFORE today (UTC).
+        // Today's entry is partial (accumulating since 00:00 UTC) and skews
+        // the PR display. Always use yesterday — the most recent complete day.
+        function getLastCompleteRewardDay(history) {
+            if (!history || !history.length) return null;
+            const todayUtc = new Date().toISOString().substring(0, 10);
+            for (let i = history.length - 1; i >= 0; i--) {
+                if (history[i].date && history[i].date < todayUtc) return history[i];
+            }
+            // Fallback: no complete day found, use whatever's last (extension just installed)
+            return history[history.length - 1];
+        }
 
         function mergeRewardHistory(existing, incoming) {
             const byDate = new Map();
