@@ -1523,6 +1523,7 @@
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees" data-i18n="kpi_pool_reward">Pool Reward</span></div>
                     <div class="value net" id="net-hashrate">--</div>
+                    <div id="pr-source" style="font-size:0.65em;color:var(--text-mute);margin-top:2px;text-align:center;"></div>
                 </div>
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="Total discount applied to your maintenance fees (sum of token, streak, VIP, and mining mode)" data-i18n="kpi_discount">Discount</span></div>
@@ -6304,6 +6305,9 @@
                 if (satEl) satEl.value = fresh;
                 const netHashEl = document.getElementById('net-hashrate');
                 if (netHashEl) netHashEl.textContent = fresh + ' PR';
+                // Visible source label so we can sanity-check which day was picked
+                const srcEl = document.getElementById('pr-source');
+                if (srcEl) srcEl.textContent = `from ${lastComplete.date}${lastComplete.partial ? ' (partial!)' : ''} · ${lastComplete.poolReward.toFixed(8)}/${lastComplete.power.toFixed(2)} TH`;
             }
         }
 
