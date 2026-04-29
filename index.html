@@ -1523,7 +1523,6 @@
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="Satoshis earned per TH/s per day before fees" data-i18n="kpi_pool_reward">Pool Reward</span></div>
                     <div class="value net" id="net-hashrate">--</div>
-                    <div id="pr-source" style="font-size:0.65em;color:var(--text-mute);margin-top:2px;text-align:center;"></div>
                 </div>
                 <div class="live-card">
                     <div class="label"><span class="has-tooltip" data-tooltip="Total discount applied to your maintenance fees (sum of token, streak, VIP, and mining mode)" data-i18n="kpi_discount">Discount</span></div>
@@ -4302,15 +4301,13 @@
                     }
                 }
 
-                // Fallback: totalIncomePerThToday (partial day, EXPLICITLY not used for PR
-                // because it gives a partial-day value that varies by hour. Only use it as
-                // an ABSOLUTE LAST resort if we have NO history at all (fresh extension install
-                // mid-day) — and even then we don't overwrite an already-good value.
-                let isPartialFallback = false;
+                // Fallback: totalIncomePerThToday (partial day, varies by hour).
+                // Only used as absolute last resort if we have no history AND no
+                // existing apiSatPerTH from a previous load — and never overwrites a
+                // good value, so PR stays stable across syncs.
                 if (!satPerTH && !state.apiSatPerTH && data.income?.prPerThGmt && gmtP && btcP) {
                     const prBtcPerTH = data.income.prPerThGmt * gmtP / btcP;
                     satPerTH = Math.round(prBtcPerTH * 1e8);
-                    isPartialFallback = true;
                 }
 
                 if (satPerTH) {
@@ -4318,15 +4315,6 @@
                     state.satPerTH = satPerTH;
                     state.apiSatPerTH = satPerTH;
                     document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
-                    // Update visible source label so it reflects the value actually shown
-                    const srcEl = document.getElementById('pr-source');
-                    if (srcEl) {
-                        if (latestForPR) {
-                            srcEl.textContent = `from ${latestForPR.date} · ${latestForPR.poolReward.toFixed(8)}/${latestForPR.power.toFixed(2)} TH`;
-                        } else if (isPartialFallback) {
-                            srcEl.textContent = `from today (partial — no complete day yet)`;
-                        }
-                    }
                 }
             }
 
@@ -6322,9 +6310,6 @@
                 if (satEl) satEl.value = fresh;
                 const netHashEl = document.getElementById('net-hashrate');
                 if (netHashEl) netHashEl.textContent = fresh + ' PR';
-                // Visible source label so we can sanity-check which day was picked
-                const srcEl = document.getElementById('pr-source');
-                if (srcEl) srcEl.textContent = `from ${lastComplete.date}${lastComplete.partial ? ' (partial!)' : ''} · ${lastComplete.poolReward.toFixed(8)}/${lastComplete.power.toFixed(2)} TH`;
             }
         }
 
