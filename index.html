@@ -4294,17 +4294,23 @@
 
                 // Primary: last complete day from reward history (always yesterday,
                 // never today — see getLastCompleteRewardDay).
+                let latestForPR = null;
                 if (data.rewardHistory?.length > 0) {
-                    const latest = getLastCompleteRewardDay(data.rewardHistory);
-                    if (latest && latest.poolReward && latest.power) {
-                        satPerTH = Math.round(latest.poolReward / latest.power * 1e8);
+                    latestForPR = getLastCompleteRewardDay(data.rewardHistory);
+                    if (latestForPR && latestForPR.poolReward && latestForPR.power) {
+                        satPerTH = Math.round(latestForPR.poolReward / latestForPR.power * 1e8);
                     }
                 }
 
-                // Fallback: totalIncomePerThToday (partial day, less accurate)
-                if (!satPerTH && data.income?.prPerThGmt && gmtP && btcP) {
+                // Fallback: totalIncomePerThToday (partial day, EXPLICITLY not used for PR
+                // because it gives a partial-day value that varies by hour. Only use it as
+                // an ABSOLUTE LAST resort if we have NO history at all (fresh extension install
+                // mid-day) — and even then we don't overwrite an already-good value.
+                let isPartialFallback = false;
+                if (!satPerTH && !state.apiSatPerTH && data.income?.prPerThGmt && gmtP && btcP) {
                     const prBtcPerTH = data.income.prPerThGmt * gmtP / btcP;
                     satPerTH = Math.round(prBtcPerTH * 1e8);
+                    isPartialFallback = true;
                 }
 
                 if (satPerTH) {
@@ -4312,6 +4318,15 @@
                     state.satPerTH = satPerTH;
                     state.apiSatPerTH = satPerTH;
                     document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
+                    // Update visible source label so it reflects the value actually shown
+                    const srcEl = document.getElementById('pr-source');
+                    if (srcEl) {
+                        if (latestForPR) {
+                            srcEl.textContent = `from ${latestForPR.date} · ${latestForPR.poolReward.toFixed(8)}/${latestForPR.power.toFixed(2)} TH`;
+                        } else if (isPartialFallback) {
+                            srcEl.textContent = `from today (partial — no complete day yet)`;
+                        }
+                    }
                 }
             }
 
@@ -4957,11 +4972,14 @@
         // ===== REWARD HISTORY PERSISTENCE =====
         const RH_KEY = 'gomining_reward_history';
 
-        // Returns the last reward-history entry that's NOT today's partial day.
+        // Returns the last reward-history entry that's NOT today's partial day,
+        // or NULL if no complete day exists (e.g. fresh sync with only today).
+        // Returning null is critical — callers must NOT compute PR from a partial
+        // entry, which would give bogus values like "14" when reality is 46.
         // Two filters (defense-in-depth):
-        //   1. `partial: true` flag set by the extension (newer extension builds)
+        //   1. `partial: true` flag set by the extension (v1.3+)
         //   2. date strictly before today UTC (works for older extension data
-        //      that doesn't have the partial flag, and as a safety net)
+        //      that doesn't have the flag, and as a safety net)
         function getLastCompleteRewardDay(history) {
             if (!history || !history.length) return null;
             const todayUtc = new Date().toISOString().substring(0, 10);
@@ -4972,8 +4990,7 @@
                 if (d.date >= todayUtc) continue;
                 return d;
             }
-            // Fallback: no complete day found, use whatever's last (extension just installed)
-            return history[history.length - 1];
+            return null;
         }
 
         function mergeRewardHistory(existing, incoming) {
