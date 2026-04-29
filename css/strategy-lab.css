@@ -1,0 +1,32 @@
+/* ===== Strategy Lab styles =====
+   Loaded from index.html via <link rel="stylesheet">.
+   .period-selector / .period-btn / .btn-primary / .quick-fill-btn /
+   .day-cell / .strategy-result-card are only used inside the Strategy
+   Lab tab — safe to keep isolated here.
+*/
+.period-selector { display: flex; gap: 0; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; max-width: 360px; }
+.period-btn { flex: 1; background: var(--bg); border: none; border-right: 1px solid var(--border); color: var(--text-dim); padding: 10px 14px; cursor: pointer; font-size: 0.9em; font-weight: 600; transition: all 0.15s; }
+.period-btn:last-child { border-right: none; }
+.period-btn:hover { color: var(--text); }
+.period-btn.active { background: var(--a-strategy); color: #000; }
+
+.quick-fill-btn { background: var(--bg2); border: 1px solid var(--border); border-radius: 6px; color: var(--text-dim); padding: 5px 10px; cursor: pointer; font-size: 0.8em; transition: all 0.15s; }
+.quick-fill-btn:hover { color: var(--text); border-color: var(--text-dim); }
+
+.day-cell { background: var(--bg2); border: 2px solid transparent; border-radius: 8px; padding: 8px 4px; cursor: pointer; user-select: none; text-align: center; transition: all 0.15s; }
+.day-cell:hover { transform: translateY(-1px); }
+.day-cell .day-num { font-size: 0.7em; color: var(--text-dim); font-weight: 600; margin-bottom: 4px; }
+.day-cell .day-strat { font-size: 0.95em; font-weight: 700; }
+.day-cell[data-strat="btc"] { border-color: var(--accent); background: rgba(247,147,26,0.08); }
+.day-cell[data-strat="btc"] .day-strat { color: var(--accent); }
+.day-cell[data-strat="gmt"] { border-color: var(--purple); background: rgba(188,140,255,0.08); }
+.day-cell[data-strat="gmt"] .day-strat { color: var(--purple); }
+.day-cell[data-strat="th"] { border-color: var(--green); background: rgba(46,204,113,0.08); }
+.day-cell[data-strat="th"] .day-strat { color: var(--green); }
+
+.btn-primary { border: none; border-radius: 8px; cursor: pointer; transition: opacity 0.15s; }
+.btn-primary:hover { opacity: 0.88; }
+
+.strategy-result-card { background: var(--bg2); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
+.strategy-result-card .res-label { color: var(--text-dim); font-size: 0.8em; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.5px; }
+.strategy-result-card .res-value { font-size: 1.4em; font-weight: 700; }
