@@ -458,40 +458,18 @@
             }
         }
 
-        // Upgrade cost per TH (from /nft/get-power-upgrade-info)
-        // Field name is uncertain — try several common patterns and log what we found
+        // Upgrade cost per TH — DISABLED.
+        // Previous heuristic picked the first numeric field 0-1000 from
+        // /nft/get-power-upgrade-info and was returning wrong values (~$7.79
+        // when the real upgrade rate is $12.34). Until we can identify the
+        // correct field with a captured raw payload, we don't propagate a
+        // cost — the simulator falls back to its hardcoded $12.34 default.
+        // For debugging when GoMining ships a new upgrade flow, log raw keys:
         result.upgrade = {};
-        const findCostPerTH = (data) => {
-            if (!data) return null;
-            const candidates = ['priceForOneTh', 'priceForOneTH', 'pricePerTh', 'pricePerTH',
-                                'priceUsd', 'priceUSD', 'price', 'upgradePrice', 'usdPriceForOneTh',
-                                'oneThPrice', 'thPrice'];
-            for (const key of candidates) {
-                if (typeof data[key] === 'number' && data[key] > 0 && data[key] < 1000) return data[key];
-                if (typeof data[key] === 'string' && parseFloat(data[key]) > 0) return parseFloat(data[key]);
-            }
-            return null;
-        };
         for (const m of Object.values(DATA.miners)) {
             if (m.url?.includes('/nft/get-power-upgrade-info') || m.url?.includes('/nft/get-upgrade-rate')) {
                 const d = m.data?.data || m.data;
-                const cost = findCostPerTH(d);
-                if (cost) {
-                    result.upgrade.costPerTH = cost;
-                    log('Upgrade cost per TH detected: $' + cost);
-                } else {
-                    log('Upgrade endpoint captured but cost field unknown — raw keys: ' + Object.keys(d || {}).join(','));
-                }
-            }
-        }
-        for (const r of Object.values(DATA.rewards)) {
-            if (r.url?.includes('/nft/get-power-upgrade-info') || r.url?.includes('/nft/get-upgrade-rate')) {
-                const d = r.data?.data || r.data;
-                const cost = findCostPerTH(d);
-                if (cost && !result.upgrade.costPerTH) {
-                    result.upgrade.costPerTH = cost;
-                    log('Upgrade cost per TH detected: $' + cost);
-                }
+                if (d) log('Upgrade endpoint keys (debug): ' + Object.keys(d).join(','));
             }
         }
 
@@ -582,8 +560,13 @@
                     // For totalDiscount, take the value from the largest NFT (they should all have the same discount)
                     const main = incomes.reduce((a, b) => (b.power || 0) > (a.power || 0) ? b : a, incomes[0]);
 
+                    // Mark today's entry as `partial: true` — it's accumulating since
+                    // 00:00 UTC and any consumer that uses `poolReward / power` for the
+                    // PR display will get inflated values without this flag.
+                    const todayUTC = new Date().toISOString().substring(0, 10);
                     result.rewardHistory.push({
                         date: dateStr,
+                        partial: dateStr >= todayUTC,
                         valueBtc: day.valueV2 || day.value || 0,
                         power: sumPower,
                         c1: sumC1,

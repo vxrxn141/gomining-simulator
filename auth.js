@@ -274,9 +274,10 @@ function watchTier(uid) {
 }
 
 // ----- preview bypass -----
-// Allows sharing a feedback link without requiring sign-in. URL must include
-// ?preview=darun. Removes the auth gate entirely; no Firebase login flow runs.
-const PREVIEW_BYPASS = new URLSearchParams(location.search).get("preview") === "darun";
+// Internal-only preview link. Gated on hostname so production (gmsim.ca)
+// cannot be bypassed — only *.github.io preview deploys honor the param.
+const PREVIEW_BYPASS = /\.github\.io$/i.test(location.hostname)
+  && new URLSearchParams(location.search).get("preview") === "darun";
 if (PREVIEW_BYPASS) {
   document.addEventListener("DOMContentLoaded", () => hideGate());
   setTimeout(() => hideGate(), 0);

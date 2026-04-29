@@ -960,12 +960,12 @@
     </style>
 
     <script>
-      // Preview-mode bypass: shareable feedback link (?preview=darun)
-      //   - skips the Firebase auth gate
-      //   - reveals the Strategy Lab nav item (hidden by default in production)
-      //   - auto-switches to the Strategy Lab tab
-      // Inline so it runs before deferred modules; the gate never visually shows.
+      // Preview-mode bypass: shareable feedback link for internal use only.
+      // Gated on hostname so production (gmsim.ca / www.gmsim.ca) can NEVER
+      // bypass auth — only the *.github.io preview deploy can.
       (function () {
+        const isPreviewHost = /\.github\.io$/i.test(location.hostname);
+        if (!isPreviewHost) return;
         if (new URLSearchParams(location.search).get('preview') !== 'darun') return;
         window.__previewBypass = true;
         const apply = () => {
@@ -4956,14 +4956,20 @@
         // ===== REWARD HISTORY PERSISTENCE =====
         const RH_KEY = 'gomining_reward_history';
 
-        // Returns the last reward-history entry STRICTLY BEFORE today (UTC).
-        // Today's entry is partial (accumulating since 00:00 UTC) and skews
-        // the PR display. Always use yesterday — the most recent complete day.
+        // Returns the last reward-history entry that's NOT today's partial day.
+        // Two filters (defense-in-depth):
+        //   1. `partial: true` flag set by the extension (newer extension builds)
+        //   2. date strictly before today UTC (works for older extension data
+        //      that doesn't have the partial flag, and as a safety net)
         function getLastCompleteRewardDay(history) {
             if (!history || !history.length) return null;
             const todayUtc = new Date().toISOString().substring(0, 10);
             for (let i = history.length - 1; i >= 0; i--) {
-                if (history[i].date && history[i].date < todayUtc) return history[i];
+                const d = history[i];
+                if (!d.date) continue;
+                if (d.partial === true) continue;
+                if (d.date >= todayUtc) continue;
+                return d;
             }
             // Fallback: no complete day found, use whatever's last (extension just installed)
             return history[history.length - 1];
