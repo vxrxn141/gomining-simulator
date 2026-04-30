@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="robots" content="noindex,nofollow"><!-- WIP, not linked yet -->
+  <title>Mining Wars Calculator · GoMining Simulator</title>
+  <link rel="icon" type="image/png" href="icon.png">
+  <link rel="stylesheet" href="mining-wars.css">
+  <script defer src="mining-wars.js"></script>
+</head>
+<body>
+  <div class="wrap">
+    <div class="topbar">
+      <div class="brand">
+        <img src="icon.png" alt="">
+        <div>
+          <h1>GoMining <span class="accent">Simulator</span></h1>
+          <p>Mining Wars Calculator</p>
+        </div>
+      </div>
+      <a href="index.html" class="back">← Back</a>
+    </div>
+
+    <!-- intro -->
+    <div class="card">
+      <div class="card-title">⚔️ Mining mode vs Miner Wars</div>
+      <div class="card-desc">
+        Same TH/s, two completely different games. Mining mode is the predictable BTC drip — paid daily, full discount stack. Miner Wars is a weekly clan competition with an <strong>excess-fee tax</strong> on earnings above your solo ceiling, calculated at the league's average W/TH (worse than yours if you're efficient). This calculator shows you which one actually pays more for your specific setup.
+      </div>
+    </div>
+
+    <!-- league picker (TOP — drives everything below) -->
+    <div class="card">
+      <div class="card-title">🏆 Pick your league</div>
+      <div class="card-desc">Choose where you mine. Each league has its own max block multiplier, prize density, and average W/TH — they all flow into the comparison and the Spell Bot tiers below. Snapshots taken from in-app data; verify before relying on them.</div>
+      <div class="league-grid" id="league-grid">
+        <button class="league-btn dune"    data-league="dune"    data-wth="18" data-density="0.18"  data-max-mult="32"  data-entry="Open league — any unique miner can join">
+          <div class="name">Dune <span class="mult-badge">×32 max</span></div>
+          <div class="stats"><strong>18 W/TH avg</strong> · ~$0.18 / TH / week<br>22+ divisions ($0.16–0.23) · <em>unique miner entry</em></div>
+        </button>
+        <button class="league-btn horizon" data-league="horizon" data-wth="19" data-density="0.26"  data-max-mult="64"  data-entry="Top clans of each Dune division promote">
+          <div class="name">Horizon ⭐ <span class="mult-badge">×64 max</span></div>
+          <div class="stats"><strong>19 W/TH avg</strong> · ~$0.26 / TH / week<br>Best per-TH density right now · <em>top of Dune promotes</em></div>
+        </button>
+        <button class="league-btn eclipse" data-league="eclipse" data-wth="20" data-density="0.22"  data-max-mult="128" data-entry="Top 5 clans in Horizon promote each week">
+          <div class="name">Eclipse <span class="mult-badge">×128 max</span></div>
+          <div class="stats"><strong>20 W/TH avg</strong> · ~$0.22 / TH / week<br>Mid prize pool, high markup · <em>top 5 of Horizon</em></div>
+        </button>
+        <button class="league-btn odyssey" data-league="odyssey" data-wth="20" data-density="0.218" data-max-mult="256" data-entry="Top 5 clans in Eclipse promote each week">
+          <div class="name">Odyssey <span class="mult-badge">×256 max</span></div>
+          <div class="stats"><strong>20 W/TH avg</strong> · ~$0.218 / TH / week<br>Whale arena, biggest pool · <em>top 5 of Eclipse</em></div>
+        </button>
+      </div>
+
+      <div class="league-info" id="league-info">
+        <div class="li-line"><span class="li-lbl">Selected:</span> <strong id="li-name">— pick a league above —</strong></div>
+        <div class="li-line"><span class="li-lbl">Max block multiplier:</span> <strong id="li-mult">—</strong></div>
+        <div class="li-line"><span class="li-lbl">How to enter:</span> <span id="li-entry">—</span></div>
+        <div class="li-line"><span class="li-lbl">Your fair share / week:</span> <strong id="li-fair">—</strong></div>
+      </div>
+
+      <div class="grid-mini">
+        <div class="price-input">
+          <label>League size at week start (TH)</label>
+          <input type="number" id="in-league-size" value="200000" step="1000" min="1">
+          <div class="sub">Combined power of every clan in this league. Find it in-app.</div>
+        </div>
+        <div class="price-input">
+          <label>League avg W/TH (override)</label>
+          <input type="number" id="in-league-wth" value="19" step="0.1" min="1">
+        </div>
+        <div class="price-input">
+          <label>Expected weekly gross (BTC)</label>
+          <input type="number" id="in-war-gross" value="0.005" step="0.0001" min="0">
+          <div class="sub">Your honest estimate of clan win share</div>
+        </div>
+        <div class="price-input">
+          <label>Personal block GMT / week</label>
+          <input type="number" id="in-war-gmt" value="0" step="1" min="0">
+          <div class="sub">Optional — set 0 if you don't hit blocks</div>
+        </div>
+        <div class="price-input">
+          <label>GMT price ($)</label>
+          <input type="number" id="in-gmt" value="0.30" step="0.01" min="0">
+        </div>
+      </div>
+    </div>
+
+    <!-- your setup -->
+    <div class="card">
+      <div class="card-title">⛏️ Your setup</div>
+      <div class="grid-mini">
+        <div class="price-input">
+          <label>Hashrate (TH/s)</label>
+          <input type="number" id="in-th" value="100" step="1" min="1">
+        </div>
+        <div class="price-input">
+          <label>Your W/TH</label>
+          <input type="number" id="in-eff" value="15" step="0.5" min="1">
+          <div class="sub">Lower = more efficient (good)</div>
+        </div>
+        <div class="price-input">
+          <label>BTC price ($)</label>
+          <input type="number" id="in-btc" value="77500" step="100">
+        </div>
+        <div class="price-input">
+          <label>Network hashrate (EH/s)</label>
+          <input type="number" id="in-net" value="950" step="10">
+        </div>
+        <div class="price-input">
+          <label>Block reward (BTC)</label>
+          <input type="number" id="in-block" value="3.125" step="0.001">
+        </div>
+        <div class="price-input">
+          <label>Electricity ($/kWh)</label>
+          <input type="number" id="in-elec" value="0.05" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <!-- discounts -->
+    <div class="card">
+      <div class="card-title">🏷️ Discounts</div>
+      <div class="card-desc">Service streak (3%) applies in <strong>both</strong> modes. Mining-mode bonus is automatic and only counts in Mining mode (variable, ~0.96% currently — set by veGOMINING vote weekly).</div>
+      <div class="grid-mini">
+        <div class="price-input">
+          <label>Service streak (%)</label>
+          <input type="number" id="in-disc-service" value="3" step="0.1" min="0" max="20">
+          <div class="sub">10-day click streak · both modes</div>
+        </div>
+        <div class="price-input">
+          <label>Mining-mode bonus (%)</label>
+          <input type="number" id="in-disc-mining" value="0.96" step="0.01" min="0" max="20">
+          <div class="sub">Mining mode only</div>
+        </div>
+        <div class="price-input">
+          <label>VIP discount (%)</label>
+          <input type="number" id="in-disc-vip" value="1.8" step="0.1" min="0" max="20">
+        </div>
+        <div class="price-input">
+          <label>Token discount (%)</label>
+          <input type="number" id="in-disc-token" value="0" step="1" min="0" max="20">
+          <div class="sub">0–20% if paying maintenance in GMT</div>
+        </div>
+      </div>
+    </div>
+
+    <button class="btn-run" id="btn-run">Run comparison</button>
+
+    <!-- Results -->
+    <div class="card" style="margin-top:14px">
+      <div class="results-title">📊 Results</div>
+      <div id="results-empty" class="empty">No comparison yet. Click <strong>Run comparison</strong> above.</div>
+      <div id="results-content" style="display:none">
+        <div class="vs-grid">
+          <div class="mode-card mining" id="card-mining">
+            <div class="mode-name">Mining mode (solo)</div>
+            <div class="mode-net" id="mining-net">$0</div>
+            <div class="mode-sub" id="mining-sub">Predictable daily BTC</div>
+            <div class="mode-row"><span class="lbl">Gross / week</span><span class="val" id="mining-gross">—</span></div>
+            <div class="mode-row"><span class="lbl">Maintenance</span><span class="val red" id="mining-maint">—</span></div>
+            <div class="mode-row"><span class="lbl">Net BTC</span><span class="val" id="mining-btc">—</span></div>
+            <div class="mode-row"><span class="lbl">Solo ceiling</span><span class="val" id="mining-ceiling">—</span></div>
+          </div>
+          <div class="mode-card wars" id="card-wars">
+            <div class="mode-name">Miner Wars</div>
+            <div class="mode-net" id="wars-net">$0</div>
+            <div class="mode-sub" id="wars-sub">Variable, weekly Tuesday</div>
+            <div class="mode-row"><span class="lbl">Gross BTC win</span><span class="val" id="wars-gross">—</span></div>
+            <div class="mode-row"><span class="lbl">Personal GMT</span><span class="val green" id="wars-gmt">—</span></div>
+            <div class="mode-row"><span class="lbl">Fees below ceiling</span><span class="val red" id="wars-fees-base">—</span></div>
+            <div class="mode-row"><span class="lbl">Excess-fee tax</span><span class="val red" id="wars-fees-excess">—</span></div>
+            <div class="mode-row"><span class="lbl">Retention rate</span><span class="val" id="wars-retention">—</span></div>
+          </div>
+        </div>
+
+        <div class="verdict" id="verdict">
+          <h3 id="verdict-title">—</h3>
+          <p id="verdict-text">—</p>
+        </div>
+
+        <div class="results-title" style="margin-top:24px">📋 Detailed breakdown</div>
+        <table class="detail" id="detail-table"></table>
+      </div>
+    </div>
+
+    <!-- Bonus tools -->
+    <div class="card">
+      <div class="card-title">🧰 Bonus tools</div>
+      <div class="card-desc">Two quick utilities for active Miner Wars players.</div>
+      <div class="tools-grid">
+        <div class="tool-card">
+          <h4>Service-button score boost</h4>
+          <p>Clicking the service button while in Miner Wars (besides keeping your streak) adds <strong>your base PPS × 100</strong> to your round score — a free instant boost. Enter your base PPS:</p>
+          <div class="grid-mini">
+            <div class="price-input">
+              <label>Your base PPS</label>
+              <input type="number" id="in-pps" value="518" step="1" min="0">
+              <div class="sub">Found on your Miner Wars dashboard</div>
+            </div>
+          </div>
+          <div class="out" id="out-boost">+51,800 score</div>
+          <div class="out-sub">Free score injection per service click</div>
+        </div>
+
+        <div class="tool-card">
+          <h4>Clan leader 5% royalty</h4>
+          <p>Clan leaders receive <strong>5% of all GMT won</strong> by clan members through personal block wins. Estimate your weekly cut:</p>
+          <div class="grid-mini">
+            <div class="price-input">
+              <label>Total GMT won by members / week</label>
+              <input type="number" id="in-clan-gmt" value="10000" step="100" min="0">
+            </div>
+          </div>
+          <div class="out" id="out-royalty">500 GMT / week</div>
+          <div class="out-sub" id="out-royalty-sub">≈ $150 / week at current GMT price</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ========== SPELL BOT SETUP ========== -->
+    <div class="card">
+      <div class="card-title">🤖 Spell Bot Setup</div>
+      <div class="card-desc">
+        Plan which spells your auto-bot fires for each block multiplier. Only boost when prize value beats spell cost — the calculator flags every row that loses money. Export the JSON rules and feed them to your bot.
+      </div>
+
+      <!-- spell catalog -->
+      <div class="spell-catalog">
+        <div class="heading">Spell catalog</div>
+        <div><span class="name">🚀 Rocket</span> — flat +PPS, best early-round · 1/10/100 GMT (G/P/R)</div>
+        <div><span class="name">📡 Echo</span> — pulse points every 2 min, scales with round length · 1/10/100 GMT</div>
+        <div><span class="name">🎯 Focus</span> — huge PPS burst for 5 min · 1/10/100 GMT</div>
+        <div><span class="name">⚡ Instant</span> — one-time lump sum, the closer · 1/10/100 GMT</div>
+        <div><span class="name">🔥 Turbo / Power Up</span> — multiplies base TH score ×100 · 10 GMT</div>
+        <div><span class="name shield">🛡 Shield (clan)</span> — doubles base hashpower for whole clan · 100 GMT</div>
+        <div><span class="name service">🛠 Service button</span> — 1000× power boost inside Miner Wars · FREE, once/day</div>
+      </div>
+
+      <!-- summary banners -->
+      <div class="bot-summary-grid">
+        <div class="tool-card">
+          <div class="bot-summary-label">EST. WEEKLY SPELL COST</div>
+          <div class="out bot-summary-value" id="bot-week-cost">0 GMT</div>
+          <div class="out-sub" id="bot-week-cost-usd">≈ $0 / week</div>
+        </div>
+        <div class="tool-card">
+          <div class="bot-summary-label">EST. WEEKLY EXTRA WIN VALUE</div>
+          <div class="out bot-summary-value green" id="bot-week-prize">$0</div>
+          <div class="out-sub">If your boosted edge converts at the rate above</div>
+        </div>
+        <div class="tool-card">
+          <div class="bot-summary-label">NET BOT EDGE</div>
+          <div class="out bot-summary-value" id="bot-week-edge">$0</div>
+          <div class="out-sub" id="bot-week-edge-sub">Prize − spell cost</div>
+        </div>
+      </div>
+
+      <!-- assumption inputs -->
+      <div class="grid-mini" style="margin-bottom:14px">
+        <div class="price-input">
+          <label>Edge per $1 spent</label>
+          <input type="number" id="bot-edge-rate" value="1.5" step="0.1" min="0">
+          <div class="sub">Heuristic: extra $ won per $1 of spells (1.0 = breakeven, 2.0 = doubles money)</div>
+        </div>
+        <div class="price-input">
+          <label>Avg blocks/week per multiplier</label>
+          <input type="number" id="bot-blocks-per-tier" value="1" step="0.5" min="0">
+          <div class="sub">How often each tier appears in your league</div>
+        </div>
+      </div>
+
+      <!-- per-multiplier rules table -->
+      <div class="bot-rules-wrap">
+        <table class="detail bot-rules-table" id="bot-rules-table">
+          <thead>
+            <tr>
+              <th>Multiplier</th>
+              <th>Rocket</th>
+              <th>Echo</th>
+              <th>Focus</th>
+              <th>Instant</th>
+              <th>Turbo</th>
+              <th>Shield</th>
+              <th>Service btn</th>
+              <th class="right">Cost (GMT)</th>
+              <th class="right">Verdict</th>
+            </tr>
+          </thead>
+          <tbody id="bot-rules-body"></tbody>
+        </table>
+      </div>
+
+      <!-- export -->
+      <div class="bot-actions">
+        <button class="bot-action-btn" id="bot-export">📋 Copy bot config (JSON)</button>
+        <button class="bot-action-btn" id="bot-preset-conserv">📐 Preset: conservative</button>
+        <button class="bot-action-btn" id="bot-preset-aggro">🔥 Preset: aggressive</button>
+        <button class="bot-action-btn dim" id="bot-preset-clear">✕ Clear all</button>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
