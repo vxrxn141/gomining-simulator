@@ -40,7 +40,33 @@ function rebuildBotForLeague(maxMult) {
   // preserve existing picks where the multiplier still applies, drop others
   const oldByMult = Object.fromEntries(botRules.map(r => [r.mult, r.picks]));
   botRules = MULT_TIERS.map(m => ({ mult:m, picks: oldByMult[m] || {} }));
+  renderFreqRow();
   renderBot();
+}
+
+// Per-tier expected blocks/week — keyed by multiplier number.
+// Defaults reflect that low multipliers happen often, big ones rare.
+const FREQ_DEFAULTS = { 1:10, 2:4, 4:2, 8:1, 16:0.5, 32:0.2, 64:0.1, 128:0.05, 256:0.02 };
+let perTierFreq = {};
+function renderFreqRow() {
+  const row = $("#bot-freq-row");
+  if (!row) return;
+  row.innerHTML = "";
+  MULT_TIERS.forEach(m => {
+    const cur = perTierFreq[m] ?? FREQ_DEFAULTS[m] ?? 1;
+    const wrap = document.createElement("div");
+    wrap.className = "price-input";
+    wrap.innerHTML = `
+      <label>×${m}</label>
+      <input type="number" data-mult="${m}" value="${cur}" step="0.1" min="0">`;
+    wrap.querySelector("input").addEventListener("input", e => {
+      perTierFreq[m] = +e.target.value || 0;
+      renderBot();
+      updateDashboard();
+    });
+    row.appendChild(wrap);
+    perTierFreq[m] = cur;
+  });
 }
 
 function preset(kind) {
@@ -69,7 +95,7 @@ function renderBot() {
   const body = $("#bot-rules-body");
   body.innerHTML = "";
 
-  const blocksPerTier = +$("#bot-blocks-per-tier").value || 1;
+  const blocksDefault = +$("#bot-blocks-per-tier").value || 1;
   const edgeRate      = +$("#bot-edge-rate").value || 1;
   const gmtUsd        = +$("#in-gmt").value || 0;
 
@@ -92,13 +118,14 @@ function renderBot() {
       }
       rowCost += +cur || 0;
     });
-    weekGmtTotal += rowCost * blocksPerTier;
+    const blocksThisTier = perTierFreq[rule.mult] ?? blocksDefault;
+    weekGmtTotal += rowCost * blocksThisTier;
     cells += `<td style="text-align:right;font-weight:700">${rowCost.toLocaleString()} GMT</td>`;
 
     // verdict per row
     const rowCostUsd  = rowCost * gmtUsd;
     const rowPrizeUsd = rowCostUsd * edgeRate;
-    weekPrizeUsd += rowPrizeUsd * blocksPerTier;
+    weekPrizeUsd += rowPrizeUsd * blocksThisTier;
     const net = rowPrizeUsd - rowCostUsd;
     let verdict = "";
     if (rowCost === 0)         verdict = '<span style="color:var(--text-mute)">no boost</span>';
@@ -178,6 +205,150 @@ function read() {
 
 function fmtUsd(n)  { return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:2}); }
 function fmtBtc(n)  { return (n < 0 ? "" : "") + n.toFixed(8); }
+
+/* ============ DASHBOARD live KPIs ============ */
+function updateDashboard() {
+  const out = simulate();
+  const m = out.mining, w = out.wars, p = out.p;
+
+  const mEl = document.getElementById("kpi-mining");
+  const wEl = document.getElementById("kpi-wars");
+  const winEl = document.getElementById("kpi-winner");
+  const botEl = document.getElementById("kpi-bot");
+
+  if (mEl) {
+    mEl.querySelector(".val").textContent = fmtUsd(m.netUsd);
+    mEl.classList.toggle("green", m.netUsd >= 0);
+    mEl.classList.toggle("red", m.netUsd < 0);
+    mEl.querySelector(".sub").textContent = fmtBtc(m.netBtc) + " BTC · all 4 discounts";
+  }
+  if (wEl) {
+    wEl.querySelector(".val").textContent = fmtUsd(w.netUsd);
+    wEl.classList.toggle("green", w.netUsd >= 0);
+    wEl.classList.toggle("red", w.netUsd < 0);
+    wEl.querySelector(".sub").textContent =
+      `Excess tax: -${fmtUsd(w.feesExcess)} · Retention ${w.retention.toFixed(1)}%`;
+  }
+  if (winEl) {
+    const diff = w.netUsd - m.netUsd;
+    const winner = m.netUsd >= w.netUsd ? "Mining mode" : "Miner Wars";
+    const v = winEl.querySelector(".val");
+    v.textContent = winner;
+    winEl.classList.remove("green", "red", "purple", "accent");
+    winEl.classList.add(winner === "Mining mode" ? "green" : "purple");
+    document.getElementById("kpi-winner-diff").textContent =
+      (diff >= 0 ? "+" : "-") + fmtUsd(Math.abs(diff));
+  }
+  if (botEl) {
+    // re-run a lightweight version of the bot edge calc
+    const blocksDefault = +($("#bot-blocks-per-tier")?.value) || 1;
+    const edgeRate      = +($("#bot-edge-rate")?.value) || 1;
+    const gmtUsd        = +$("#in-gmt").value || 0;
+    let weekGmt = 0, weekPrize = 0;
+    botRules.forEach(rule => {
+      const blocks = perTierFreq[rule.mult] ?? blocksDefault;
+      const cost = Object.values(rule.picks).reduce((a, b) => a + (+b || 0), 0);
+      weekGmt   += cost * blocks;
+      weekPrize += cost * gmtUsd * edgeRate * blocks;
+    });
+    const edge = weekPrize - weekGmt * gmtUsd;
+    botEl.querySelector(".val").textContent = fmtUsd(edge);
+    botEl.classList.remove("green", "red", "dim");
+    if (edge > 0) botEl.classList.add("green");
+    else if (edge < 0) botEl.classList.add("red");
+    else botEl.classList.add("dim");
+    botEl.querySelector(".sub").textContent =
+      weekGmt > 0
+        ? `Spends ${weekGmt.toLocaleString()} GMT/wk for ~${fmtUsd(weekPrize)} return`
+        : "No bot rules set yet — configure in Spell Bot tab";
+  }
+}
+
+/* ============ Variance scenarios (Compare tab) ============ */
+function renderVariance(out) {
+  const el = document.getElementById("variance-grid");
+  if (!el) return;
+  document.getElementById("variance-card").style.display = "block";
+  const p = out.p;
+  const scenarios = [
+    { label:"BAD LUCK · 0.5×", mul:0.5, cls:"bad",   note:"Half of expected wins" },
+    { label:"AVERAGE · 1.0×",  mul:1.0, cls:"avg",   note:"Your expected gross" },
+    { label:"LUCKY · 3.0×",    mul:3.0, cls:"lucky", note:"Heavy block-win streak" },
+  ];
+  el.innerHTML = scenarios.map(s => {
+    const grossBtc = p.warGross * s.mul;
+    const grossUsd = grossBtc * p.btcUsd;
+    // recompute fees with adjusted gross
+    const elecPerDayUsd = (p.elecKwh * 24 * p.eff * p.th) / 1000;
+    const servPerDayUsd = SERVICE_FEE_TH_USD * p.th;
+    const warsDisc = p.discService + p.discVip + p.discToken;
+    const baseFees = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * 7;
+    const excessBtc = Math.max(0, grossBtc - out.mining.ceilingBtc);
+    const excessUsd = excessBtc * p.btcUsd;
+    const leagueElec = (p.elecKwh * 24 * p.leagueWth * p.th) / 1000;
+    const ratio = (leagueElec + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
+    const excessFee = excessUsd * (ratio - 1) * (1 - warsDisc);
+    const net = grossUsd - baseFees - excessFee;
+    const beatSolo = net > out.mining.netUsd;
+    return `
+      <div class="variance-card ${s.cls}">
+        <span class="luck">${s.label}</span>
+        <div class="vc-net ${net >= 0 ? "green" : "red"}">${fmtUsd(net)}</div>
+        <div class="vc-sub">${s.note} · ${beatSolo ? "✅ beats solo" : "❌ solo wins"}</div>
+        <div class="vc-row"><span class="l">Gross BTC</span><span class="r">${fmtBtc(grossBtc)}</span></div>
+        <div class="vc-row"><span class="l">Excess tax</span><span class="r">-${fmtUsd(excessFee)}</span></div>
+        <div class="vc-row"><span class="l">vs Mining</span><span class="r ${net >= out.mining.netUsd ? "green" : "red"}" style="color:${net >= out.mining.netUsd ? "var(--green)" : "var(--red)"}">${(net >= out.mining.netUsd ? "+" : "")}${fmtUsd(net - out.mining.netUsd)}</span></div>
+      </div>`;
+  }).join("");
+}
+
+/* ============ Break-even calculator (Compare tab) ============ */
+function renderBreakeven(out) {
+  document.getElementById("breakeven-card").style.display = "block";
+  const p = out.p;
+  const elecPerDayUsd = (p.elecKwh * 24 * p.eff * p.th) / 1000;
+  const servPerDayUsd = SERVICE_FEE_TH_USD * p.th;
+  const warsDisc = p.discService + p.discVip + p.discToken;
+  const baseFees = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * 7;
+  const leagueElec = (p.elecKwh * 24 * p.leagueWth * p.th) / 1000;
+  const ratio = (leagueElec + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
+  // Solve: gross_usd - baseFees - max(0, gross_btc - ceilingBtc) * btcUsd * (ratio-1) * (1-disc) = miningNetUsd
+  // Two regimes: gross_btc <= ceiling → excessFee = 0
+  //              gross_btc > ceiling  → excessFee scales with overage
+  const ceilingUsd = out.mining.ceilingBtc * p.btcUsd;
+  // Try below-ceiling regime
+  let beUsd = out.mining.netUsd + baseFees;     // pure (no excess fee)
+  let regime = "below ceiling";
+  if (beUsd > ceilingUsd) {
+    // has to be above-ceiling. Solve:
+    // beUsd - baseFees - (beUsd - ceilingUsd)*(ratio-1)*(1-disc) = miningNetUsd
+    // beUsd*(1 - (ratio-1)*(1-disc)) = miningNetUsd + baseFees - ceilingUsd*(ratio-1)*(1-disc)
+    const a = 1 - (ratio - 1) * (1 - warsDisc);
+    if (a > 0.001) {
+      beUsd = (out.mining.netUsd + baseFees - ceilingUsd * (ratio - 1) * (1 - warsDisc)) / a;
+    }
+    regime = "above ceiling";
+  }
+  const beBtc = p.btcUsd > 0 ? beUsd / p.btcUsd : 0;
+  const yourGap = p.warGross - beBtc;
+  const gapPct = beBtc > 0 ? (yourGap / beBtc) * 100 : 0;
+
+  document.getElementById("breakeven-row").innerHTML = `
+    <div class="be-block">
+      <div class="be-lbl">Break-even gross BTC / week</div>
+      <div class="be-val">${fmtBtc(beBtc)}</div>
+      <div class="be-sub">≈ ${fmtUsd(beUsd)} · regime: <strong>${regime}</strong></div>
+    </div>
+    <div class="be-block">
+      <div class="be-lbl">Your gap to break-even</div>
+      <div class="be-val ${yourGap >= 0 ? "green" : "red"}">${(yourGap >= 0 ? "+" : "")}${fmtBtc(yourGap)}</div>
+      <div class="be-sub">${
+        yourGap >= 0
+        ? `You're <strong>${gapPct.toFixed(1)}%</strong> above break-even — Wars is profitable at your expected gross.`
+        : `You need <strong>${Math.abs(gapPct).toFixed(1)}%</strong> more weekly gross BTC for Wars to beat solo.`
+      }</div>
+    </div>`;
+}
 
 function simulate() {
   const p = read();
@@ -295,6 +466,53 @@ function render(out) {
     <tr><td class="lbl">Excess-fee tax on overage</td><td class="red">-${fmtUsd(w.feesExcess)}</td></tr>
     <tr class="total"><td>Net difference</td><td class="${diff >= 0 ? 'green' : 'red'}">${fmtUsd(diff)}/week (${diff>=0?"+":""}${(diff*52).toLocaleString(undefined,{maximumFractionDigits:0})} /year)</td></tr>
   `;
+
+  // variance + break-even
+  renderVariance(out);
+  renderBreakeven(out);
+}
+
+/* ============ Boost ROI break-even (Tools tab) ============ */
+function updateRoiMax() {
+  const prize = +$("#in-prize-usd").value || 0;
+  const lift  = +$("#in-prob-lift").value || 0;
+  // Expected gain at spend S = prize * lift * S - S = S * (prize*lift - 1)
+  // Positive ROI requires prize*lift > 1. Max useful S = where p(S) caps at ~1
+  // (i.e. additional spend gives no extra probability). Heuristic:
+  // max useful spend = 1 / lift  (after which p≈100%)
+  const breakEven = lift > 0 ? 1 / lift : 0;
+  // But you also shouldn't spend more than the prize itself for break-even at p=1.
+  const maxSensible = Math.min(prize, breakEven);
+  const out = $("#out-roi-max");
+  const sub = $("#out-roi-sub");
+  if (!out) return;
+  if (lift <= 0 || prize <= 0) {
+    out.textContent = "—";
+    sub.textContent = "Set both inputs above";
+    return;
+  }
+  out.textContent = fmtUsd(maxSensible);
+  if (prize * lift < 1) {
+    sub.textContent = `⚠ Lift × prize = ${(prize*lift).toFixed(2)} < 1 → boosting is unprofitable in expectation`;
+  } else {
+    sub.textContent = `Each $1 lifts win prob by ${(lift*100).toFixed(1)}%. Don't exceed ${fmtUsd(maxSensible)} on this block.`;
+  }
+}
+
+/* ============ Maintenance discount estimator (Tools tab) ============ */
+function updateDiscount() {
+  const days = +$("#in-prepaid-days").value || 0;
+  let pct;
+  if (days < 18)         pct = 0;
+  else if (days >= 360)  pct = 20;
+  else                   pct = Math.round((days - 18) / (360 - 18) * 20);
+  const out = $("#out-discount");
+  const sub = $("#out-discount-sub");
+  if (!out) return;
+  out.textContent = pct + "%";
+  if (days < 18)         sub.textContent = "Prepaid <18 days → no discount yet. Lock more GMT.";
+  else if (days >= 360)  sub.textContent = "Maxed at 20% discount cap.";
+  else                   sub.textContent = `+${pct}% off your maintenance fees this period.`;
 }
 
 /* ---------- Bonus tools (live) ---------- */
@@ -369,7 +587,46 @@ $("#bot-edge-rate").addEventListener("input", renderBot);
 $("#bot-blocks-per-tier").addEventListener("input", renderBot);
 $("#in-gmt").addEventListener("input", renderBot);    // GMT price affects USD math
 
+// ---- sidebar tabs ----
+function switchTab(name) {
+  document.querySelectorAll(".mw-nav-item").forEach(b =>
+    b.classList.toggle("active", b.dataset.tab === name));
+  document.querySelectorAll(".mw-tab").forEach(s =>
+    s.classList.toggle("active", s.dataset.tab === name));
+  window.scrollTo(0, 0);
+}
+document.querySelectorAll(".mw-nav-item").forEach(btn =>
+  btn.addEventListener("click", () => switchTab(btn.dataset.tab)));
+
+// dashboard "jump to tab" buttons
+document.querySelectorAll("[data-jump]").forEach(btn =>
+  btn.addEventListener("click", () => switchTab(btn.dataset.jump)));
+
+// ---- live dashboard wiring: any input change updates KPIs ----
+const DASH_INPUTS = [
+  "#in-th","#in-eff","#in-btc","#in-net","#in-block","#in-elec",
+  "#in-disc-service","#in-disc-mining","#in-disc-vip","#in-disc-token",
+  "#in-league-wth","#in-war-gross","#in-war-gmt","#in-gmt",
+  "#bot-edge-rate","#bot-blocks-per-tier",
+];
+DASH_INPUTS.forEach(sel => {
+  const el = document.querySelector(sel);
+  if (el) el.addEventListener("input", updateDashboard);
+});
+// league click also refreshes dashboard
+document.querySelectorAll(".league-btn").forEach(btn =>
+  btn.addEventListener("click", () => setTimeout(updateDashboard, 0)));
+
+// ---- Tools tab: ROI + discount calculators ----
+$("#in-prize-usd")?.addEventListener("input", updateRoiMax);
+$("#in-prob-lift")?.addEventListener("input", updateRoiMax);
+$("#in-prepaid-days")?.addEventListener("input", updateDiscount);
+
 // initial paint
 updateBoost();
 updateRoyalty();
+renderFreqRow();
 renderBot();
+updateRoiMax();
+updateDiscount();
+updateDashboard();
