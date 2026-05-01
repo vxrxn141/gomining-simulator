@@ -206,10 +206,26 @@ function read() {
 function fmtUsd(n)  { return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString(undefined,{maximumFractionDigits:2}); }
 function fmtBtc(n)  { return (n < 0 ? "" : "") + n.toFixed(8); }
 
-/* ============ DASHBOARD live KPIs ============ */
+/* ============ DASHBOARD live KPIs + snapshot ============ */
+function updateSnapshot(p) {
+  const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+  set("sv-th",    fmtNumLocal(p.th, 1) + " TH/s");
+  set("sv-eff",   p.eff + " W/TH");
+  set("sv-elec",  "$" + p.elecKwh.toFixed(2) + " /kWh");
+  set("sv-btc",   "$" + p.btcUsd.toLocaleString());
+  set("sv-gmt",   "$" + p.gmtUsd.toFixed(4));
+  set("sv-net",   p.netEh + " EH/s · " + p.blockBtc + " BTC/blk");
+  const stack = (p.discService + p.discMining + p.discVip + p.discToken) * 100;
+  set("sv-disc",  stack.toFixed(2) + "% (M) · " +
+                  ((p.discService + p.discVip + p.discToken) * 100).toFixed(2) + "% (W)");
+  set("sv-gross", p.warGross.toFixed(6) + " BTC ($" + (p.warGross * p.btcUsd).toFixed(0) + ")");
+}
+function fmtNumLocal(n, p=0) { return Number(n).toLocaleString(undefined, {maximumFractionDigits:p}); }
+
 function updateDashboard() {
   const out = simulate();
   const m = out.mining, w = out.wars, p = out.p;
+  updateSnapshot(p);
 
   const mEl = document.getElementById("kpi-mining");
   const wEl = document.getElementById("kpi-wars");
