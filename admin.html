@@ -99,6 +99,17 @@
       <div class="stats" id="stats"></div>
 
       <div class="panel">
+        <h2><span>Quick links</span></h2>
+        <div style="display:flex;flex-wrap:wrap;gap:8px">
+          <a href="index.html" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:.82em">🏠 Main app</a>
+          <a href="mining-wars.html" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:.82em">⚔️ Mining Wars</a>
+          <a href="reinvestment.html" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:.82em">🧪 Reinvestment Lab</a>
+          <a href="support.html" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:.82em">❤ Support page</a>
+          <a href="about.html" target="_blank" class="ghost" style="text-decoration:none;display:inline-flex;align-items:center;padding:7px 12px;border:1px solid var(--border);border-radius:8px;color:var(--text-dim);font-size:.82em">ℹ About</a>
+        </div>
+      </div>
+
+      <div class="panel">
         <h2>
           <span>Users</span>
           <span class="toolbar">
@@ -133,7 +144,7 @@
 <script type="module">
   import { auth, db, signInWithGoogle, signOutUser, isAdmin, onUserReady }
     from "./auth.js";
-  import { collection, getDocs, query, orderBy, limit, doc, updateDoc, serverTimestamp }
+  import { collection, getDocs, query, orderBy, limit, doc, getDoc, updateDoc, serverTimestamp }
     from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
 
   const $ = sel => document.querySelector(sel);
@@ -162,11 +173,17 @@
   }
 
   let allUsers = [];
+  let publicCount = null;        // from meta/userCount (includes pre-tracked + new)
 
   async function loadUsers() {
     const q = query(collection(db, "users"), orderBy("createdAt", "desc"), limit(500));
     const snap = await getDocs(q);
     allUsers = snap.docs.map(d => d.data());
+    // also pull the public landing-page counter
+    try {
+      const metaSnap = await getDoc(doc(db, "meta", "userCount"));
+      publicCount = metaSnap.exists() ? (metaSnap.data().count || 0) : null;
+    } catch { publicCount = null; }
     renderStats();
     renderTable($("#search").value);
   }
@@ -206,10 +223,17 @@
     }
     const avgSession = totalSessionCount ? totalSessionMs / totalSessionCount : 0;
     const retentionPct = total ? Math.round((returners / total) * 100) : 0;
+    const counterDelta = publicCount !== null ? publicCount - total : null;
     $("#stats").innerHTML = `
       <div class="stat"><div class="label">Total users</div>
         <div class="value">${total.toLocaleString()}</div>
         <div class="sub">+${today} today, +${week} this week</div></div>
+      <div class="stat"><div class="label">Public counter</div>
+        <div class="value" style="color:var(--blue)">${publicCount !== null ? publicCount.toLocaleString() : "—"}</div>
+        <div class="sub">${publicCount === null ? "meta/userCount not seeded" :
+          (counterDelta === 0 ? "matches user list" :
+           counterDelta > 0 ? `+${counterDelta} from manual seed` :
+           `${counterDelta} drift — re-seed?`)}</div></div>
       <div class="stat"><div class="label">Premium</div>
         <div class="value" style="color:var(--accent)">${premiumCount}</div>
         <div class="sub">${total ? Math.round(premiumCount/total*100) : 0}% of base</div></div>
