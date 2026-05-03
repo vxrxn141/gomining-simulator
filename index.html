@@ -2283,6 +2283,16 @@
         };
 
         const FEE_MODE_KEY = 'gomining_fee_mode';
+        const DISCOUNT_API_KEY = 'gomining_discount_from_api';
+        // Hydrate discountFromApi from localStorage on init — without this, page
+        // reload resets the flag to false and the next fetchLiveData() runs
+        // updatePrepaidDiscount() which overwrites the API token discount with
+        // the local heuristic (which is wrong for users with locked GMT).
+        try {
+            if (localStorage.getItem(DISCOUNT_API_KEY) === '1') state.discountFromApi = true;
+            const savedDays = parseInt(localStorage.getItem('gomining_api_prepaid_days'), 10);
+            if (savedDays > 0) state.apiPrepaidDays = savedDays;
+        } catch(_) {}
 
         function setFeeMode(mode) {
             state.feeMode = mode;
@@ -3634,9 +3644,11 @@
             if (data.discount?.token !== undefined) {
                 document.getElementById('discount-maintenance').value = (data.discount.token * 100).toFixed(1);
                 state.discountFromApi = true;
+                try { localStorage.setItem(DISCOUNT_API_KEY, '1'); } catch(_) {}
             }
             if (data.discount?.availableDays !== undefined && data.discount.availableDays > 0) {
                 state.apiPrepaidDays = data.discount.availableDays;
+                try { localStorage.setItem('gomining_api_prepaid_days', String(data.discount.availableDays)); } catch(_) {}
             }
 
             // Prices — GoMining API prices have priority over CoinGecko
