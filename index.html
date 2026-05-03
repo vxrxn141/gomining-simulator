@@ -5749,6 +5749,17 @@
                     <div style="margin-top:6px;color:#8b949e;">
                         saved settings.discount-maintenance = <b style="color:#e6edf3;">${settings['discount-maintenance'] ?? '∅'}</b>
                     </div>
+                    <div style="margin-top:6px;color:#8b949e;">
+                        ${(() => {
+                            const rh = state.rewardHistory || [];
+                            const last5 = rh.slice(-5);
+                            const fmt = d => `${d.date}${d.partial?'(partial)':''} pr=${d.poolReward?.toFixed(8)} pow=${d.power?.toFixed(2)} sat/TH=${d.poolReward&&d.power?Math.round(d.poolReward/d.power*1e8):'?'}`;
+                            return `rewardHistory (${rh.length} days, last 5): ${last5.map(fmt).join(' | ') || '∅'}`;
+                        })()}
+                    </div>
+                    <div style="margin-top:6px;color:#8b949e;">
+                        sat-per-th field=<b style="color:#e6edf3;">${f('sat-per-th')}</b> | apiSatPerTH=<b style="color:#e6edf3;">${state.apiSatPerTH ?? '∅'}</b>
+                    </div>
                     <div style="margin-top:8px;display:flex;gap:8px;">
                         <button id="dbg-reset" style="background:#f85149;color:white;border:0;padding:6px 12px;border-radius:6px;cursor:pointer;font:600 12px ui-monospace;">⟲ Reset all + reload</button>
                         <button id="dbg-clearsettings" style="background:#58a6ff;color:white;border:0;padding:6px 12px;border-radius:6px;cursor:pointer;font:600 12px ui-monospace;">Clear settings only</button>
