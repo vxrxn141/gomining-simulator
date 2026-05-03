@@ -3108,14 +3108,14 @@
             for (let d = 0; d < 180; d++) {
                 const dayR = calcDailyReward(th, efficiency, 0.05,
                     parseFloat(document.getElementById('discount').value) || 0, bp,
-                    parseFloat(document.getElementById('sat-per-th').value) || 45);
+                    parseFloat(document.getElementById('sat-per-th').value) || 47);
                 if (!dayR) break;
                 const thGain = (dayR.grossUsd / costPerTH) * 1.05;
                 th += thGain;
             }
             const thReward = calcDailyReward(th, efficiency, 0.05,
                 parseFloat(document.getElementById('discount').value) || 0, bp,
-                parseFloat(document.getElementById('sat-per-th').value) || 45);
+                parseFloat(document.getElementById('sat-per-th').value) || 47);
             thVal = thReward ? thReward.netUsd * 365 : 0;
 
             const strategies = [
