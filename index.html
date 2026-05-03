@@ -2277,7 +2277,9 @@
             walletMode: 'btc', // 'btc', 'gmt', 'cash' — toggle on the unified Wallet KPI card
             rewardHistory: [], // loaded from localStorage on init
             costPerTH: 0, // upgrade cost per TH from /nft/get-power-upgrade-info (extension sync)
-            feeMode: 'gmt' // 'gmt' = pay fees in GMT (token discount applies) | 'btc' = pay in BTC (no token discount)
+            feeMode: 'gmt', // 'gmt' = pay fees in GMT (token discount applies) | 'btc' = pay in BTC (no token discount)
+            discountFromApi: false, // true when extension synced the real discount; blocks the local prepaid-days heuristic from overwriting it
+            apiPrepaidDays: null    // /get-my-nft-discount → discountAvailableDays. Authoritative: includes locked GMT, uses GoMining's own price + fee formula.
         };
 
         const FEE_MODE_KEY = 'gomining_fee_mode';
@@ -2415,6 +2417,12 @@
 
         // Calculer les jours prépayés et le discount maintenance auto
         function updatePrepaidDiscount() {
+            // If the extension synced the real discount from the API, trust it.
+            // The local prepaid-days heuristic disagrees with GoMining's actual
+            // logic (which factors in locked GMT + uses live GMT price), so don't
+            // overwrite a real value. Without this guard, fetchLiveData() would
+            // reset the API-provided 1% to 0% on every refresh.
+            if (state.discountFromApi) return;
             const gmtWallet = parseFloat(document.getElementById('gmt-prepaid').value) || 0;
             const gmtLocked = parseFloat(document.getElementById('gmt-locked').value) || 0;
             const totalGmt = gmtWallet + gmtLocked;
@@ -3173,11 +3181,18 @@
             const gmtPrepaid = parseFloat(document.getElementById('gmt-prepaid')?.value) || 0;
             if (gmtWalletEl) gmtWalletEl.textContent = gmtPrepaid.toFixed(1) + ' GMT';
 
-            // Prepaid days
+            // Prepaid days — prefer API's discountAvailableDays when synced
+            // (uses GoMining's own GMT price + fee formula, includes locked GMT).
+            // Fall back to local calc for manual-entry users.
             const prepaidEl = document.getElementById('dash-prepaid-days');
-            const prepaidDays = parseFloat(document.getElementById('discount')?.value) > 0
-                ? Math.round((gmtPrepaid + (parseFloat(document.getElementById('gmt-locked')?.value) || 0)) / (r.feesGmt > 0 ? r.feesGmt : 1))
-                : 0;
+            let prepaidDays;
+            if (state.apiPrepaidDays != null) {
+                prepaidDays = state.apiPrepaidDays;
+            } else {
+                prepaidDays = parseFloat(document.getElementById('discount')?.value) > 0
+                    ? Math.round((gmtPrepaid + (parseFloat(document.getElementById('gmt-locked')?.value) || 0)) / (r.feesGmt > 0 ? r.feesGmt : 1))
+                    : 0;
+            }
             if (prepaidEl) {
                 prepaidEl.textContent = prepaidDays + 'd';
                 prepaidEl.style.color = prepaidDays > 30 ? 'var(--green)' : prepaidDays > 7 ? 'var(--accent)' : 'var(--red)';
@@ -3610,10 +3625,19 @@
             if (data.wallet?.btcBalance !== undefined) state.btcWalletBalance = data.wallet.btcBalance;
 
             // Discounts (API returns decimals: 0.03 = 3%)
+            // The API is the source of truth — set discountFromApi so the
+            // local prepaid-days heuristic in updatePrepaidDiscount() doesn't
+            // overwrite the token discount on next fetchLiveData / input change.
             if (data.discount?.streak !== undefined) document.getElementById('discount-streak').value = (data.discount.streak * 100).toFixed(1);
             if (data.discount?.vip !== undefined) document.getElementById('discount-vip').value = (data.discount.vip * 100).toFixed(1);
             if (data.discount?.miningMode !== undefined) document.getElementById('discount-solo').value = (data.discount.miningMode * 100).toFixed(2);
-            if (data.discount?.token !== undefined) document.getElementById('discount-maintenance').value = (data.discount.token * 100).toFixed(1);
+            if (data.discount?.token !== undefined) {
+                document.getElementById('discount-maintenance').value = (data.discount.token * 100).toFixed(1);
+                state.discountFromApi = true;
+            }
+            if (data.discount?.availableDays !== undefined && data.discount.availableDays > 0) {
+                state.apiPrepaidDays = data.discount.availableDays;
+            }
 
             // Prices — GoMining API prices have priority over CoinGecko
             // Fallback: prices from the last complete day (yesterday) of reward history
@@ -3653,9 +3677,13 @@
 
                 // Primary: last complete day from reward history (always yesterday,
                 // never today — see getLastCompleteRewardDay).
+                // Read from the merged state.rewardHistory rather than the just-arrived
+                // payload — when this sync didn't include reward data (e.g. dashboard-only
+                // visit), the merged history still has yesterday's complete day from a
+                // previous sync, and PR refreshes to reflect it instead of staying stuck.
                 let latestForPR = null;
-                if (data.rewardHistory?.length > 0) {
-                    latestForPR = getLastCompleteRewardDay(data.rewardHistory);
+                if (state.rewardHistory?.length > 0) {
+                    latestForPR = getLastCompleteRewardDay(state.rewardHistory);
                     if (latestForPR && latestForPR.poolReward && latestForPR.power) {
                         satPerTH = Math.round(latestForPR.poolReward / latestForPR.power * 1e8);
                     }
