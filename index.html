@@ -1699,7 +1699,7 @@
                     </div>
                     <div class="form-group">
                         <label data-i18n="lbl_sat_per_th">sat/TH/day (PR)</label>
-                        <input type="number" id="sat-per-th" value="47" min="1" max="500" step="1">
+                        <input type="number" id="sat-per-th" value="47" min="1" max="500" step="0.1">
                         <span class="hint" data-i18n="hint_sat_per_th">Auto-calculated — manually adjustable from your dashboard</span>
                     </div>
                 </div>
@@ -2538,7 +2538,7 @@
                     document.getElementById('net-difficulty').textContent = ehps.toFixed(1) + ' EH/s';
                 }
                 if (state.satPerTH) {
-                    document.getElementById('net-hashrate').textContent = state.satPerTH + ' PR';
+                    document.getElementById('net-hashrate').textContent = Number(state.satPerTH).toFixed(1) + ' PR';
                 }
 
                 const now = new Date();
@@ -3693,11 +3693,16 @@
                 // payload — when this sync didn't include reward data (e.g. dashboard-only
                 // visit), the merged history still has yesterday's complete day from a
                 // previous sync, and PR refreshes to reflect it instead of staying stuck.
+                // Round to 1 decimal precision (e.g., 46.4 instead of 46) — the
+                // raw poolReward/power ratio can have a fractional part that gets
+                // lost with integer rounding, making the simulator's PR display
+                // diverge from GoMining's UI by ~1 sat. 1 decimal eliminates the
+                // ambiguity and matches projection math.
                 let latestForPR = null;
                 if (state.rewardHistory?.length > 0) {
                     latestForPR = getLastCompleteRewardDay(state.rewardHistory);
                     if (latestForPR && latestForPR.poolReward && latestForPR.power) {
-                        satPerTH = Math.round(latestForPR.poolReward / latestForPR.power * 1e8);
+                        satPerTH = Math.round(latestForPR.poolReward / latestForPR.power * 1e9) / 10;
                     }
                 }
 
@@ -3707,14 +3712,14 @@
                 // good value, so PR stays stable across syncs.
                 if (!satPerTH && !state.apiSatPerTH && data.income?.prPerThGmt && gmtP && btcP) {
                     const prBtcPerTH = data.income.prPerThGmt * gmtP / btcP;
-                    satPerTH = Math.round(prBtcPerTH * 1e8);
+                    satPerTH = Math.round(prBtcPerTH * 1e9) / 10;
                 }
 
                 if (satPerTH) {
                     document.getElementById('sat-per-th').value = satPerTH;
                     state.satPerTH = satPerTH;
                     state.apiSatPerTH = satPerTH;
-                    document.getElementById('net-hashrate').textContent = satPerTH + ' PR';
+                    document.getElementById('net-hashrate').textContent = satPerTH.toFixed(1) + ' PR';
                 }
             }
 
@@ -5703,13 +5708,13 @@
             // until the next extension sync).
             const lastComplete = getLastCompleteRewardDay(state.rewardHistory);
             if (lastComplete && lastComplete.poolReward && lastComplete.power) {
-                const fresh = Math.round(lastComplete.poolReward / lastComplete.power * 1e8);
+                const fresh = Math.round(lastComplete.poolReward / lastComplete.power * 1e9) / 10;
                 state.satPerTH = fresh;
                 state.apiSatPerTH = fresh;
                 const satEl = document.getElementById('sat-per-th');
                 if (satEl) satEl.value = fresh;
                 const netHashEl = document.getElementById('net-hashrate');
-                if (netHashEl) netHashEl.textContent = fresh + ' PR';
+                if (netHashEl) netHashEl.textContent = fresh.toFixed(1) + ' PR';
             }
         }
 
