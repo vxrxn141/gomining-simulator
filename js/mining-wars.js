@@ -13,6 +13,183 @@ const SERVICE_FEE_TH_USD = 0.0089;   // GoMining service cost ($/TH/day)
 
 const $ = sel => document.querySelector(sel);
 
+/* ===========================================================
+   LIVE DATA from the GoMining extension
+   ===========================================================
+   The extension's extractor.js writes a snapshot of the user's
+   GoMining account to chrome.storage.local under "gominingAutoSync".
+   The sync-bridge content script (running on this page too) mirrors
+   that into window.localStorage["gomining_autosync"]. We listen for
+   it here and auto-fill the Setup inputs + show a live banner.
+
+   Falls back gracefully when no extension is installed — defaults +
+   league presets keep working unchanged.
+   =========================================================== */
+const LIVE_KEY    = "gomining_autosync";
+const HIST_KEY    = "mw_history_v1";
+const HIST_MAX_DAYS = 30;
+
+let liveData = { available:false, capturedAt:null };
+
+function loadLiveData() {
+  try {
+    const raw = window.localStorage.getItem(LIVE_KEY);
+    if (!raw) return false;
+    const parsed = JSON.parse(raw);
+    liveData = { ...parsed, available:true, capturedAt: Date.now() };
+    autofillFromLive(parsed);
+    appendHistory(parsed);
+    showLiveBanner(parsed);
+    return true;
+  } catch (e) { console.warn("loadLiveData failed:", e); return false; }
+}
+
+function autofillFromLive(d) {
+  // From the solo-mining extractor (already populated)
+  if (d.miner?.power)            $("#in-th").value  = d.miner.power.toFixed(2);
+  if (d.miner?.energyEfficiency) $("#in-eff").value = d.miner.energyEfficiency.toFixed(2);
+  if (d.prices?.btcPrice)        $("#in-btc").value = Math.round(d.prices.btcPrice);
+  if (d.prices?.gmtPrice)        $("#in-gmt").value = (+d.prices.gmtPrice).toFixed(4);
+  if (d.discount?.streak !== undefined)     $("#in-disc-service").value = d.discount.streak;
+  if (d.discount?.miningMode !== undefined) $("#in-disc-mining").value  = d.discount.miningMode;
+  if (d.discount?.vip !== undefined)        $("#in-disc-vip").value     = d.discount.vip;
+  if (d.discount?.token !== undefined)      $("#in-disc-token").value   = d.discount.token;
+
+  // From the new MW extractor
+  const w = d.wars || {};
+  if (w.you?.basePps)        $("#in-pps").value         = Math.round(w.you.basePps);
+  if (w.clan?.totalTh)       { /* surfaced in snapshot card; no input */ }
+  if (w.league?.totalTh)     $("#in-league-size").value = Math.round(w.league.totalTh);
+  // Auto-select a league button by id/name when possible
+  const lid = (w.league?.id || "").toString().toLowerCase();
+  const match = ["dune","horizon","eclipse","odyssey"].find(x => lid.includes(x));
+  if (match) document.querySelector(`.league-btn[data-league="${match}"]`)?.click();
+
+  // Replace expected-gross input with rolling-avg projection if we have it
+  const proj = projectFromHistory();
+  if (proj.expectedWeeklyBtc > 0) $("#in-war-gross").value = proj.expectedWeeklyBtc.toFixed(6);
+  if (proj.expectedWeeklyGmt > 0) $("#in-war-gmt").value   = Math.round(proj.expectedWeeklyGmt);
+
+  updateDashboard();
+}
+
+function showLiveBanner(d) {
+  const el = document.getElementById("live-banner");
+  if (!el) return;
+  const w = d.wars || {};
+  const hasWars = !!(w.clan?.totalTh || w.recentBlocks?.length);
+  const proj = projectFromHistory();
+  el.style.display = "block";
+  el.innerHTML = `
+    <div class="live-dot"></div>
+    <div class="live-text">
+      <strong>Live data connected</strong>
+      <span> · ${hasWars ? "Mining Wars + solo" : "Solo mining only"} · synced ${fmtAgo(d.timestamp || Date.now())}</span>
+      ${proj.confidence !== "no-data"
+        ? `<span class="live-proj">Projection: <strong>${proj.expectedWeeklyBtc.toFixed(6)} BTC/wk</strong> from last 7 d (${proj.confidence})</span>`
+        : `<span class="live-proj">Browse Mining Wars in app.gomining.com to start collecting block history.</span>`}
+    </div>`;
+}
+function fmtAgo(ts) {
+  const d = typeof ts === "string" ? new Date(ts).getTime() : +ts;
+  const s = Math.max(0, Math.floor((Date.now() - d) / 1000));
+  if (s < 60)    return s + "s ago";
+  if (s < 3600)  return Math.floor(s/60) + "m ago";
+  if (s < 86400) return Math.floor(s/3600) + "h ago";
+  return Math.floor(s/86400) + "d ago";
+}
+
+/* ----- Rolling 30-day history of MW snapshots ----- */
+function loadHistory() {
+  try { return JSON.parse(window.localStorage.getItem(HIST_KEY) || "[]"); }
+  catch { return []; }
+}
+function appendHistory(snap) {
+  if (!snap?.wars) return;
+  const hist = loadHistory();
+  hist.push({
+    capturedAt: Date.now(),
+    yourTh:     snap.miner?.power || null,
+    clan:       snap.wars.clan || null,
+    league:     snap.wars.league || null,
+    blocks:     snap.wars.recentBlocks || [],
+    personal:   snap.wars.recentPersonal || [],
+  });
+  // dedupe — keep one per hour to avoid bloat
+  const byHour = new Map();
+  hist.forEach(s => {
+    const k = Math.floor(s.capturedAt / 3600_000);
+    byHour.set(k, s);   // newer wins
+  });
+  const cutoff = Date.now() - HIST_MAX_DAYS * 86400_000;
+  const pruned = Array.from(byHour.values()).filter(s => s.capturedAt > cutoff);
+  window.localStorage.setItem(HIST_KEY, JSON.stringify(pruned));
+}
+
+/* ----- Backtracking projection ----- */
+function projectFromHistory() {
+  const hist = loadHistory();
+  if (!hist.length) return { expectedWeeklyBtc:0, expectedWeeklyGmt:0, confidence:"no-data", samples:0 };
+
+  // Pool every block/personal-win we've seen in the last 7 days, dedupe by ts.
+  const cutoff = Date.now() - 7 * 86400_000;
+  const seenBlocks = new Map(), seenPersonal = new Map();
+  let latestSnap = hist[hist.length - 1];
+
+  hist.forEach(s => {
+    (s.blocks || []).forEach(b => {
+      const t = +new Date(b.ts || 0) || 0;
+      if (t > cutoff && b.btc) seenBlocks.set(`${t}-${b.btc}`, { ...b, snap:s });
+    });
+    (s.personal || []).forEach(b => {
+      const t = +new Date(b.ts || 0) || 0;
+      if (t > cutoff && b.gmt) seenPersonal.set(`${t}-${b.gmt}`, b);
+    });
+  });
+
+  // BTC: clan wins multiplied by your-TH / clan-total-TH at time of win
+  let btcShare = 0;
+  for (const b of seenBlocks.values()) {
+    const yourTh = b.snap?.yourTh || latestSnap.yourTh || 0;
+    const clanTh = b.snap?.clan?.totalTh || latestSnap.clan?.totalTh || 1;
+    btcShare += (+b.btc || 0) * (yourTh / clanTh);
+  }
+  // GMT: just sum personal block prizes
+  let gmt = 0;
+  for (const b of seenPersonal.values()) gmt += (+b.gmt || 0);
+
+  // scale by clan/league shifts since last week (current vs avg-of-window)
+  const currentClanTh   = latestSnap.clan?.totalTh   || 0;
+  const avgClanTh       = avgField(hist, "clan.totalTh") || currentClanTh;
+  const currentLeagueTh = latestSnap.league?.totalTh || 0;
+  const avgLeagueTh     = avgField(hist, "league.totalTh") || currentLeagueTh;
+
+  const clanFactor   = avgClanTh   > 0 ? currentClanTh   / avgClanTh   : 1;
+  const leagueFactor = avgLeagueTh > 0 ? avgLeagueTh     / currentLeagueTh : 1; // smaller league = bigger share
+  const scale = clanFactor * leagueFactor;
+  const samples = seenBlocks.size + seenPersonal.size;
+  const confidence = samples >= 10 ? "strong" : samples >= 3 ? "medium" : samples > 0 ? "weak" : "no-data";
+
+  return {
+    expectedWeeklyBtc: btcShare * scale,
+    expectedWeeklyGmt: gmt * scale,
+    confidence,
+    samples,
+    clanFactor,
+    leagueFactor,
+  };
+}
+function avgField(hist, path) {
+  const parts = path.split(".");
+  const vals = hist.map(s => parts.reduce((o,k) => (o ? o[k] : null), s)).filter(v => v != null);
+  return vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : null;
+}
+
+/* Listen for new snapshots from the extension */
+window.addEventListener("storage", e => {
+  if (e.key === LIVE_KEY) loadLiveData();
+});
+
 /* ---------- Spell catalog & bot rules ---------- */
 const SPELLS = {
   rocket:  { label:"Rocket",  costs:[1,10,100], icon:"🚀" },
@@ -533,6 +710,7 @@ function updateDiscount() {
 
 /* ---------- Bonus tools (live) ---------- */
 function updateBoost() {
+  // Service-button click in MW = 100× power boost (one click per day).
   const pps = +$("#in-pps").value || 0;
   $("#out-boost").textContent = "+" + (pps * 100).toLocaleString() + " score";
 }
@@ -646,3 +824,6 @@ renderBot();
 updateRoiMax();
 updateDiscount();
 updateDashboard();
+
+// Try to pull live extension data on page load (no-op if extension not installed)
+loadLiveData();

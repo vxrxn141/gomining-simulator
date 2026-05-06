@@ -21,7 +21,13 @@
             try {
                 const essentials = extractEssentials();
                 // Only save if we have at least some meaningful data
-                if (essentials.miner.power || essentials.income.prPerThGmt || essentials.rewardHistory?.length) {
+                const hasWarsData = essentials.wars && (
+                    essentials.wars.clan?.totalTh ||
+                    essentials.wars.league?.totalTh ||
+                    essentials.wars.recentBlocks?.length ||
+                    essentials.wars.recentPersonal?.length
+                );
+                if (essentials.miner.power || essentials.income.prPerThGmt || essentials.rewardHistory?.length || hasWarsData) {
                     chrome.storage.local.set({ gominingAutoSync: essentials }, () => {
                         if (!chrome.runtime.lastError) {
                             log('Auto-sync: données sauvegardées pour le simulateur');
@@ -38,6 +44,7 @@
         apiCalls: [],
         miners: {},    // clé = endpoint, valeur = dernière réponse
         rewards: {},   // clé = endpoint, valeur = dernière réponse
+        wars: {},      // Miner Wars: clan / league / blocks endpoints
         discount: {},
         prices: {},
         timestamp: null
@@ -107,7 +114,11 @@
         // Purger apiCalls vieux
         DATA.apiCalls = DATA.apiCalls.filter(c => c.time > cutoff);
 
-        log(`Purge: miners=${Object.keys(DATA.miners).length}, rewards=${Object.keys(DATA.rewards).length}, apiCalls=${DATA.apiCalls.length}`);
+        for (const key of Object.keys(DATA.wars)) {
+            if (DATA.wars[key].time < cutoff) delete DATA.wars[key];
+        }
+
+        log(`Purge: miners=${Object.keys(DATA.miners).length}, rewards=${Object.keys(DATA.rewards).length}, wars=${Object.keys(DATA.wars).length}, apiCalls=${DATA.apiCalls.length}`);
     }
 
     // Purge auto toutes les 30 min
@@ -151,6 +162,21 @@
                 data: data
             };
             log('Données rewards: ' + key);
+        }
+
+        // === Miner Wars: clan / league / round / block data ===
+        // We capture broadly because GoMining's MW endpoints are still being
+        // mapped — extractEssentials() does best-effort field hunting on the
+        // captured payload so the schema can change without breaking us.
+        if (url.match(/mining-?wars|miner-?wars|mining_?war|\/clan\/|\/round\/|\/league\/|pool-block|block-find|round-find|round-stat|score|pps|spell|boost|multiplier-block/i) ||
+            str.match(/clantotalth|leaguepower|leaguetotalth|prizefund|reward_fund|basepps|boostedpps|round_id|clan_score|multiplier_block|spell_cost/i)) {
+            const key = extractEndpointKey(url);
+            DATA.wars[key] = {
+                url: url,
+                time: new Date().toISOString(),
+                data: data
+            };
+            log('Données wars: ' + key);
         }
 
         // Données de mineur/NFT — garder seulement la dernière par endpoint
@@ -637,7 +663,95 @@
         }
         delete result.income._partialDayPr;
 
+        // === MINER WARS data ===
+        // Best-effort: GoMining's MW endpoints are still being mapped, so we
+        // recursively scan captured payloads for likely field names rather
+        // than relying on a fixed schema.
+        result.wars = extractWarsData();
+
         return result;
+    }
+
+    // ===== Miner Wars helpers =====
+    // Recursively search an object/array for the first matching key (case-insensitive).
+    function findField(obj, names, depth) {
+        if (depth === undefined) depth = 0;
+        if (depth > 6 || obj === null || obj === undefined) return null;
+        if (typeof obj !== 'object') return null;
+        const keys = Object.keys(obj);
+        for (const k of keys) {
+            if (names.indexOf(k.toLowerCase()) >= 0) return obj[k];
+        }
+        for (const k of keys) {
+            const v = obj[k];
+            if (v && typeof v === 'object') {
+                const found = findField(v, names, depth + 1);
+                if (found !== null && found !== undefined) return found;
+            }
+        }
+        return null;
+    }
+    function findArray(obj, names, depth) {
+        if (depth === undefined) depth = 0;
+        if (depth > 6 || obj === null || obj === undefined) return null;
+        if (typeof obj !== 'object') return null;
+        const keys = Object.keys(obj);
+        for (const k of keys) {
+            if (names.indexOf(k.toLowerCase()) >= 0 && Array.isArray(obj[k])) return obj[k];
+        }
+        for (const k of keys) {
+            const v = obj[k];
+            if (v && typeof v === 'object') {
+                const found = findArray(v, names, depth + 1);
+                if (found) return found;
+            }
+        }
+        return null;
+    }
+    function extractWarsData() {
+        const out = {
+            clan: {},
+            league: {},
+            you: {},
+            recentBlocks: [],
+            recentPersonal: [],
+            capturedAt: Date.now(),
+            sourceEndpoints: Object.keys(DATA.wars),
+        };
+        if (Object.keys(DATA.wars).length === 0) return out;
+
+        for (const r of Object.values(DATA.wars)) {
+            const d = r.data;
+            // best-effort field hunt — populate only if not already set
+            out.clan.id          = out.clan.id          || findField(d, ['clanid','clan_id']);
+            out.clan.name        = out.clan.name        || findField(d, ['clanname','clan_name','name']);
+            out.clan.totalTh     = out.clan.totalTh     || findField(d, ['clantotalth','clan_total_th','clanpower','totalpower','totaltth','totalhashrate','clanhashrate']);
+            out.clan.memberCount = out.clan.memberCount || findField(d, ['membercount','members','membersnumber','clansize']);
+            out.league.id        = out.league.id        || findField(d, ['leagueid','league_id','leaguename','leaguetier','leaguelevel']);
+            out.league.totalTh   = out.league.totalTh   || findField(d, ['leaguetotalth','league_total_th','leaguepower','leaguehashrate']);
+            out.league.prizeFund = out.league.prizeFund || findField(d, ['prizefund','prize_fund','rewardfund','reward_fund','poolreward','pool_reward','poolprize']);
+            out.league.maxMult   = out.league.maxMult   || findField(d, ['maxmultiplier','max_multiplier','multipliercap']);
+            out.you.basePps      = out.you.basePps      || findField(d, ['basepps','base_pps','baseppspoint']);
+            out.you.boostedPps   = out.you.boostedPps   || findField(d, ['boostedpps','boosted_pps','currentpps']);
+            out.you.score        = out.you.score        || findField(d, ['userscore','my_score','score','roundscore']);
+
+            // recent block arrays (clan and personal)
+            const allBlocks = findArray(d, ['blocks','recentblocks','recent_blocks','blockhistory','wins','rounds']);
+            if (Array.isArray(allBlocks)) {
+                allBlocks.forEach(b => {
+                    if (!b || typeof b !== 'object') return;
+                    const ts   = findField(b, ['createdat','timestamp','time','date','foundat']);
+                    const mult = findField(b, ['multiplier','mult','reward_multiplier','blockmultiplier']);
+                    const btc  = findField(b, ['btc','btcamount','btcreward','btc_amount','rewardbtc']);
+                    const gmt  = findField(b, ['gmt','gmtamount','gmtreward','gmt_amount','rewardgmt']);
+                    const isPersonal = findField(b, ['personal','ispersonal','is_personal','personalwin']);
+                    const entry = { ts, mult, btc, gmt };
+                    if (isPersonal || (gmt && !btc))      out.recentPersonal.push(entry);
+                    else if (btc !== null && btc !== undefined) out.recentBlocks.push(entry);
+                });
+            }
+        }
+        return out;
     }
 
     // === Init ===
