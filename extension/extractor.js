@@ -713,6 +713,8 @@
             clan: {},
             league: {},
             you: {},
+            cycle: {},
+            cycleSoFar: { clanBlocksWon:0, clanBtcWon:0, yourBtcWon:0, yourGmtWon:0, yourPersonalBlocks:0 },
             recentBlocks: [],
             recentPersonal: [],
             capturedAt: Date.now(),
@@ -722,21 +724,45 @@
 
         for (const r of Object.values(DATA.wars)) {
             const d = r.data;
-            // best-effort field hunt — populate only if not already set
+
+            // ---- Clan ----
             out.clan.id          = out.clan.id          || findField(d, ['clanid','clan_id']);
-            out.clan.name        = out.clan.name        || findField(d, ['clanname','clan_name','name']);
+            out.clan.name        = out.clan.name        || findField(d, ['clanname','clan_name']);
             out.clan.totalTh     = out.clan.totalTh     || findField(d, ['clantotalth','clan_total_th','clanpower','totalpower','totaltth','totalhashrate','clanhashrate']);
             out.clan.memberCount = out.clan.memberCount || findField(d, ['membercount','members','membersnumber','clansize']);
+            out.clan.score       = out.clan.score       || findField(d, ['clanscore','clan_score','currentscore']);
+            out.clan.rank        = out.clan.rank        || findField(d, ['clanrank','rank','position']);
+
+            // ---- League ----
             out.league.id        = out.league.id        || findField(d, ['leagueid','league_id','leaguename','leaguetier','leaguelevel']);
             out.league.totalTh   = out.league.totalTh   || findField(d, ['leaguetotalth','league_total_th','leaguepower','leaguehashrate']);
-            out.league.prizeFund = out.league.prizeFund || findField(d, ['prizefund','prize_fund','rewardfund','reward_fund','poolreward','pool_reward','poolprize']);
+            out.league.avgWth    = out.league.avgWth    || findField(d, ['leagueaveragewth','averagewth','avg_w_per_th','leagueavgw']);
+            out.league.prizeFundBtc = out.league.prizeFundBtc || findField(d, ['prizefundbtc','rewardfundbtc','prizefund','prize_fund','rewardfund','reward_fund','poolreward','poolprize']);
+            out.league.prizeFundGmt = out.league.prizeFundGmt || findField(d, ['prizefundgmt','rewardfundgmt','gmtfund','gmt_fund']);
             out.league.maxMult   = out.league.maxMult   || findField(d, ['maxmultiplier','max_multiplier','multipliercap']);
+
+            // ---- You ----
             out.you.basePps      = out.you.basePps      || findField(d, ['basepps','base_pps','baseppspoint']);
             out.you.boostedPps   = out.you.boostedPps   || findField(d, ['boostedpps','boosted_pps','currentpps']);
-            out.you.score        = out.you.score        || findField(d, ['userscore','my_score','score','roundscore']);
+            out.you.score        = out.you.score        || findField(d, ['userscore','my_score','score','roundscore','playerscore']);
 
-            // recent block arrays (clan and personal)
-            const allBlocks = findArray(d, ['blocks','recentblocks','recent_blocks','blockhistory','wins','rounds']);
+            // ---- Cycle / round timing ----
+            out.cycle.startAt    = out.cycle.startAt    || findField(d, ['cyclestart','cycle_start','roundstart','round_start','weekstart','startedat','started_at']);
+            out.cycle.endAt      = out.cycle.endAt      || findField(d, ['cycleend','cycle_end','roundend','round_end','weekend','endsat','ends_at','finishesat']);
+            out.cycle.roundId    = out.cycle.roundId    || findField(d, ['roundid','round_id','cycleid','cycle_id']);
+
+            // ---- Cumulative this cycle ----
+            out.cycleSoFar.clanBlocksWon = Math.max(out.cycleSoFar.clanBlocksWon,
+                +findField(d, ['clanblockswon','clan_blocks_won','blockswon','blocks_won','totalblocks']) || 0);
+            out.cycleSoFar.clanBtcWon = Math.max(out.cycleSoFar.clanBtcWon,
+                +findField(d, ['clanbtcwon','clan_btc_won','accumulatedbtc','btcaccumulated','btc_so_far','rewardsoFarBtc']) || 0);
+            out.cycleSoFar.yourBtcWon = Math.max(out.cycleSoFar.yourBtcWon,
+                +findField(d, ['yourbtcwon','user_btc_won','myrewardbtc','my_btc_so_far']) || 0);
+            out.cycleSoFar.yourGmtWon = Math.max(out.cycleSoFar.yourGmtWon,
+                +findField(d, ['yourgmtwon','user_gmt_won','myrewardgmt','my_gmt_so_far','personalgmt']) || 0);
+
+            // ---- Recent blocks history ----
+            const allBlocks = findArray(d, ['blocks','recentblocks','recent_blocks','blockhistory','wins','rounds','blockwins']);
             if (Array.isArray(allBlocks)) {
                 allBlocks.forEach(b => {
                     if (!b || typeof b !== 'object') return;

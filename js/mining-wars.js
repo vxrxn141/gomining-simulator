@@ -45,35 +45,50 @@ function loadLiveData() {
 }
 
 function autofillFromLive(d) {
+  const lived = [];   // ids of fields populated from extension data
+  const setLive = (id, val) => {
+    if (val === undefined || val === null) return;
+    const el = document.getElementById(id);
+    if (el) { el.value = val; lived.push(id); }
+  };
   // From the solo-mining extractor (already populated)
-  if (d.miner?.power)            $("#in-th").value  = d.miner.power.toFixed(2);
-  if (d.miner?.energyEfficiency) $("#in-eff").value = d.miner.energyEfficiency.toFixed(2);
-  if (d.prices?.btcPrice)        $("#in-btc").value = Math.round(d.prices.btcPrice);
-  if (d.prices?.gmtPrice)        $("#in-gmt").value = (+d.prices.gmtPrice).toFixed(4);
-  if (d.discount?.streak !== undefined)     $("#in-disc-service").value = d.discount.streak;
-  if (d.discount?.miningMode !== undefined) $("#in-disc-mining").value  = d.discount.miningMode;
-  if (d.discount?.vip !== undefined)        $("#in-disc-vip").value     = d.discount.vip;
-  if (d.discount?.token !== undefined)      $("#in-disc-token").value   = d.discount.token;
+  if (d.miner?.power)            setLive("in-th",  d.miner.power.toFixed(2));
+  if (d.miner?.energyEfficiency) setLive("in-eff", d.miner.energyEfficiency.toFixed(2));
+  if (d.prices?.btcPrice)        setLive("in-btc", Math.round(d.prices.btcPrice));
+  if (d.prices?.gmtPrice)        setLive("in-gmt", (+d.prices.gmtPrice).toFixed(4));
+  if (d.discount?.streak     !== undefined) setLive("in-disc-service", d.discount.streak);
+  if (d.discount?.miningMode !== undefined) setLive("in-disc-mining",  d.discount.miningMode);
+  if (d.discount?.vip        !== undefined) setLive("in-disc-vip",     d.discount.vip);
+  if (d.discount?.token      !== undefined) setLive("in-disc-token",   d.discount.token);
 
   // From the new MW extractor
   const w = d.wars || {};
-  if (w.you?.basePps)        $("#in-pps").value         = Math.round(w.you.basePps);
-  if (w.league?.totalTh)     $("#in-league-size").value = Math.round(w.league.totalTh);
+  if (w.you?.basePps)    setLive("in-pps",         Math.round(w.you.basePps));
+  if (w.league?.totalTh) setLive("in-league-size", Math.round(w.league.totalTh));
+  if (w.league?.avgWth)  setLive("in-league-wth",  (+w.league.avgWth).toFixed(2));
   // Auto-select a league button by id/name when possible
   const lid = (w.league?.id || "").toString().toLowerCase();
   const match = ["dune","horizon","eclipse","odyssey"].find(x => lid.includes(x));
   if (match) document.querySelector(`.league-btn[data-league="${match}"]`)?.click();
 
-  // ONLY overwrite expected-gross when we have at least 3 observed samples
-  // in the rolling 7-day history. Never autofill from preset density —
-  // that's what produced the wildly inflated $312 projection on a $3 week.
-  const proj = projectFromHistory();
-  if (proj.confidence !== "no-data" && proj.confidence !== "weak") {
-    $("#in-war-gross").value = proj.expectedWeeklyBtc.toFixed(6);
-    if (proj.expectedWeeklyGmt > 0) $("#in-war-gmt").value = Math.round(proj.expectedWeeklyGmt);
+  // The cycle projection (if we have round timing) is the source of truth
+  // for expected gross. It blends statistical baseline with observed data.
+  const cyc = projectCycle();
+  if (cyc.available && cyc.projectionBtc > 0) {
+    setLive("in-war-gross", cyc.projectionBtc.toFixed(8));
+  } else {
+    // Fallback to historical 7-day rolling avg if no cycle timing yet
+    const proj = projectFromHistory();
+    if (proj.confidence !== "no-data" && proj.confidence !== "weak") {
+      setLive("in-war-gross", proj.expectedWeeklyBtc.toFixed(8));
+      if (proj.expectedWeeklyGmt > 0) setLive("in-war-gmt", Math.round(proj.expectedWeeklyGmt));
+    }
   }
 
+  // mark every captured field with the "🔌 live" tag
+  markFieldsAsLive(lived);
   updateDashboard();
+  updateCycleCard();
 }
 
 function showLiveBanner(d) {
@@ -186,6 +201,162 @@ function avgField(hist, path) {
 window.addEventListener("storage", e => {
   if (e.key === LIVE_KEY) loadLiveData();
 });
+
+/* ===========================================================
+   CYCLE-BLENDED PROJECTION
+   ===========================================================
+   Day 1 of a cycle: nothing observed yet → use statistical baseline
+     (your fair share of the league prize fund).
+   Day 2-7: blend observed rate with statistical baseline.
+     Weight shifts from 0% observed → 100% observed as the cycle ends.
+
+   This is what the user described: "the longer the cycle moves on,
+   the more accurate the cycle-end projection."
+   =========================================================== */
+function projectCycle() {
+  const w = liveData.wars || {};
+  const c = w.cycle || {};
+  const sofar = w.cycleSoFar || {};
+  const startMs = parseTs(c.startAt);
+  const endMs   = parseTs(c.endAt);
+  if (!startMs || !endMs || endMs <= startMs) {
+    return { available:false };
+  }
+  const now = Date.now();
+  const totalMs     = endMs - startMs;
+  const elapsedMs   = Math.max(0, Math.min(totalMs, now - startMs));
+  const remainingMs = Math.max(0, totalMs - elapsedMs);
+  const totalDays     = totalMs     / 86400_000;
+  const elapsedDays   = elapsedMs   / 86400_000;
+  const remainingDays = remainingMs / 86400_000;
+  const alpha = totalDays > 0 ? elapsedDays / totalDays : 0;
+
+  // ---- Statistical baseline (no data needed) ----
+  const p = read();
+  const fairShareBtc = p.leagueSizeTh > 0 && (w.league?.prizeFundBtc || 0) > 0
+    ? (p.th / p.leagueSizeTh) * w.league.prizeFundBtc
+    : 0;
+
+  // ---- Observed rate so far (USD or BTC accumulated for YOU) ----
+  // If yourBtcWon is reported directly, use it. Otherwise derive from clan-share.
+  let yourBtcSoFar = sofar.yourBtcWon || 0;
+  if (!yourBtcSoFar && sofar.clanBtcWon && w.clan?.totalTh > 0) {
+    yourBtcSoFar = sofar.clanBtcWon * (p.th / w.clan.totalTh);
+  }
+  const ratePerDayBtc = elapsedDays > 0 ? yourBtcSoFar / elapsedDays : 0;
+  const observedFullCycleBtc = yourBtcSoFar + (ratePerDayBtc * remainingDays);
+
+  // ---- Blend (alpha = how much of the cycle has elapsed) ----
+  const projectionBtc = alpha * observedFullCycleBtc + (1 - alpha) * fairShareBtc;
+
+  // ---- Variance band: ±5% league size, ±15% clan score swing ----
+  // Combined worst/best multiplier ~= [0.85, 1.20]
+  const lowBtc  = projectionBtc * 0.85;
+  const highBtc = projectionBtc * 1.20;
+
+  return {
+    available:true,
+    elapsedDays, remainingDays, totalDays, alpha,
+    fairShareBtc, observedFullCycleBtc, projectionBtc,
+    lowBtc, highBtc,
+    yourBtcSoFar, ratePerDayBtc,
+    clanBlocksWon: sofar.clanBlocksWon || 0,
+    clanBtcWon: sofar.clanBtcWon || 0,
+    confidence:
+      alpha < 0.15 ? "stat-only"     :   // < ~1 day
+      alpha < 0.45 ? "early-data"    :   // 1-3 days
+      alpha < 0.80 ? "well-observed" :   // 3-5.5 days
+                     "near-final",       // > 5.5 days
+  };
+}
+function parseTs(v) {
+  if (!v) return null;
+  if (typeof v === "number") return v < 1e12 ? v * 1000 : v;
+  const d = new Date(v).getTime();
+  return Number.isFinite(d) ? d : null;
+}
+
+/* When live data lands, mark fields as "captured from extension" so the
+ * user knows they shouldn't normally edit them. They CAN still edit if
+ * they want to experiment. */
+function updateCycleCard() {
+  const card = document.getElementById("cycle-card");
+  if (!card) return;
+  const cyc = projectCycle();
+  if (!cyc.available) {
+    card.style.display = "none";
+    return;
+  }
+  card.style.display = "block";
+  const p = read();
+  const w = liveData.wars || {};
+
+  const pct = Math.min(100, cyc.alpha * 100);
+  const yourBtcSoFarUsd  = cyc.yourBtcSoFar * p.btcUsd;
+  const projUsd          = cyc.projectionBtc * p.btcUsd;
+  const lowUsd           = cyc.lowBtc        * p.btcUsd;
+  const highUsd          = cyc.highBtc       * p.btcUsd;
+
+  const confLabel = {
+    "stat-only":     "Day 1 — using statistical baseline only",
+    "early-data":    "Early in cycle — limited live data",
+    "well-observed": "Mid-cycle — projection blending well",
+    "near-final":    "Cycle nearly complete — high confidence",
+  }[cyc.confidence];
+
+  const clanShareSoFar = w.clan?.totalTh > 0 && cyc.clanBtcWon > 0
+    ? `${(cyc.yourBtcSoFar / cyc.clanBtcWon * 100).toFixed(2)}% of clan winnings`
+    : "—";
+
+  card.innerHTML = `
+    <div class="card-title">⏱️ Cycle in progress</div>
+    <div class="card-desc">As the week progresses, observed data replaces the statistical baseline. <strong>${confLabel}.</strong></div>
+    <div class="cycle-bar">
+      <div class="cycle-bar-fill" style="width:${pct.toFixed(1)}%"></div>
+      <div class="cycle-bar-label">${cyc.elapsedDays.toFixed(1)} / ${cyc.totalDays.toFixed(1)} days · ${pct.toFixed(0)}%</div>
+    </div>
+    <div class="cycle-grid">
+      <div class="cycle-cell">
+        <div class="cyc-l">Clan blocks won so far</div>
+        <div class="cyc-v">${cyc.clanBlocksWon}</div>
+        <div class="cyc-s">${cyc.clanBtcWon ? cyc.clanBtcWon.toFixed(6) + " BTC clan total" : ""}</div>
+      </div>
+      <div class="cycle-cell">
+        <div class="cyc-l">Your share so far</div>
+        <div class="cyc-v">${cyc.yourBtcSoFar.toFixed(6)} BTC</div>
+        <div class="cyc-s">≈ ${fmtUsd(yourBtcSoFarUsd)} · ${clanShareSoFar}</div>
+      </div>
+      <div class="cycle-cell">
+        <div class="cyc-l">Cycle-end projection</div>
+        <div class="cyc-v" style="color:var(--green)">${fmtUsd(projUsd)}</div>
+        <div class="cyc-s">${cyc.projectionBtc.toFixed(6)} BTC · range ${fmtUsd(lowUsd)} – ${fmtUsd(highUsd)}</div>
+      </div>
+      <div class="cycle-cell">
+        <div class="cyc-l">Statistical baseline</div>
+        <div class="cyc-v">${fmtUsd(cyc.fairShareBtc * p.btcUsd)}</div>
+        <div class="cyc-s">If you won fair-share of league prize</div>
+      </div>
+    </div>
+    <div class="cycle-explainer">
+      <strong>${(cyc.alpha * 100).toFixed(0)}%</strong> observed +
+      <strong>${((1 - cyc.alpha) * 100).toFixed(0)}%</strong> statistical.
+      Variance band reflects ±5% league size and ±15% clan-score swing.
+    </div>`;
+}
+
+function markFieldsAsLive(fields) {
+  fields.forEach(id => {
+    const el = document.getElementById(id);
+    if (el && !el.dataset.liveMarked) {
+      el.dataset.liveMarked = "1";
+      el.classList.add("from-ext");
+      const lbl = el.closest(".price-input")?.querySelector("label");
+      if (lbl && !lbl.querySelector(".ext-tag")) {
+        lbl.insertAdjacentHTML("beforeend", ' <span class="ext-tag" title="Captured live from the extension">🔌 live</span>');
+      }
+    }
+  });
+}
 
 /* ---------- Spell catalog & bot rules ---------- */
 const SPELLS = {
@@ -407,6 +578,7 @@ function updateDashboard() {
   const out = simulate();
   const m = out.mining, w = out.wars, p = out.p;
   updateSnapshot(p);
+  updateCycleCard();
 
   const mEl = document.getElementById("kpi-mining");
   const wEl = document.getElementById("kpi-wars");
@@ -738,9 +910,9 @@ function updateDiscount() {
 
 /* ---------- Bonus tools (live) ---------- */
 function updateBoost() {
-  // Service-button click in MW = 100× power boost (one click per day).
+  // Service-button click in MW = 1000× power boost (one click per day).
   const pps = +$("#in-pps").value || 0;
-  $("#out-boost").textContent = "+" + (pps * 100).toLocaleString() + " score";
+  $("#out-boost").textContent = "+" + (pps * 1000).toLocaleString() + " score";
 }
 function updateRoyalty() {
   const gmt = +$("#in-clan-gmt").value || 0;
