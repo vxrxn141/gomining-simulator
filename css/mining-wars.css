@@ -220,6 +220,17 @@ body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;
          padding:1px 6px;border-radius:4px;background:rgba(63,185,80,.1);font-weight:700;
          text-transform:none;letter-spacing:.02em}
 
+/* Inputs currently showing a live value (data-live="1") */
+input[data-live="1"]{border-left:3px solid var(--green) !important;background:rgba(63,185,80,.04)}
+/* Inputs the user has manually overridden (data-manual="1") */
+input[data-manual="1"]{border-left:3px solid var(--yellow) !important}
+
+/* "↻ live" button that lets user revert a manually-edited field to the latest live value */
+.reset-live-btn{margin-left:8px;font-size:.7em;padding:2px 8px;border-radius:6px;
+                background:rgba(63,185,80,.1);color:var(--green);border:1px solid rgba(63,185,80,.3);
+                cursor:pointer;font-weight:700}
+.reset-live-btn:hover{background:rgba(63,185,80,.2)}
+
 /* Config snapshot (read-only summary on Dashboard) */
 .snap-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px}
 .snap-cell{background:#0c1118;border:1px solid var(--border);border-radius:10px;padding:12px 14px}

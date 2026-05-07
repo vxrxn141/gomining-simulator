@@ -45,13 +45,21 @@ function loadLiveData() {
 }
 
 function autofillFromLive(d) {
-  const lived = [];   // ids of fields populated from extension data
-  const setLive = (id, val) => {
+  const lived = [];   // ids of fields populated from extension data this pass
+  // setLive: write to the input UNLESS the user has manually edited it.
+  // Manual edits set data-manual="1" via wireManualOverride() at boot.
+  // Pass {force:true} to override even manual edits (used for the bot's
+  // probability table where the user expects the live numbers).
+  const setLive = (id, val, opts) => {
     if (val === undefined || val === null) return;
     const el = document.getElementById(id);
-    if (el) { el.value = val; lived.push(id); }
+    if (!el) return;
+    if (!opts?.force && el.dataset.manual === "1") return;
+    el.value = val;
+    el.dataset.live = "1";
+    lived.push(id);
   };
-  // From the solo-mining extractor (already populated)
+  // ===== From the SOLO-MINING extractor (do not touch — solo path is sacred) =====
   if (d.miner?.power)            setLive("in-th",  d.miner.power.toFixed(2));
   if (d.miner?.energyEfficiency) setLive("in-eff", d.miner.energyEfficiency.toFixed(2));
   if (d.prices?.btcPrice)        setLive("in-btc", Math.round(d.prices.btcPrice));
@@ -68,10 +76,12 @@ function autofillFromLive(d) {
   // Provenance helper: unwrap {value,...} or pass through plain values.
   const v  = (x) => (x && typeof x === 'object' && 'value' in x) ? x.value : x;
 
-  // === User base TH + W/TH (your eligible mining power, your efficiency) ===
+  // === User base TH + W/TH (MW values are AUTHORITATIVE — overwrite solo) ===
+  // Solo extractor sums all NFTs incl. staking miners; MW reports your
+  // ACTIVE clan-eligible TH only, which is what the calculator wants.
   const userTh   = v(lv.user?.baseTh);
   const userWth  = v(lv.user?.wPerTh);
-  if (userTh)  setLive("in-th",  (+userTh).toFixed(2));   // also useful for cross-check
+  if (userTh)  setLive("in-th",  (+userTh).toFixed(2));
   if (userWth) setLive("in-eff", (+userWth).toFixed(2));
 
   // === League average W/TH + total power (CRITICAL — from leaderboard endpoint) ===
@@ -82,6 +92,46 @@ function autofillFromLive(d) {
 
   // === Legacy you.basePps fallback (no equivalent in HAR yet) ===
   if (w.you?.basePps) setLive("in-pps", Math.round(w.you.basePps));
+
+  // === Clan-fed inputs (from /api/nft-game/clan/get-by-id) ===
+  // in-clan-gmt = sum of GMT spent on boosts by clan members this cycle
+  // (proxy for "clan member GMT spend" used in clan-leader royalty calc).
+  // We don't have per-cycle spend directly, but we have cumulative ability
+  // usage per member with prices — multiply.
+  const members = v(lv.clan?.members);
+  const abilityCatalog = w.abilities || (v(lv.boosts?.abilityCatalog) || []);
+  if (Array.isArray(members) && Array.isArray(abilityCatalog) && abilityCatalog.length) {
+    const priceById = {};
+    for (const a of abilityCatalog) priceById[a.id] = +a.priceInGMT || 0;
+    let totalGmtSpent = 0;
+    for (const m of members) {
+      for (const u of (m.usedNftGameAbilities || [])) {
+        totalGmtSpent += (priceById[u.nftGameAbilityId] || 0) * (u.count || 0);
+      }
+    }
+    if (totalGmtSpent > 0) setLive("in-member-gmt", Math.round(totalGmtSpent));
+  }
+  // Your own boost spend this cycle
+  const myAbilities = v(lv.boosts?.usedAbilitiesByUser);
+  if (Array.isArray(myAbilities) && Array.isArray(abilityCatalog) && abilityCatalog.length) {
+    const priceById = {};
+    for (const a of abilityCatalog) priceById[a.id] = +a.priceInGMT || 0;
+    let mySpend = 0;
+    for (const u of myAbilities) {
+      mySpend += (priceById[u.nftGameAbilityId] || 0) * (u.count || 0);
+    }
+    if (mySpend > 0) setLive("in-boost-spend", Math.round(mySpend));
+  }
+  // Are you the clan owner? (5% royalty toggle)
+  const isOwner = v(lv.user?.isClanOwner);
+  if (isOwner !== undefined && isOwner !== null) {
+    const cb = document.getElementById("in-is-leader");
+    if (cb && cb.dataset.manual !== "1") {
+      cb.checked = !!isOwner;
+      cb.dataset.live = "1";
+      lived.push("in-is-leader");
+    }
+  }
 
   // === Auto-select league button ===
   // Prefer the HAR league name (e.g. "dune-18") -> normalize to family.
@@ -254,10 +304,30 @@ function avgField(hist, path) {
   return vals.length ? vals.reduce((a,b)=>a+b,0) / vals.length : null;
 }
 
-/* Listen for new snapshots from the extension */
+/* Listen for new snapshots from the extension.
+ * Three channels because of how localStorage / Chrome extensions interact:
+ *   1) Cross-tab StorageEvent — fires when ANOTHER tab writes the key.
+ *   2) Custom 'gomining-autosync' event — sync-bridge dispatches this on
+ *      document so SAME-window writes are caught (StorageEvent does not
+ *      fire in the window that wrote).
+ *   3) Polling fallback every 5s — handles the case where the bridge is
+ *      from an older extension version that doesn't emit the custom event.
+ */
 window.addEventListener("storage", e => {
   if (e.key === LIVE_KEY) loadLiveData();
 });
+document.addEventListener("gomining-autosync", () => loadLiveData());
+
+let _lastLiveJson = null;
+setInterval(() => {
+  try {
+    const cur = window.localStorage.getItem(LIVE_KEY);
+    if (cur && cur !== _lastLiveJson) {
+      _lastLiveJson = cur;
+      loadLiveData();
+    }
+  } catch {}
+}, 5000);
 
 /* ===========================================================
    CYCLE-BLENDED PROJECTION
@@ -1079,6 +1149,46 @@ const DASH_INPUTS = [
 DASH_INPUTS.forEach(sel => {
   const el = document.querySelector(sel);
   if (el) el.addEventListener("input", updateDashboard);
+});
+
+// ---- Manual-override flag ----
+// Any time a user types/changes a Setup input, flag it as `data-manual=1` so
+// future autosyncs from the extension don't clobber their value. Spell-bot
+// inputs (#bot-*) are intentionally NOT flagged here — those stay manual by
+// design and live data only suggests defaults via rebuildBotForLeague().
+const MANUAL_FLAG_INPUTS = [
+  "#in-th","#in-eff","#in-btc","#in-net","#in-block","#in-elec",
+  "#in-disc-service","#in-disc-mining","#in-disc-vip","#in-disc-token",
+  "#in-league-wth","#in-league-size","#in-war-gross","#in-war-gmt","#in-gmt",
+  "#in-pps","#in-clan-gmt",
+  "#in-elig-mining","#in-elig-wars","#in-boost-spend","#in-is-leader","#in-member-gmt",
+];
+function flagManual(e) {
+  const el = e.target;
+  if (!el) return;
+  el.dataset.manual = "1";
+  el.dataset.live = "";
+  // Show a tiny restore button next to the field
+  const lab = el.closest(".price-input,.toggle-row,.field");
+  if (lab && !lab.querySelector(".reset-live-btn")) {
+    const btn = document.createElement("button");
+    btn.type = "button";
+    btn.className = "reset-live-btn";
+    btn.textContent = "↻ live";
+    btn.title = "Reset this field to the latest live value from the extension";
+    btn.addEventListener("click", () => {
+      el.dataset.manual = "";
+      btn.remove();
+      loadLiveData();   // re-pull and re-fill non-manual fields
+    });
+    lab.appendChild(btn);
+  }
+}
+MANUAL_FLAG_INPUTS.forEach(sel => {
+  const el = document.querySelector(sel);
+  if (!el) return;
+  el.addEventListener("input",  flagManual);
+  el.addEventListener("change", flagManual);
 });
 // league click also refreshes dashboard
 document.querySelectorAll(".league-btn").forEach(btn =>
