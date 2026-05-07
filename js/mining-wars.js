@@ -58,17 +58,20 @@ function autofillFromLive(d) {
   // From the new MW extractor
   const w = d.wars || {};
   if (w.you?.basePps)        $("#in-pps").value         = Math.round(w.you.basePps);
-  if (w.clan?.totalTh)       { /* surfaced in snapshot card; no input */ }
   if (w.league?.totalTh)     $("#in-league-size").value = Math.round(w.league.totalTh);
   // Auto-select a league button by id/name when possible
   const lid = (w.league?.id || "").toString().toLowerCase();
   const match = ["dune","horizon","eclipse","odyssey"].find(x => lid.includes(x));
   if (match) document.querySelector(`.league-btn[data-league="${match}"]`)?.click();
 
-  // Replace expected-gross input with rolling-avg projection if we have it
+  // ONLY overwrite expected-gross when we have at least 3 observed samples
+  // in the rolling 7-day history. Never autofill from preset density —
+  // that's what produced the wildly inflated $312 projection on a $3 week.
   const proj = projectFromHistory();
-  if (proj.expectedWeeklyBtc > 0) $("#in-war-gross").value = proj.expectedWeeklyBtc.toFixed(6);
-  if (proj.expectedWeeklyGmt > 0) $("#in-war-gmt").value   = Math.round(proj.expectedWeeklyGmt);
+  if (proj.confidence !== "no-data" && proj.confidence !== "weak") {
+    $("#in-war-gross").value = proj.expectedWeeklyBtc.toFixed(6);
+    if (proj.expectedWeeklyGmt > 0) $("#in-war-gmt").value = Math.round(proj.expectedWeeklyGmt);
+  }
 
   updateDashboard();
 }
@@ -126,15 +129,20 @@ function appendHistory(snap) {
   window.localStorage.setItem(HIST_KEY, JSON.stringify(pruned));
 }
 
-/* ----- Backtracking projection ----- */
+/* ----- Backtracking projection -----
+ * Simple rule: what you ACTUALLY earned in the last 7 days is the best
+ * estimate of what you'll earn this week. Don't double-scale by clan or
+ * league size shifts — that risks inflating the projection.
+ *
+ * If clan size or your TH changed materially mid-week, the user can
+ * manually adjust. We just report the raw observed numbers.
+ */
 function projectFromHistory() {
   const hist = loadHistory();
   if (!hist.length) return { expectedWeeklyBtc:0, expectedWeeklyGmt:0, confidence:"no-data", samples:0 };
 
-  // Pool every block/personal-win we've seen in the last 7 days, dedupe by ts.
   const cutoff = Date.now() - 7 * 86400_000;
   const seenBlocks = new Map(), seenPersonal = new Map();
-  let latestSnap = hist[hist.length - 1];
 
   hist.forEach(s => {
     (s.blocks || []).forEach(b => {
@@ -147,36 +155,25 @@ function projectFromHistory() {
     });
   });
 
-  // BTC: clan wins multiplied by your-TH / clan-total-TH at time of win
+  // BTC: each clan win × your-share-at-time-of-win.
+  // No further scaling — the observed share already reflects clan size.
   let btcShare = 0;
   for (const b of seenBlocks.values()) {
-    const yourTh = b.snap?.yourTh || latestSnap.yourTh || 0;
-    const clanTh = b.snap?.clan?.totalTh || latestSnap.clan?.totalTh || 1;
+    const yourTh = b.snap?.yourTh || 0;
+    const clanTh = b.snap?.clan?.totalTh || 1;
     btcShare += (+b.btc || 0) * (yourTh / clanTh);
   }
-  // GMT: just sum personal block prizes
   let gmt = 0;
   for (const b of seenPersonal.values()) gmt += (+b.gmt || 0);
 
-  // scale by clan/league shifts since last week (current vs avg-of-window)
-  const currentClanTh   = latestSnap.clan?.totalTh   || 0;
-  const avgClanTh       = avgField(hist, "clan.totalTh") || currentClanTh;
-  const currentLeagueTh = latestSnap.league?.totalTh || 0;
-  const avgLeagueTh     = avgField(hist, "league.totalTh") || currentLeagueTh;
-
-  const clanFactor   = avgClanTh   > 0 ? currentClanTh   / avgClanTh   : 1;
-  const leagueFactor = avgLeagueTh > 0 ? avgLeagueTh     / currentLeagueTh : 1; // smaller league = bigger share
-  const scale = clanFactor * leagueFactor;
   const samples = seenBlocks.size + seenPersonal.size;
   const confidence = samples >= 10 ? "strong" : samples >= 3 ? "medium" : samples > 0 ? "weak" : "no-data";
 
   return {
-    expectedWeeklyBtc: btcShare * scale,
-    expectedWeeklyGmt: gmt * scale,
+    expectedWeeklyBtc: btcShare,
+    expectedWeeklyGmt: gmt,
     confidence,
     samples,
-    clanFactor,
-    leagueFactor,
   };
 }
 function avgField(hist, path) {
@@ -374,9 +371,16 @@ function read() {
     discVip:     (+$("#in-disc-vip").value     || 0) / 100,
     discToken:   (+$("#in-disc-token").value   || 0) / 100,
     leagueWth: +$("#in-league-wth").value || 19,
+    leagueSizeTh: +$("#in-league-size").value || 0,
     warGross:  +$("#in-war-gross").value || 0,
     warGmt:    +$("#in-war-gmt").value || 0,
     gmtUsd:    +$("#in-gmt").value || 0,
+    // ---- new explicit inputs (default-safe) ----
+    eligibleMiningDays: +$("#in-elig-mining")?.value || 7,
+    eligibleWarDays:    +$("#in-elig-wars")?.value   || 7,
+    boostSpendGmt:      +$("#in-boost-spend")?.value || 0,
+    isLeader:           !!$("#in-is-leader")?.checked,
+    memberGmtTotal:     +$("#in-member-gmt")?.value  || 0,
   };
 }
 
@@ -457,80 +461,67 @@ function updateDashboard() {
   }
 }
 
-/* ============ Variance scenarios (Compare tab) ============ */
+/* ============ Variance scenarios (Compare tab) ============
+ * Reuses the canonical runMW() with a warGross override so all fees,
+ * GMT, leader royalty, and boost spend stay consistent.
+ */
 function renderVariance(out) {
   const el = document.getElementById("variance-grid");
   if (!el) return;
   document.getElementById("variance-card").style.display = "block";
-  const p = out.p;
+  const baseGross = out.p.warGross;
   const scenarios = [
     { label:"BAD LUCK · 0.5×", mul:0.5, cls:"bad",   note:"Half of expected wins" },
     { label:"AVERAGE · 1.0×",  mul:1.0, cls:"avg",   note:"Your expected gross" },
     { label:"LUCKY · 3.0×",    mul:3.0, cls:"lucky", note:"Heavy block-win streak" },
   ];
   el.innerHTML = scenarios.map(s => {
-    const grossBtc = p.warGross * s.mul;
-    const grossUsd = grossBtc * p.btcUsd;
-    // recompute fees with adjusted gross
-    const elecPerDayUsd = (p.elecKwh * 24 * p.eff * p.th) / 1000;
-    const servPerDayUsd = SERVICE_FEE_TH_USD * p.th;
-    const warsDisc = p.discService + p.discVip + p.discToken;
-    const baseFees = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * 7;
-    const excessBtc = Math.max(0, grossBtc - out.mining.ceilingBtc);
-    const excessUsd = excessBtc * p.btcUsd;
-    const leagueElec = (p.elecKwh * 24 * p.leagueWth * p.th) / 1000;
-    const ratio = (leagueElec + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
-    const excessFee = excessUsd * (ratio - 1) * (1 - warsDisc);
-    const net = grossUsd - baseFees - excessFee;
-    const beatSolo = net > out.mining.netUsd;
+    const r = runMW({ warGross: baseGross * s.mul });
+    const beatSolo = r.wars.netUsd > r.mining.netUsd;
+    const diff = r.wars.netUsd - r.mining.netUsd;
     return `
       <div class="variance-card ${s.cls}">
         <span class="luck">${s.label}</span>
-        <div class="vc-net ${net >= 0 ? "green" : "red"}">${fmtUsd(net)}</div>
+        <div class="vc-net ${r.wars.netUsd >= 0 ? "green" : "red"}">${fmtUsd(r.wars.netUsd)}</div>
         <div class="vc-sub">${s.note} · ${beatSolo ? "✅ beats solo" : "❌ solo wins"}</div>
-        <div class="vc-row"><span class="l">Gross BTC</span><span class="r">${fmtBtc(grossBtc)}</span></div>
-        <div class="vc-row"><span class="l">Excess tax</span><span class="r">-${fmtUsd(excessFee)}</span></div>
-        <div class="vc-row"><span class="l">vs Mining</span><span class="r ${net >= out.mining.netUsd ? "green" : "red"}" style="color:${net >= out.mining.netUsd ? "var(--green)" : "var(--red)"}">${(net >= out.mining.netUsd ? "+" : "")}${fmtUsd(net - out.mining.netUsd)}</span></div>
+        <div class="vc-row"><span class="l">Gross BTC</span><span class="r">${fmtBtc(r.wars.grossBtc)}</span></div>
+        <div class="vc-row"><span class="l">Excess tax</span><span class="r">-${fmtUsd(r.wars.excessFee)}</span></div>
+        <div class="vc-row"><span class="l">Boost cost</span><span class="r">-${fmtUsd(r.wars.boostSpendUsd)}</span></div>
+        <div class="vc-row"><span class="l">vs Mining</span><span class="r ${diff >= 0 ? "green" : "red"}">${(diff >= 0 ? "+" : "")}${fmtUsd(diff)}</span></div>
       </div>`;
   }).join("");
 }
 
-/* ============ Break-even calculator (Compare tab) ============ */
+/* ============ Break-even calculator (Compare tab) ============
+ * Numerical solve: find the warGross that makes wars.netUsd == mining.netUsd
+ * Uses a coarse-then-fine binary search on top of runMW(). Slower than the
+ * old algebra, but stays correct as we add GMT/royalty/boost terms.
+ */
 function renderBreakeven(out) {
   document.getElementById("breakeven-card").style.display = "block";
-  const p = out.p;
-  const elecPerDayUsd = (p.elecKwh * 24 * p.eff * p.th) / 1000;
-  const servPerDayUsd = SERVICE_FEE_TH_USD * p.th;
-  const warsDisc = p.discService + p.discVip + p.discToken;
-  const baseFees = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * 7;
-  const leagueElec = (p.elecKwh * 24 * p.leagueWth * p.th) / 1000;
-  const ratio = (leagueElec + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
-  // Solve: gross_usd - baseFees - max(0, gross_btc - ceilingBtc) * btcUsd * (ratio-1) * (1-disc) = miningNetUsd
-  // Two regimes: gross_btc <= ceiling → excessFee = 0
-  //              gross_btc > ceiling  → excessFee scales with overage
-  const ceilingUsd = out.mining.ceilingBtc * p.btcUsd;
-  // Try below-ceiling regime
-  let beUsd = out.mining.netUsd + baseFees;     // pure (no excess fee)
-  let regime = "below ceiling";
-  if (beUsd > ceilingUsd) {
-    // has to be above-ceiling. Solve:
-    // beUsd - baseFees - (beUsd - ceilingUsd)*(ratio-1)*(1-disc) = miningNetUsd
-    // beUsd*(1 - (ratio-1)*(1-disc)) = miningNetUsd + baseFees - ceilingUsd*(ratio-1)*(1-disc)
-    const a = 1 - (ratio - 1) * (1 - warsDisc);
-    if (a > 0.001) {
-      beUsd = (out.mining.netUsd + baseFees - ceilingUsd * (ratio - 1) * (1 - warsDisc)) / a;
-    }
-    regime = "above ceiling";
+  const target = out.mining.netUsd;
+  const valueAt = btc => runMW({ warGross: btc }).wars.netUsd - target;
+
+  // Bracket: low = 0, high = whatever overshoots target
+  let lo = 0, hi = Math.max(0.01, out.p.warGross * 4 || 0.05);
+  let guard = 0;
+  while (valueAt(hi) < 0 && guard++ < 50) hi *= 2;
+  // Binary search
+  for (let i = 0; i < 60; i++) {
+    const mid = (lo + hi) / 2;
+    if (valueAt(mid) < 0) lo = mid; else hi = mid;
   }
-  const beBtc = p.btcUsd > 0 ? beUsd / p.btcUsd : 0;
-  const yourGap = p.warGross - beBtc;
+  const beBtc = (lo + hi) / 2;
+  const beUsd = beBtc * out.p.btcUsd;
+  const regime = beBtc > out.mining.ceilingForWars ? "above ceiling" : "below ceiling";
+  const yourGap = out.p.warGross - beBtc;
   const gapPct = beBtc > 0 ? (yourGap / beBtc) * 100 : 0;
 
   document.getElementById("breakeven-row").innerHTML = `
     <div class="be-block">
       <div class="be-lbl">Break-even gross BTC / week</div>
       <div class="be-val">${fmtBtc(beBtc)}</div>
-      <div class="be-sub">≈ ${fmtUsd(beUsd)} · regime: <strong>${regime}</strong></div>
+      <div class="be-sub">≈ ${fmtUsd(beUsd)} · regime: <strong>${regime}</strong> · includes GMT, royalty &amp; boost cost</div>
     </div>
     <div class="be-block">
       <div class="be-lbl">Your gap to break-even</div>
@@ -543,60 +534,93 @@ function renderBreakeven(out) {
     </div>`;
 }
 
-function simulate() {
+// =================================================================
+//  CANONICAL CALCULATION — single source of truth.
+//  Every card (Dashboard, Compare, Variance, Break-even) calls this
+//  function with optional overrides. Don't duplicate fee math anywhere.
+// =================================================================
+function runMW(overrides) {
+  overrides = overrides || {};
   const p = read();
-  const networkTh = p.netEh * 1_000_000;     // EH/s → TH/s
+  const warGross           = overrides.warGross           ?? p.warGross;
+  const warGmt             = overrides.warGmt             ?? p.warGmt;
+  const eligibleMiningDays = overrides.eligibleMiningDays ?? p.eligibleMiningDays;
+  const eligibleWarDays    = overrides.eligibleWarDays    ?? p.eligibleWarDays;
+  const boostSpendGmt      = overrides.boostSpendGmt      ?? p.boostSpendGmt;
 
-  // ---------- MINING MODE ----------
+  const networkTh = p.netEh * 1_000_000;
+
+  // ---------- Mining mode (eligible days, full discount stack) ----------
   const grossPerDayBtc = (p.th / networkTh) * 144 * p.blockBtc;
   const elecPerDayUsd  = (p.elecKwh * 24 * p.eff * p.th) / 1000;
   const servPerDayUsd  = SERVICE_FEE_TH_USD * p.th;
   const miningDisc     = p.discService + p.discMining + p.discVip + p.discToken;
   const maintPerDayUsd = (elecPerDayUsd + servPerDayUsd) * (1 - miningDisc);
   const maintPerDayBtc = p.btcUsd > 0 ? maintPerDayUsd / p.btcUsd : 0;
-  const miningWeekNetBtc = (grossPerDayBtc - maintPerDayBtc) * 7;
-  const miningWeekNetUsd = miningWeekNetBtc * p.btcUsd;
-  const miningWeekGrossUsd = grossPerDayBtc * 7 * p.btcUsd;
-  const miningWeekMaintUsd = maintPerDayUsd * 7;
-  const soloCeilingBtc = miningWeekNetBtc;            // excess-fee threshold
+  const miningNetBtc   = (grossPerDayBtc - maintPerDayBtc) * eligibleMiningDays;
+  const miningNetUsd   = miningNetBtc * p.btcUsd;
+  const miningGrossUsd = grossPerDayBtc * eligibleMiningDays * p.btcUsd;
+  const miningMaintUsd = maintPerDayUsd * eligibleMiningDays;
 
-  // ---------- MINER WARS ----------
-  const warsDisc = p.discService + p.discVip + p.discToken;     // mining-mode bonus does NOT apply
-  const warsFeesBaseUsd = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * 7;
-  const excessBtc = Math.max(0, p.warGross - soloCeilingBtc);
+  // Solo ceiling for excess-fee math = same Mining-mode net for the WAR period
+  const soloCeilingBtcForWars = (grossPerDayBtc - maintPerDayBtc) * eligibleWarDays;
+
+  // ---------- Miner Wars ----------
+  // Mining-mode bonus does NOT apply in MW. Service streak still does.
+  const warsDisc        = p.discService + p.discVip + p.discToken;
+  const warsBaseFeesUsd = (elecPerDayUsd + servPerDayUsd) * (1 - warsDisc) * eligibleWarDays;
+
+  const excessBtc = Math.max(0, warGross - soloCeilingBtcForWars);
   const excessUsd = excessBtc * p.btcUsd;
   const leagueElecPerDay = (p.elecKwh * 24 * p.leagueWth * p.th) / 1000;
-  const leagueRatio = (leagueElecPerDay + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
-  const warsExcessFeeUsd = excessUsd * (leagueRatio - 1) * (1 - warsDisc);
-  const warsGrossUsd = p.warGross * p.btcUsd;
-  const warsGmtUsd   = p.warGmt   * p.gmtUsd;
-  const warsNetUsd   = warsGrossUsd + warsGmtUsd - warsFeesBaseUsd - warsExcessFeeUsd;
-  const warsNetBtc   = p.btcUsd > 0 ? warsNetUsd / p.btcUsd : 0;
-  const warsRetention = warsGrossUsd > 0
-    ? ((warsGrossUsd - warsFeesBaseUsd - warsExcessFeeUsd) / warsGrossUsd) * 100
+  const leagueRatio      = (leagueElecPerDay + servPerDayUsd) / (elecPerDayUsd + servPerDayUsd);
+  const excessFeeUsd     = excessUsd * (leagueRatio - 1) * (1 - warsDisc);
+
+  const warBtcGrossUsd  = warGross * p.btcUsd;
+  const personalGmtUsd  = warGmt * p.gmtUsd;
+  const leaderRoyaltyUsd = p.isLeader ? (p.memberGmtTotal * 0.05 * p.gmtUsd) : 0;
+  const boostSpendUsd    = boostSpendGmt * p.gmtUsd;
+
+  const warNetUsd = warBtcGrossUsd
+                  + personalGmtUsd
+                  + leaderRoyaltyUsd
+                  - warsBaseFeesUsd
+                  - excessFeeUsd
+                  - boostSpendUsd;
+  const warNetBtc = p.btcUsd > 0 ? warNetUsd / p.btcUsd : 0;
+
+  // BTC-only retention (kept distinct from net-of-everything)
+  const btcRetention = warBtcGrossUsd > 0
+    ? ((warBtcGrossUsd - warsBaseFeesUsd - excessFeeUsd) / warBtcGrossUsd) * 100
     : 0;
 
   return {
-    p,
+    p, overrides,
     mining: {
-      gross: miningWeekGrossUsd,
-      maint: miningWeekMaintUsd,
-      netBtc: miningWeekNetBtc,
-      netUsd: miningWeekNetUsd,
-      ceilingBtc: soloCeilingBtc,
+      gross: miningGrossUsd,
+      maint: miningMaintUsd,
+      netBtc: miningNetBtc,
+      netUsd: miningNetUsd,
+      ceilingBtc: miningNetBtc,                  // solo ceiling for the same period
+      ceilingForWars: soloCeilingBtcForWars,     // ceiling adjusted for war days
     },
     wars: {
-      gross: warsGrossUsd,
-      gmt:   warsGmtUsd,
-      feesBase: warsFeesBaseUsd,
-      feesExcess: warsExcessFeeUsd,
-      excessBtc, leagueRatio,
-      netBtc: warsNetBtc,
-      netUsd: warsNetUsd,
-      retention: warsRetention,
+      grossBtc: warGross,
+      grossUsd: warBtcGrossUsd,
+      personalGmt: warGmt,
+      personalGmtUsd,
+      leaderRoyaltyUsd,
+      boostSpendUsd,
+      feesBase: warsBaseFeesUsd,
+      excessBtc, excessFee: excessFeeUsd, leagueRatio,
+      netBtc: warNetBtc,
+      netUsd: warNetUsd,
+      retention: btcRetention,
     },
   };
 }
+// Back-compat alias — old callers keep working.
+function simulate() { return runMW(); }
 
 function render(out) {
   $("#results-empty").style.display = "none";
@@ -614,11 +638,11 @@ function render(out) {
   $("#wars-net").textContent = fmtUsd(w.netUsd);
   $("#wars-net").className   = "mode-net " + (w.netUsd >= 0 ? "green" : "red");
   $("#wars-sub").textContent = fmtBtc(w.netBtc) + " BTC equivalent / week";
-  $("#wars-gross").textContent      = fmtUsd(w.gross);
-  $("#wars-gmt").textContent        = w.gmt > 0 ? "+" + fmtUsd(w.gmt) : "—";
+  $("#wars-gross").textContent      = fmtUsd(w.grossUsd);
+  $("#wars-gmt").textContent        = w.personalGmtUsd > 0 ? "+" + fmtUsd(w.personalGmtUsd) : "—";
   $("#wars-fees-base").textContent  = "-" + fmtUsd(w.feesBase);
-  $("#wars-fees-excess").textContent= "-" + fmtUsd(w.feesExcess);
-  $("#wars-retention").textContent  = w.retention.toFixed(1) + "%";
+  $("#wars-fees-excess").textContent= "-" + fmtUsd(w.excessFee);
+  $("#wars-retention").textContent  = w.retention.toFixed(1) + "% (BTC-only)";
 
   // verdict + winner ribbon
   const diff = w.netUsd - m.netUsd;
@@ -648,16 +672,20 @@ function render(out) {
     $("#verdict-text").textContent  = `Your expected clan share is high enough to beat solo even after the league fee markup. Worth playing — but confirm your gross estimate is realistic.`;
   }
 
-  // detail table
+  // detail table — every line of the war net build
   $("#detail-table").innerHTML = `
-    <tr><td class="lbl">Your hashrate</td><td>${p.th.toLocaleString()} TH/s</td></tr>
-    <tr><td class="lbl">Your W/TH</td><td>${p.eff} (vs league avg ${p.leagueWth})</td></tr>
+    <tr><td class="lbl">Eligible mining days / war days</td><td>${p.eligibleMiningDays} / ${p.eligibleWarDays}</td></tr>
+    <tr><td class="lbl">Your hashrate / W/TH</td><td>${p.th.toLocaleString()} TH/s · ${p.eff} W/TH (league avg ${p.leagueWth})</td></tr>
     <tr><td class="lbl">League fee multiplier on excess</td><td>${(w.leagueRatio).toFixed(3)}× (×${((w.leagueRatio-1)*100).toFixed(1)}% markup)</td></tr>
     <tr><td class="lbl">Mining-mode discount stack</td><td>${((p.discService+p.discMining+p.discVip+p.discToken)*100).toFixed(2)}%</td></tr>
     <tr><td class="lbl">Miner-Wars discount stack</td><td>${((p.discService+p.discVip+p.discToken)*100).toFixed(2)}% <span style="color:var(--text-mute)">(no Mining-mode bonus)</span></td></tr>
-    <tr><td class="lbl">Excess BTC above solo ceiling</td><td>${fmtBtc(w.excessBtc)} BTC (${fmtUsd(w.excessBtc*p.btcUsd)})</td></tr>
-    <tr><td class="lbl">Excess-fee tax on overage</td><td class="red">-${fmtUsd(w.feesExcess)}</td></tr>
-    <tr class="total"><td>Net difference</td><td class="${diff >= 0 ? 'green' : 'red'}">${fmtUsd(diff)}/week (${diff>=0?"+":""}${(diff*52).toLocaleString(undefined,{maximumFractionDigits:0})} /year)</td></tr>
+    <tr><td class="lbl">+ BTC clan share gross</td><td class="green">+${fmtUsd(w.grossUsd)}</td></tr>
+    <tr><td class="lbl">+ Personal GMT</td><td class="green">+${fmtUsd(w.personalGmtUsd)}</td></tr>
+    <tr><td class="lbl">+ Clan-leader 5% royalty</td><td class="green">+${fmtUsd(w.leaderRoyaltyUsd)}</td></tr>
+    <tr><td class="lbl">− Normal maintenance (war days)</td><td class="red">-${fmtUsd(w.feesBase)}</td></tr>
+    <tr><td class="lbl">− Excess-fee tax on overage</td><td class="red">-${fmtUsd(w.excessFee)} (excess BTC: ${fmtBtc(w.excessBtc)})</td></tr>
+    <tr><td class="lbl">− Boost / spell spend</td><td class="red">-${fmtUsd(w.boostSpendUsd)}</td></tr>
+    <tr class="total"><td>Net difference (Wars − Mining)</td><td class="${diff >= 0 ? 'green' : 'red'}">${fmtUsd(diff)}/week (${diff>=0?"+":""}${(diff*52).toLocaleString(undefined,{maximumFractionDigits:0})} /year)</td></tr>
   `;
 
   // variance + break-even
@@ -729,24 +757,22 @@ function selectLeague(btn) {
   btn.classList.add("active");
   const id      = btn.dataset.league;
   const wth     = +btn.dataset.wth;
-  const density = +btn.dataset.density;
   const maxMult = +btn.dataset.maxMult;
   const entry   = btn.dataset.entry || "—";
   currentLeague = id;
-  // populate league fields
+  // Only set league avg W/TH (used for excess-fee math).
+  // Do NOT auto-overwrite #in-war-gross — league $/TH/week density is just
+  // a max ceiling assuming you win at league-average rate, which most
+  // miners don't. User must enter their own honest expected gross
+  // (last week's actual is the best baseline).
   $("#in-league-wth").value = wth;
-  const p = read();
-  const usdGross = density * p.th;
-  const btcGross = p.btcUsd > 0 ? usdGross / p.btcUsd : 0;
-  $("#in-war-gross").value = btcGross.toFixed(6);
-  // info card
   const name = btn.querySelector(".name").textContent.replace(/×\d+ max/i, "").trim();
   $("#li-name").textContent  = name;
   $("#li-mult").textContent  = "×" + maxMult;
   $("#li-entry").textContent = entry;
   updateFairShare();
-  // rebuild spell-bot table to reflect this league's multiplier cap
   rebuildBotForLeague(maxMult);
+  updateDashboard();
 }
 document.querySelectorAll(".league-btn").forEach(btn =>
   btn.addEventListener("click", () => selectLeague(btn)));
@@ -800,8 +826,10 @@ document.querySelectorAll("[data-jump]").forEach(btn =>
 const DASH_INPUTS = [
   "#in-th","#in-eff","#in-btc","#in-net","#in-block","#in-elec",
   "#in-disc-service","#in-disc-mining","#in-disc-vip","#in-disc-token",
-  "#in-league-wth","#in-war-gross","#in-war-gmt","#in-gmt",
+  "#in-league-wth","#in-league-size","#in-war-gross","#in-war-gmt","#in-gmt",
   "#bot-edge-rate","#bot-blocks-per-tier",
+  // new war-week adjustment inputs
+  "#in-elig-mining","#in-elig-wars","#in-boost-spend","#in-is-leader","#in-member-gmt",
 ];
 DASH_INPUTS.forEach(sel => {
   const el = document.querySelector(sel);
