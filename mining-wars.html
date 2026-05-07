@@ -162,9 +162,9 @@
           <input type="number" id="in-league-wth" value="19" step="0.1" min="1">
         </div>
         <div class="price-input">
-          <label>Expected weekly gross (BTC)</label>
-          <input type="number" id="in-war-gross" value="0.005" step="0.0001" min="0">
-          <div class="sub">Your honest estimate of clan win share</div>
+          <label>Your expected weekly gross (BTC)</label>
+          <input type="number" id="in-war-gross" value="0.0001" step="0.00001" min="0">
+          <div class="sub"><strong>Best baseline = last week's actual.</strong> League $/TH/week density is misleading — most miners earn far less than the league average. If you made $3 last week, type that ÷ BTC price.</div>
         </div>
         <div class="price-input">
           <label>Personal block GMT / week</label>
@@ -206,6 +206,41 @@
         <div class="price-input">
           <label>Electricity ($/kWh)</label>
           <input type="number" id="in-elec" value="0.05" step="0.01">
+        </div>
+      </div>
+    </div>
+
+    <!-- new: war-specific costs and adjustments -->
+    <div class="card">
+      <div class="card-title">⚡ War-week adjustments</div>
+      <div class="card-desc">Things that the projection should subtract or scale, often missed.</div>
+      <div class="grid-mini">
+        <div class="price-input">
+          <label>Eligible mining days</label>
+          <input type="number" id="in-elig-mining" value="7" step="0.5" min="0" max="7">
+          <div class="sub">Lower if you switched mid-week</div>
+        </div>
+        <div class="price-input">
+          <label>Eligible war days</label>
+          <input type="number" id="in-elig-wars" value="7" step="0.5" min="0" max="7">
+          <div class="sub">Same — switching costs a day</div>
+        </div>
+        <div class="price-input">
+          <label>Boost / spell spend (GMT/wk)</label>
+          <input type="number" id="in-boost-spend" value="0" step="1" min="0">
+          <div class="sub">Subtracted from war net. Set to your bot's weekly cost.</div>
+        </div>
+        <div class="price-input">
+          <label style="display:flex;align-items:center;gap:8px;cursor:pointer">
+            <input type="checkbox" id="in-is-leader" style="width:auto;margin:0">
+            <span>I'm the clan leader</span>
+          </label>
+          <div class="sub">Adds 5% of member GMT below to war net</div>
+        </div>
+        <div class="price-input">
+          <label>Clan member GMT won / week</label>
+          <input type="number" id="in-member-gmt" value="0" step="100" min="0">
+          <div class="sub">Total GMT won by all clan members (used only if leader checked)</div>
         </div>
       </div>
     </div>
