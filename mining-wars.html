@@ -90,6 +90,34 @@
       </div>
     </div>
 
+    <!-- Live MW vitals — populated only when extension HAR endpoints are captured -->
+    <div class="card" id="mw-vitals-card" style="display:none">
+      <div class="card-title">⚡ Live Miner Wars vitals</div>
+      <div class="card-desc">Pulled from the GoMining extension. Only shows when fresh data is available.</div>
+      <div class="dash-kpi-grid">
+        <div class="dash-kpi" id="kpi-winchance-card">
+          <div class="lbl">WIN CHANCE / ROUND</div>
+          <div class="val" id="kpi-winchance">—</div>
+          <div class="sub">From round/get-state</div>
+        </div>
+        <div class="dash-kpi" id="kpi-clanrank-card">
+          <div class="lbl">CLAN RANK</div>
+          <div class="val" id="kpi-clanrank">—</div>
+          <div class="sub">In your league</div>
+        </div>
+        <div class="dash-kpi" id="kpi-userrank-card">
+          <div class="lbl">YOUR RANK</div>
+          <div class="val" id="kpi-userrank">—</div>
+          <div class="sub">Among all MW players</div>
+        </div>
+        <div class="dash-kpi" id="kpi-botbalance-card">
+          <div class="lbl">BOT BALANCE</div>
+          <div class="val" id="kpi-botbalance">—</div>
+          <div class="sub">Available for spells</div>
+        </div>
+      </div>
+    </div>
+
     <!-- League info (read-only display of what's selected in Setup) -->
     <div class="card">
       <div class="card-title">🏆 Your league</div>

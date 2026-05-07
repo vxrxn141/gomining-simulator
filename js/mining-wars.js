@@ -61,15 +61,69 @@ function autofillFromLive(d) {
   if (d.discount?.vip        !== undefined) setLive("in-disc-vip",     d.discount.vip);
   if (d.discount?.token      !== undefined) setLive("in-disc-token",   d.discount.token);
 
-  // From the new MW extractor
-  const w = d.wars || {};
-  if (w.you?.basePps)    setLive("in-pps",         Math.round(w.you.basePps));
-  if (w.league?.totalTh) setLive("in-league-size", Math.round(w.league.totalTh));
-  if (w.league?.avgWth)  setLive("in-league-wth",  (+w.league.avgWth).toFixed(2));
-  // Auto-select a league button by id/name when possible
-  const lid = (w.league?.id || "").toString().toLowerCase();
-  const match = ["dune","horizon","eclipse","odyssey"].find(x => lid.includes(x));
+  // From the new MW extractor — prefer the HAR-precise live.* shape when present,
+  // fall back to the legacy clan/league/you buckets otherwise.
+  const w  = d.wars || {};
+  const lv = w.live || {};
+  // Provenance helper: unwrap {value,...} or pass through plain values.
+  const v  = (x) => (x && typeof x === 'object' && 'value' in x) ? x.value : x;
+
+  // === User base TH + W/TH (your eligible mining power, your efficiency) ===
+  const userTh   = v(lv.user?.baseTh);
+  const userWth  = v(lv.user?.wPerTh);
+  if (userTh)  setLive("in-th",  (+userTh).toFixed(2));   // also useful for cross-check
+  if (userWth) setLive("in-eff", (+userWth).toFixed(2));
+
+  // === League average W/TH + total power (CRITICAL — from leaderboard endpoint) ===
+  const leagueTotalTh = v(lv.league?.totalPowerTh) ?? w.league?.totalTh;
+  const leagueAvgWth  = v(lv.league?.averageWPerTh) ?? w.league?.avgWth;
+  if (leagueTotalTh) setLive("in-league-size", Math.round(leagueTotalTh));
+  if (leagueAvgWth)  setLive("in-league-wth",  (+leagueAvgWth).toFixed(2));
+
+  // === Legacy you.basePps fallback (no equivalent in HAR yet) ===
+  if (w.you?.basePps) setLive("in-pps", Math.round(w.you.basePps));
+
+  // === Auto-select league button ===
+  // Prefer the HAR league name (e.g. "dune-18") -> normalize to family.
+  const leagueName = (v(lv.league?.leagueName) || w.league?.name || w.league?.id || "").toString().toLowerCase();
+  const match = ["dune","horizon","eclipse","odyssey"].find(x => leagueName.includes(x));
   if (match) document.querySelector(`.league-btn[data-league="${match}"]`)?.click();
+
+  // === Live probability table from /api/nft-game/league/index ===
+  // Use the actual roundMultiplierConfig for THIS league instead of guessed
+  // FREQ_DEFAULTS — the spell bot frequency row now reflects real chances.
+  const multConfig = v(lv.league?.roundMultiplierConfig) || w.roundMultConfig;
+  const maxMult = v(lv.league?.maxMultiplier) ||
+    (Array.isArray(multConfig) ? multConfig.reduce((m,x) => Math.max(m, x.v||0), 0) : null);
+  if (Array.isArray(multConfig) && maxMult) {
+    rebuildBotForLeague(maxMult, multConfig);
+  }
+
+  // === Win chance + rank for the dashboard ===
+  // round.myClanRound.winChance is a probability per round. Display it.
+  let vitalsAny = false;
+  const myCR = v(lv.round?.myClanRound);
+  if (myCR && myCR.winChance != null) {
+    const el = document.getElementById("kpi-winchance");
+    if (el) { el.textContent = (myCR.winChance * 100).toFixed(2) + "%"; vitalsAny = true; }
+  }
+  if (lv.clan?.rank && v(lv.clan.rank) != null) {
+    const el = document.getElementById("kpi-clanrank");
+    if (el) { el.textContent = "#" + v(lv.clan.rank); vitalsAny = true; }
+  }
+  if (lv.user?.rank && v(lv.user.rank) != null) {
+    const el = document.getElementById("kpi-userrank");
+    if (el) { el.textContent = "#" + v(lv.user.rank); vitalsAny = true; }
+  }
+  // Bot balance — useful for "can I afford this week's strategy?"
+  if (lv.boosts?.botBalanceGmt && v(lv.boosts.botBalanceGmt) != null) {
+    const el = document.getElementById("kpi-botbalance");
+    if (el) { el.textContent = (+v(lv.boosts.botBalanceGmt)).toFixed(2) + " GMT"; vitalsAny = true; }
+  }
+  if (vitalsAny) {
+    const card = document.getElementById("mw-vitals-card");
+    if (card) card.style.display = "";
+  }
 
   // The cycle projection (if we have round timing) is the source of truth
   // for expected gross. It blends statistical baseline with observed data.
@@ -94,8 +148,11 @@ function autofillFromLive(d) {
 function showLiveBanner(d) {
   const el = document.getElementById("live-banner");
   if (!el) return;
-  const w = d.wars || {};
-  const hasWars = !!(w.clan?.totalTh || w.recentBlocks?.length);
+  const w  = d.wars || {};
+  const lv = w.live || {};
+  const _v = (x) => (x && typeof x === 'object' && 'value' in x) ? x.value : x;
+  const hasHar  = !!(_v(lv.league?.btcRewardFund) || _v(lv.league?.totalPowerTh) || _v(lv.user?.baseTh));
+  const hasWars = hasHar || !!(w.clan?.totalTh || w.recentBlocks?.length);
   const proj = projectFromHistory();
   el.style.display = "block";
   el.innerHTML = `
@@ -380,11 +437,27 @@ let currentLeague = null;        // "dune" | "horizon" | "eclipse" | "odyssey" |
 let MULT_TIERS = [1, 2, 4, 8, 16, 32];     // Dune-default until user picks
 let botRules = MULT_TIERS.map(m => ({ mult:m, picks:{} }));
 
-function rebuildBotForLeague(maxMult) {
+function rebuildBotForLeague(maxMult, multConfig) {
   MULT_TIERS = tiersFor(maxMult);
   // preserve existing picks where the multiplier still applies, drop others
   const oldByMult = Object.fromEntries(botRules.map(r => [r.mult, r.picks]));
   botRules = MULT_TIERS.map(m => ({ mult:m, picks: oldByMult[m] || {} }));
+  // If we got a live probability table from the extension, derive expected
+  // blocks/week per tier from p × (rounds/week). Rounds are ~3 min apart, so
+  // ~3360 rounds/week. Anything the user manually edited stays put.
+  if (Array.isArray(multConfig) && multConfig.length) {
+    const ROUNDS_PER_WEEK = 60 * 24 * 7 / 3; // ~3360
+    const fromLive = {};
+    for (const row of multConfig) {
+      if (row && row.v != null && row.p != null) fromLive[row.v] = +row.p * ROUNDS_PER_WEEK;
+    }
+    // Only fill in tiers the user hasn't customized (perTierFreq overrides).
+    for (const m of MULT_TIERS) {
+      if (perTierFreq[m] === undefined && fromLive[m] !== undefined) {
+        perTierFreq[m] = +fromLive[m].toFixed(2);
+      }
+    }
+  }
   renderFreqRow();
   renderBot();
 }
