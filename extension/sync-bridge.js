@@ -32,10 +32,21 @@
             const prev = window.localStorage.getItem(STORAGE_KEY);
             if (json === prev) return;
             window.localStorage.setItem(STORAGE_KEY, json);
-            window.dispatchEvent(new StorageEvent('storage', {
-                key: STORAGE_KEY, oldValue: prev, newValue: json,
-                storageArea: window.localStorage
-            }));
+            // StorageEvent only fires across tabs/windows, NOT in the window
+            // that wrote the value. Dispatch BOTH a synthetic StorageEvent
+            // (for any cross-tab style listeners) and a CustomEvent on
+            // document so same-window listeners actually receive it.
+            try {
+                window.dispatchEvent(new StorageEvent('storage', {
+                    key: STORAGE_KEY, oldValue: prev, newValue: json,
+                    storageArea: window.localStorage
+                }));
+            } catch {}
+            try {
+                document.dispatchEvent(new CustomEvent('gomining-autosync', {
+                    detail: { key: STORAGE_KEY, json }
+                }));
+            } catch {}
         } catch (e) { /* never throw out of the bridge */ }
     }
 
